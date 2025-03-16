@@ -34,12 +34,12 @@ A web-based asset management system built with Laravel and Tailwind CSS.
 
 Configure your `.env` file with these settings:
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=your_database_name
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
+- DB_CONNECTION=mysql
+- DB_HOST=127.0.0.1
+- DB_PORT=3306
+- DB_DATABASE=your_database_name
+- DB_USERNAME=your_username
+- DB_PASSWORD=your_password
 
 ## Default Login
 
