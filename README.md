@@ -1,3 +1,9 @@
-# Capstone
+# Asset Management System
 
-Operations Management System for PCC's ICTC
+A web-based asset management system built with Laravel and Tailwind CSS.
+
+## Features
+
+- Asset tracking with QR code generation
+- Category management
+- User management with role-based access
