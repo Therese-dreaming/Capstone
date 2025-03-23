@@ -5,7 +5,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\MaintenanceController;
 use Illuminate\Support\Facades\Route;
+
 
 Route::get('/', function () {
     return view('login');
@@ -28,4 +30,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/qrcodes/export', [AssetController::class, 'exportQrCodes'])->name('qrcodes.export');
     Route::post('/qrcodes/preview', [AssetController::class, 'previewQrCodes'])->name('qrcodes.preview');
     Route::resource('categories', CategoryController::class);
+    Route::get('/maintenance/schedule', [MaintenanceController::class, 'scheduleForm'])->name('maintenance.schedule');
+    Route::post('/maintenance/schedule', [MaintenanceController::class, 'scheduleStore'])->name('maintenance.schedule.store');
+    Route::get('/categories/{category}/assets', [MaintenanceController::class, 'getAssetsByCategory']);
+    Route::get('/assets/{asset}', [MaintenanceController::class, 'getAssetDetails']);
+    Route::get('/maintenance/schedules/{date}', [MaintenanceController::class, 'getSchedulesByDate']);
+    Route::get('/maintenance/completed', [MaintenanceController::class, 'getCompletedMaintenance']);
 });

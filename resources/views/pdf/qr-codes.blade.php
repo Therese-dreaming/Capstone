@@ -2,53 +2,57 @@
 <html>
 <head>
     <style>
+        @page {
+            size: A4 landscape;
+            margin: 20px;
+        }
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
-        .qr-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0;
+        .page {
+            display: block;
+            margin-bottom: 20px;
+        }
+        .qr-container {
+            display: inline-block;
+            width: 100%;
         }
         .qr-item {
+            display: inline-block;
             width: 180px;
-            height: 240px;
             text-align: center;
-            padding: 15px;
-            border-right: 1px dashed #999;
-            border-bottom: 1px dashed #999;
-            page-break-inside: avoid;
-        }
-        .qr-item:nth-child(3n) {
-            border-right: none;
+            padding: 10px;
+            border: 1px dashed #999;
+            margin: 5px;
+            vertical-align: top;
         }
         .qr-code {
             width: 150px;
-            height: auto;
+            height: 150px;
             margin-bottom: 10px;
         }
         .asset-info {
             font-size: 12px;
             line-height: 1.2;
-            margin-top: 10px;
-        }
-        @page {
-            margin: 0;
         }
     </style>
 </head>
 <body>
-    <div class="qr-grid">
-        @foreach($assets as $asset)
-            <div class="qr-item">
-                <img src="{{ public_path('storage/' . $asset->qr_code) }}" class="qr-code">
-                <div class="asset-info">
-                    <strong>{{ $asset->name }}</strong><br>
-                    {{ $asset->serial_number }}
-                </div>
+    @foreach($assets->chunk(5) as $rowAssets)
+        <div class="page">
+            <div class="qr-container">
+                @foreach($rowAssets as $asset)
+                    <div class="qr-item">
+                        <img src="{{ public_path('storage/' . $asset->qr_code) }}" class="qr-code">
+                        <div class="asset-info">
+                            <strong>{{ $asset->name }}</strong><br>
+                            {{ $asset->serial_number }}
+                        </div>
+                    </div>
+                @endforeach
             </div>
-        @endforeach
-    </div>
+        </div>
+    @endforeach
 </body>
 </html>
