@@ -6,6 +6,7 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\RepairRequestController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -36,4 +37,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/assets/{asset}', [MaintenanceController::class, 'getAssetDetails']);
     Route::get('/maintenance/schedules/{date}', [MaintenanceController::class, 'getSchedulesByDate']);
     Route::get('/maintenance/completed', [MaintenanceController::class, 'getCompletedMaintenance']);
+    // Repair Routes
+    Route::get('/repair/request', [RepairRequestController::class, 'create'])->name('repair.request');
+    Route::post('/repair/store', [RepairRequestController::class, 'store'])->name('repair.store');
+    Route::get('/repair-status', [RepairRequestController::class, 'status'])->name('repair.status');
 });

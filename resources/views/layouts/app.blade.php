@@ -126,14 +126,32 @@
                             </svg>
                         </button>
                         <div id="maintenanceMenu" class="hidden ml-8 space-y-1.5">
-                            <a href="#" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                Repair Request
-                            </a>
                             <a href="{{ route('maintenance.schedule') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Maintenance Schedule
                             </a>
                             <a href="{{ route('assets.list') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Asset History
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Asset Repair -->
+                    <div class="space-y-1.5">
+                        <button onclick="toggleRepairMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                            </svg>
+                            <span>Asset Repair</span>
+                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="repairMenu" class="hidden ml-8 space-y-1.5">
+                            <a href="{{ route('repair.request') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Repair Request
+                            </a>
+                            <a href="{{ route('repair.status') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Repair Status
                             </a>
                         </div>
                     </div>
@@ -223,10 +241,18 @@
             }
 
             // Check if current path is within a dropdown and open it
+            function toggleRepairMenu() {
+                const menu = document.getElementById('repairMenu');
+                menu.classList.toggle('hidden');
+                localStorage.setItem('repairMenu', menu.classList.contains('hidden') ? 'closed' : 'open');
+            }
+
+            // Update the checkAndOpenDropdown function
             function checkAndOpenDropdown() {
                 const dropdowns = {
                     'userMenu': ['/users', '/groups'],
-                    'maintenanceMenu': ['/assets', '/maintenance', '/repair']
+                    'maintenanceMenu': ['/assets', '/maintenance'],
+                    'repairMenu': ['/repair'] // Add this line
                 };
 
                 for (const [menuId, paths] of Object.entries(dropdowns)) {
