@@ -19,7 +19,8 @@ class RepairRequest extends Model
         'issue',
         'status',
         'technician_id',
-        'completed_at'
+        'completed_at',
+        'remarks'
     ];
 
     protected $dates = [

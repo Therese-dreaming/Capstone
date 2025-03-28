@@ -41,4 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/repair/request', [RepairRequestController::class, 'create'])->name('repair.request');
     Route::post('/repair/store', [RepairRequestController::class, 'store'])->name('repair.store');
     Route::get('/repair-status', [RepairRequestController::class, 'status'])->name('repair.status');
+    Route::get('/repair-completed', [RepairRequestController::class, 'completed'])->name('repair.completed');
+    Route::put('/repair-requests/{id}', [RepairRequestController::class, 'update'])->name('repair-requests.update');
+    Route::delete('/repair-requests/delete/{id}', [RepairRequestController::class, 'destroy'])->name('repair-requests.destroy');
 });
