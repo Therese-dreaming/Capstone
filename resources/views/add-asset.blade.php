@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <div class="flex-1 ml-80">
     <div class="p-6">
         <div class="mb-6">
@@ -14,7 +15,7 @@
                 <div class="mb-4 text-sm text-gray-600">
                     Note: Maximum file size allowed is 2MB
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-8">
                     <!-- Left Column -->
                     <div>
@@ -109,12 +110,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Asset Photo</label>
-                                <input type="file" 
-                                       name="photo" 
-                                       accept="image/*"
-                                       max="2048"
-                                       onchange="validateFileSize(this)"
-                                       class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
+                                <input type="file" name="photo" accept="image/*" max="2048" onchange="validateFileSize(this)" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                                 <p class="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG, GIF (max. 2MB)</p>
                                 <p class="text-xs text-red-500 mt-1 hidden" id="fileError"></p>
                             </div>
@@ -123,20 +119,11 @@
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-4">
-                    <a href="{{ route('assets.list') }}" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    <a href="{{ route('assets.index') }}" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                         Cancel
                     </a>
-                    <button type="submit" 
-                            id="submitButton"
-                            class="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 flex items-center">
-                        <span id="buttonText">Add Asset</span>
-                        <span id="loadingIndicator" class="hidden ml-2">
-                            <!-- Loading spinner -->
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </span>
+                    <button type="submit" class="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
+                        Add Asset
                     </button>
                 </div>
             </form>
@@ -169,6 +156,7 @@
     </div>
 </div>
 
+<!-- Remove the nested script tags and combine the JavaScript -->
 <script>
     // Show modal if there's an error
     @if(session('showErrorModal'))
@@ -180,57 +168,14 @@
         document.getElementById('errorModal').classList.add('hidden');
     }
 
-    // Add form submission handling
-    <script>
-        document.querySelector('form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitButton = document.getElementById('submitButton');
-            const buttonText = document.getElementById('buttonText');
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            const form = this;
-            
-            // Show loading state
-            submitButton.disabled = true;
-            buttonText.textContent = 'Adding Asset...';
-            loadingIndicator.classList.remove('hidden');
-    
-            // Submit form using fetch
-            fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                window.location.href = '{{ route('assets.list') }}';
-            })
-            .catch(error => {
-                // Show error in modal
-                document.getElementById('errorMessageText').textContent = error.message;
-                document.getElementById('errorModal').classList.remove('hidden');
-                
-                // Reset button state
-                submitButton.disabled = false;
-                buttonText.textContent = 'Add Asset';
-                loadingIndicator.classList.add('hidden');
-            });
-        });
-    </script>
-</script>
-<script>
+    // File size validation
     function validateFileSize(input) {
         const fileError = document.getElementById('fileError');
         const submitButton = document.getElementById('submitButton');
-        
+
         if (input.files && input.files[0]) {
             const fileSize = input.files[0].size / 1024 / 1024; // Convert to MB
-            
+
             if (fileSize > 2) {
                 fileError.textContent = 'File size exceeds 2MB limit. Please choose a smaller file.';
                 fileError.classList.remove('hidden');
@@ -242,5 +187,68 @@
             }
         }
     }
+
+    // Form submission handling
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const submitButton = document.getElementById('submitButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            // Show loading state
+            submitButton.disabled = true;
+            buttonText.textContent = 'Adding Asset...';
+            loadingIndicator.classList.remove('hidden');
+
+            // Get CSRF token
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Submit form using fetch
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.error) {
+                    throw new Error(data.error);
+                }
+                // If we get here and haven't redirected, manually redirect
+                window.location.href = '{{ route('assets.index') }}';
+            })
+            .catch(error => {
+                // If this is a redirect, don't show error
+                if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
+                    window.location.href = '{{ route('assets.index') }}';
+                    return;
+                }
+                
+                // Show error in modal
+                document.getElementById('errorMessageText').textContent =
+                    error.message || 'An error occurred while creating the asset. Please try again.';
+                document.getElementById('errorModal').classList.remove('hidden');
+
+                // Reset button state
+                submitButton.disabled = false;
+                buttonText.textContent = 'Add Asset';
+                loadingIndicator.classList.add('hidden');
+            });
+        });
+    });
+
 </script>
 @endsection

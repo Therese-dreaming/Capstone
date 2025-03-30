@@ -35,7 +35,19 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        $category->delete();
-        return redirect()->route('categories.index')->with('success', 'Category deleted successfully');
+        try {
+            // Check if category has assets
+            if ($category->assets()->count() > 0) {
+                return back()->with('error', 'Cannot delete category: It still has assets assigned to it.');
+            }
+
+            $categoryName = $category->name;
+            $category->delete();
+
+            return redirect()->route('categories.index')
+                ->with('success', 'Category "' . $categoryName . '" has been deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete category. Please try again.');
+        }
     }
 }

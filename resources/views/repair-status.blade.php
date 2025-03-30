@@ -107,10 +107,16 @@
             for (let i = startIndex; i < endIndex; i++) {
                 const repair = urgentData[i];
                 const div = document.createElement('div');
-                div.className = 'text-gray-800 p-2 border-b border-gray-100 last:border-0';
+                div.className = 'text-gray-800 p-2 border-b border-gray-100 last:border-0 hover:bg-red-100 transition-colors duration-200 cursor-pointer relative group';
                 div.innerHTML = `→ ${repair.office_room} - ${repair.equipment} - ${repair.technician ? repair.technician.name : 'Not Assigned'}
                     (${new Date(repair.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} 
-                    ${new Date(repair.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })})`;
+                    ${new Date(repair.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })})
+                    <div class="absolute inset-0 hidden group-hover:flex items-center justify-center">
+                        <span class="text-white text-xl font-bold">Update</span>
+                    </div>`;
+                
+                // Add click event to open update modal
+                div.onclick = () => openUpdateModal(repair.id);
                 tableBody.appendChild(div);
             }
 

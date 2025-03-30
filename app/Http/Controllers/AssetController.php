@@ -37,9 +37,12 @@ class AssetController extends Controller
 
             // Check for duplicate serial number
             if (Asset::where('serial_number', $request->serial_number)->exists()) {
-                return response()->json([
-                    'error' => 'This Serial Number is already registered in the system.'
-                ], 422);
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'error' => 'This Serial Number is already registered in the system.'
+                    ], 422);
+                }
+                return back()->withErrors(['serial_number' => 'This Serial Number is already registered in the system.']);
             }
 
             $validated['serial_number'] = $request->serial_number;
@@ -51,7 +54,7 @@ class AssetController extends Controller
     
             $asset = Asset::create($validated);
 
-            // Simplified QR code generation
+            // QR code generation
             $qrCode = new QrCode(json_encode([
                 'id' => $asset->id,
                 'name' => $asset->name,
@@ -67,13 +70,22 @@ class AssetController extends Controller
             
             $asset->update(['qr_code' => $qrPath]);
     
-            return redirect()->route('assets.list')->with('success', 'Asset added successfully');
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Asset added successfully']);
+            }
+            
+            return redirect()->route('assets.index')->with('success', 'Asset has been added successfully');
         
         } catch (\Exception $e) {
             \Log::error('Asset creation error: ' . $e->getMessage());
-            return response()->json([
-                'error' => 'An error occurred while creating the asset. Please try again.'
-            ], 500);
+            
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'error' => 'An error occurred while creating the asset. Please try again.'
+                ], 500);
+            }
+            
+            return back()->with('error', 'An error occurred while creating the asset. Please try again.');
         }
     }
 

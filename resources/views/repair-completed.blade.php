@@ -4,9 +4,6 @@
 <div class="flex-1 p-8 ml-72">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-semibold">All Completed Requests</h2>
-        <a href="{{ route('repair.status') }}" class="bg-[#960106] text-white px-4 py-2 rounded hover:bg-red-800">
-            Back to Status
-        </a>
     </div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Asset Management System</title>
     <!-- Add Poppins font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -10,17 +11,21 @@
         * {
             font-family: 'Poppins', sans-serif !important;
         }
+
         .nav-active svg {
             stroke: #FEB35A !important;
         }
+
         .nav-active {
             color: white !important;
             font-weight: bold;
             background-color: rgb(185 28 28) !important;
         }
+
         .menu-open {
             display: block !important;
         }
+
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -38,7 +43,7 @@
             <!-- User Profile Dropdown -->
             <div class="relative">
                 <button id="profileDropdown" class="flex items-center space-x-3 hover:text-gray-200">
-                    <img src="{{ asset('images/default-profile.png') }}" alt="Profile" class="h-8 w-8 rounded-full">
+                    <img src="{{ Auth::user()->profile_picture ?? asset('images/default-profile.png') }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
                     <span>{{ Auth::user()->name ?? 'User Name' }}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -47,7 +52,7 @@
 
                 <!-- Dropdown Menu -->
                 <div id="profileMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 text-gray-700 hidden">
-                    <a href="#" class="block px-4 py-2 hover:bg-gray-100">Profile Settings</a>
+                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-100">Edit Profile</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
@@ -118,19 +123,27 @@
                     <div class="space-y-1.5">
                         <button onclick="toggleMaintenanceMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
                             </svg>
                             <span>Asset Maintenance</span>
                             <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
+                        <!-- Asset Maintenance Dropdown Items -->
                         <div id="maintenanceMenu" class="hidden ml-8 space-y-1.5">
-                            <a href="{{ route('maintenance.schedule') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                Maintenance Schedule
+                            <a href="{{ route('assets.index') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Asset List
                             </a>
-                            <a href="{{ route('assets.list') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                Asset History
+                            <a href="{{ route('maintenance.schedule') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Schedule Maintenance
+                            </a>
+                            <a href="{{ route('maintenance.upcoming') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Upcoming Maintenance
+                            </a>
+                            <a href="{{ route('maintenance.history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Maintenance History
                             </a>
                         </div>
                     </div>
@@ -152,6 +165,9 @@
                             </a>
                             <a href="{{ route('repair.status') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Repair Status
+                            </a>
+                            <a href="{{ route('repair.completed') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Repair History
                             </a>
                         </div>
                     </div>
@@ -223,12 +239,12 @@
                     if (parentDropdown) {
                         const dropdownButton = parentDropdown.querySelector('button');
                         const dropdownMenu = parentDropdown.querySelector('[id$="Menu"]');
-                        
+
                         if (dropdownButton) {
                             dropdownButton.classList.add('nav-active');
                             dropdownButton.classList.add('bg-red-700');
                         }
-                        
+
                         if (dropdownMenu) {
                             dropdownMenu.classList.remove('hidden');
                             localStorage.setItem(dropdownMenu.id, 'open');
@@ -250,9 +266,9 @@
             // Update the checkAndOpenDropdown function
             function checkAndOpenDropdown() {
                 const dropdowns = {
-                    'userMenu': ['/users', '/groups'],
-                    'maintenanceMenu': ['/assets', '/maintenance'],
-                    'repairMenu': ['/repair'] // Add this line
+                    'userMenu': ['/users', '/groups']
+                    , 'maintenanceMenu': ['/assets', '/maintenance']
+                    , 'repairMenu': ['/repair'] // Add this line
                 };
 
                 for (const [menuId, paths] of Object.entries(dropdowns)) {
@@ -326,7 +342,23 @@
             checkAndOpenDropdown();
         });
 
-        // Keep your existing toggle and profile dropdown functions...
+        // Profile dropdown functionality
+        const profileDropdown = document.getElementById('profileDropdown');
+        const profileMenu = document.getElementById('profileMenu');
+
+        // Toggle dropdown when clicking the profile button
+        profileDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileMenu.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!profileDropdown.contains(e.target)) {
+                profileMenu.classList.add('hidden');
+            }
+        });
+
     </script>
 </body>
 </html>
