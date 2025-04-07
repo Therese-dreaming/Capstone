@@ -20,9 +20,16 @@
             <!-- Header Section -->
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold">ALL ASSETS</h1>
+                <!-- Add this in the header section where your other buttons are -->
                 <div class="flex space-x-3">
                     <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
                         Add New Asset
+                    </a>
+                    <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                        Procurement History
+                    </a>
+                    <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                        Disposal History
                     </a>
                     <button onclick="openFullList()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,7 +54,9 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -71,32 +80,48 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name ?? '' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->category->name ?? '' }}</td>
-                            <!-- For both tables, update the status cell like this -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px]
-                                    @switch($asset->status)
-                                        @case('UNDER REPAIR')
-                                            bg-yellow-100 text-yellow-800
-                                            @break
-                                        @case('IN USE')
-                                            bg-green-100 text-green-800
-                                            @break
-                                        @case('DISPOSED')
-                                            bg-red-100 text-red-800
-                                            @break
-                                        @case('UPGRADE')
-                                            bg-blue-100 text-blue-800
-                                            @break
-                                        @case('PENDING DEPLOYMENT')
-                                            bg-purple-100 text-purple-800
-                                            @break
-                                        @default
-                                            bg-gray-100 text-gray-800
-                                    @endswitch">
+                                            @switch($asset->status)
+                                                @case('UNDER REPAIR')
+                                                    bg-yellow-100 text-yellow-800
+                                                    @break
+                                                @case('IN USE')
+                                                    bg-green-100 text-green-800
+                                                    @break
+                                                @case('DISPOSED')
+                                                    bg-red-100 text-red-800
+                                                    @break
+                                                @case('UPGRADE')
+                                                    bg-blue-100 text-blue-800
+                                                    @break
+                                                @case('PENDING DEPLOYMENT')
+                                                    bg-purple-100 text-purple-800
+                                                    @break
+                                                @default
+                                                    bg-gray-100 text-gray-800
+                                            @endswitch">
                                     {{ $asset->status ?? 'N/A' }}
                                 </span>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ?? '' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex space-x-2">
+                                    <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-blue-700">
+                                        History
+                                    </a>
+                                    <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-yellow-700">
+                                        Edit
+                                    </a>
+                                    <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-red-700">
+                                        Delete
+                                    </button>
+                                    <button onclick="confirmDispose({{ $asset->id }})" class="bg-gray-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-gray-700">
+                                        Dispose
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -104,6 +129,8 @@
             </div>
         </div>
     </div>
+</div>
+</div>
 </div>
 
 <!-- Image Modal -->
@@ -138,6 +165,7 @@
         <!-- Table Container -->
         <div class="overflow-y-auto max-h-[70vh] rounded-lg border border-gray-200">
             <table class="min-w-full divide-y divide-gray-200">
+                <!-- Add to full list table header -->
                 <thead class="bg-gray-50 sticky top-0 shadow-sm z-10">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">#</th>
@@ -145,6 +173,7 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">QR Code</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Asset Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Serial Number</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
@@ -186,6 +215,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->name ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap font-bold">{{ $asset->serial_number ?? '' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->category->name ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->location ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -231,6 +261,63 @@
 <!-- Move the script section outside the fullListModal div and place it at the end of the content section -->
 </div> <!-- end of fullListModal -->
 
+<!-- Add these modals before the closing </div> of your main content -->
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Asset</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Are you sure you want to delete this asset? This action cannot be undone.</p>
+            </div>
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="deleteConfirm" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    Delete
+                </button>
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dispose Confirmation Modal -->
+<div id="disposeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Dispose Asset</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500 mb-4">Are you sure you want to mark this asset as disposed?</p>
+                <div class="text-left">
+                    <label for="disposeReason" class="block text-sm font-medium text-gray-700 mb-2">Reason for Disposal</label>
+                    <textarea id="disposeReason" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" rows="3" placeholder="Enter reason for disposal"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="disposeConfirm" class="px-4 py-2 bg-yellow-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                    Dispose
+                </button>
+                <button onclick="closeDisposeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update the JavaScript for dispose confirmation -->
 <script>
     function openFullList() {
         document.getElementById('fullListModal').classList.remove('hidden');
@@ -272,5 +359,83 @@
         });
     });
 
+    let currentAssetId = null;
+
+    function confirmDelete(assetId) {
+        currentAssetId = assetId;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function confirmDispose(assetId) {
+        currentAssetId = assetId;
+        document.getElementById('disposeModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        currentAssetId = null;
+    }
+
+    function closeDisposeModal() {
+        document.getElementById('disposeModal').classList.add('hidden');
+        document.getElementById('disposeReason').value = ''; // Clear the reason field
+        document.body.style.overflow = 'auto'; // Restore page scrolling
+        currentAssetId = null;
+    }
+
+    document.getElementById('deleteConfirm').addEventListener('click', function() {
+        if (currentAssetId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/assets/${currentAssetId}`;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+
+            form.appendChild(csrfInput);
+            form.appendChild(methodInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    document.getElementById('disposeConfirm').addEventListener('click', function() {
+        if (currentAssetId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/assets/${currentAssetId}/dispose`;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+
+            // Add disposal reason input
+            const reasonInput = document.createElement('input');
+            reasonInput.type = 'hidden';
+            reasonInput.name = 'disposal_reason';
+            reasonInput.value = document.getElementById('disposeReason').value;
+
+            const redirectInput = document.createElement('input');
+            redirectInput.type = 'hidden';
+            redirectInput.name = 'redirect';
+            redirectInput.value = '{{ route("reports.disposal-history") }}';
+
+            form.appendChild(csrfInput);
+            form.appendChild(reasonInput);  // Add the reason input to the form
+            form.appendChild(redirectInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
 </script>
 @endsection

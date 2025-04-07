@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::table('maintenances', function (Blueprint $table) {
-            $table->string('serial_number')->after('asset_id');
+        Schema::table('repair_requests', function (Blueprint $table) {
+            $table->string('department')->nullable()->change();
         });
     }
 
     public function down()
     {
-        Schema::table('maintenances', function (Blueprint $table) {
-            $table->dropColumn('serial_number');
+        Schema::table('repair_requests', function (Blueprint $table) {
+            $table->string('department')->nullable(false)->change();
         });
     }
 };

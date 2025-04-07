@@ -10,6 +10,7 @@ class RepairRequest extends Model
     use HasFactory;
 
     protected $fillable = [
+        'ticket_number',
         'date_called',
         'time_called',
         'department',
@@ -19,8 +20,8 @@ class RepairRequest extends Model
         'issue',
         'status',
         'technician_id',
-        'completed_at',
-        'remarks'
+        'remarks',
+        'completed_at'
     ];
 
     protected $dates = [

@@ -9,169 +9,9 @@
     </div>
     @endif
 
-    <!-- Remove the old alertContainer div -->
-    
-    <h2 class="text-2xl font-semibold mb-6">Request Status</h2>
-
-    <!-- Statistics Section -->
-    <div class="grid grid-cols-2 gap-6 mb-6">
-        <!-- Status Overview -->
-        <div class="bg-yellow-50 rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-2">Status Overview</h3>
-            <p class="text-sm text-gray-600 mb-4">Key metrics for repair requests and technician performance</p>
-
-            <div class="grid grid-cols-3 gap-4">
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <p class="text-sm text-gray-600">Total Open</p>
-                    <p class="text-2xl font-semibold">{{ $totalOpen }}</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <p class="text-sm text-gray-600">Completed this Month</p>
-                    <p class="text-2xl font-semibold">{{ $completedThisMonth }}</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <p class="text-sm text-gray-600">Average Response Time</p>
-                    <p class="text-2xl font-semibold">{{ round($avgResponseTime) }} days</p>
-                </div>
-            </div>
-            
-            <!-- Add View Completed Button -->
-            <div class="mt-4 flex justify-end">
-                <button onclick="window.location.href='{{ route('repair.completed') }}'" 
-                        class="bg-[#960106] text-white px-4 py-2 rounded hover:bg-red-700 transition-colors">
-                    View Completed Requests
-                </button>
-            </div>
-        </div>
-
-        <!-- Technician Performance -->
-        <div class="bg-teal-50 rounded-lg p-6">
-            <h3 class="text-lg font-semibold mb-2">Technician Performance</h3>
-            <p class="text-sm text-gray-600">Admin view only</p>
-            <!-- Add technician performance metrics here -->
-        </div>
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">Request Status</h2>
     </div>
-
-    <!-- Urgent Repairs Section -->
-    @if($urgentRepairs->count() > 0)
-    <div class="mb-6">
-        <div class="bg-[#960106] text-white p-4 rounded-t-lg">
-            <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <h3 class="text-xl font-semibold">URGENT REPAIRS ({{ $urgentRepairs->count() }})</h3>
-            </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-b-lg shadow-lg">
-            <!-- Remove this div containing the dropdown -->
-            <!-- <div class="flex justify-between items-center mb-4">
-                <select id="urgentEntriesPerPage" class="border rounded px-2 py-1">
-                    <option value="5" selected>5 per page</option>
-                    <option value="10">10 per page</option>
-                    <option value="25">25 per page</option>
-                </select>
-            </div> -->
-
-            <div id="urgentTableBody">
-                <!-- Urgent repairs will be populated here -->
-            </div>
-
-            <div class="mt-4 flex items-center justify-between">
-                <div id="urgentTableInfo" class="text-sm text-gray-700">
-                    Showing <span id="urgentStartEntry">1</span> to <span id="urgentEndEntry">5</span> of <span id="urgentTotalEntries">0</span> entries
-                </div>
-                <div class="flex gap-2" id="urgentPagination">
-                    <button class="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" id="urgentPrevPage">&lt;</button>
-                    <div id="urgentPageNumbers" class="flex gap-1"></div>
-                    <button class="px-3 py-1 bg-gray-200 rounded disabled:opacity-50" id="urgentNextPage">&gt;</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    <script>
-        let urgentCurrentPage = 1;
-        let urgentEntriesPerPage = 5;  // Fixed at 5
-        let urgentData = @json($urgentRepairs);
-
-        function updateUrgentTable() {
-            const startIndex = (urgentCurrentPage - 1) * urgentEntriesPerPage;
-            const endIndex = Math.min(startIndex + urgentEntriesPerPage, urgentData.length);
-            
-            const tableBody = document.getElementById('urgentTableBody');
-            tableBody.innerHTML = '';
-
-            for (let i = startIndex; i < endIndex; i++) {
-                const repair = urgentData[i];
-                const div = document.createElement('div');
-                div.className = 'text-gray-800 p-2 border-b border-gray-100 last:border-0 hover:bg-red-100 transition-colors duration-200 cursor-pointer relative group';
-                div.innerHTML = `→ ${repair.office_room} - ${repair.equipment} - ${repair.technician ? repair.technician.name : 'Not Assigned'}
-                    (${new Date(repair.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} 
-                    ${new Date(repair.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })})
-                    <div class="absolute inset-0 hidden group-hover:flex items-center justify-center">
-                        <span class="text-white text-xl font-bold">Update</span>
-                    </div>`;
-                
-                // Add click event to open update modal
-                div.onclick = () => openUpdateModal(repair.id);
-                tableBody.appendChild(div);
-            }
-
-            updateUrgentTableInfo(startIndex + 1, endIndex, urgentData.length);
-            updateUrgentPagination(urgentData.length);
-        }
-
-        function updateUrgentTableInfo(start, end, total) {
-            document.getElementById('urgentStartEntry').textContent = total === 0 ? 0 : start;
-            document.getElementById('urgentEndEntry').textContent = end;
-            document.getElementById('urgentTotalEntries').textContent = total;
-        }
-
-        function updateUrgentPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / urgentEntriesPerPage);
-            const pageNumbers = document.getElementById('urgentPageNumbers');
-            pageNumbers.innerHTML = '';
-
-            for (let i = 1; i <= totalPages; i++) {
-                const button = document.createElement('button');
-                button.textContent = i;
-                button.className = `px-3 py-1 rounded ${urgentCurrentPage === i ? 'bg-[#960106] text-white' : 'bg-gray-200'}`;
-                button.onclick = () => {
-                    urgentCurrentPage = i;
-                    updateUrgentTable();
-                };
-                pageNumbers.appendChild(button);
-            }
-
-            document.getElementById('urgentPrevPage').disabled = urgentCurrentPage === 1;
-            document.getElementById('urgentNextPage').disabled = urgentCurrentPage === totalPages;
-        }
-
-        // Remove the dropdown event listener
-        // document.getElementById('urgentEntriesPerPage').addEventListener('change', ...);
-
-        // Keep only these event listeners
-        document.getElementById('urgentPrevPage').addEventListener('click', () => {
-            if (urgentCurrentPage > 1) {
-                urgentCurrentPage--;
-                updateUrgentTable();
-            }
-        });
-
-        document.getElementById('urgentNextPage').addEventListener('click', () => {
-            const totalPages = Math.ceil(urgentData.length / urgentEntriesPerPage);
-            if (urgentCurrentPage < totalPages) {
-                urgentCurrentPage++;
-                updateUrgentTable();
-            }
-        });
-
-        // Initialize urgent repairs table when page loads
-        document.addEventListener('DOMContentLoaded', updateUrgentTable);
-    </script>
 
     <!-- Requests Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -183,20 +23,21 @@
             <thead class="bg-[#960106]">
                 <tr>
                     <th class="px-6 py-3 text-left text-sm font-medium text-white">Request Date</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Ticket No.</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-white">Item</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-white">Department</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Lab Room</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Room</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-white">Technician</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Issue</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200" id="tableBody">
                 @foreach($requests as $request)
-                <tr class="relative group cursor-pointer hover:bg-red-100 transition-colors duration-200" 
-                    onclick="openUpdateModal('{{ $request->id }}')"
-                    data-id="{{ $request->id }}">
+                <tr id="request-{{ $request->id }}" class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
+                    <td class="px-6 py-4 font-medium">{{ $request->ticket_number ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{{ $request->equipment }}</td>
                     <td class="px-6 py-4">{{ $request->department }}</td>
                     <td class="px-6 py-4">{{ $request->office_room }}</td>
@@ -222,16 +63,20 @@
                     <td class="px-6 py-4">
                         {{ $request->technician ? $request->technician->name : 'Not Assigned' }}
                     </td>
+                    <td class="px-6 py-4">{{ $request->issue }}</td>
                     <td class="px-6 py-4">
-                        <button onclick="event.preventDefault(); event.stopPropagation(); openDeleteModal('{{ $request->id }}')" class="text-red-600 hover:text-red-900">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                        <div class="flex space-x-2">
+                            <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-yellow-700">
+                                Edit
+                            </button>
+                            <button onclick="openCompleteModal('{{ $request->id }}')" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-green-700">
+                                Complete
+                            </button>
+                            <button onclick="openDeleteModal('{{ $request->id }}')" class="bg-red-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-red-700">
+                                Delete
+                            </button>
+                        </div>
                     </td>
-                    <div class="absolute inset-0 hidden group-hover:flex items-center justify-center">
-                        <span class="text-white text-xl font-bold">Update</span>
-                    </div>
                 </tr>
                 @endforeach
             </tbody>
@@ -242,20 +87,18 @@
         <div id="updateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
             <div class="bg-white p-8 rounded-lg shadow-xl w-96">
                 <h2 class="text-xl font-bold mb-4">Update Request</h2>
-                <!-- In the Update Modal form, remove the JavaScript event handling -->
                 <form id="updateForm" method="POST">
                     @csrf
                     @method('PUT')
-                    
+
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="technician_id">
                             Technician
                         </label>
-                        <select id="technician_id" name="technician_id" required
-                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <select id="technician_id" name="technician_id" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             <option value="">Select Technician</option>
                             @foreach($technicians as $technician)
-                                <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                            <option value="{{ $technician->id }}">{{ $technician->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -264,44 +107,24 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="status">
                             Status
                         </label>
-                        <select id="status" name="status" required
-                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            <option value="">Select Status</option>
+                        <select id="status" name="status" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             <option value="urgent">Urgent</option>
                             <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
+                            <option value="pulled_out">Pulled Out</option>
+                            <option value="disposed">Disposed</option>
                         </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="date_finished">
-                            Date Finished
-                        </label>
-                        <input type="date" id="date_finished" name="date_finished" required
-                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="time_finished">
-                            Time Finished
-                        </label>
-                        <input type="time" id="time_finished" name="time_finished" required
-                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                     </div>
 
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="remarks">
                             Remarks
                         </label>
-                        <textarea id="remarks" name="remarks" rows="3" required
-                                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                        <textarea id="remarks" name="remarks" rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter reason for status change..."></textarea>
                     </div>
 
                     <div class="flex justify-end">
-                        <button type="button" onclick="closeUpdateModal()" 
-                                class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
-                        <button type="submit" 
-                                class="bg-[#960106] text-white px-4 py-2 rounded">Update</button>
+                        <button type="button" onclick="closeUpdateModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
+                        <button type="submit" class="bg-[#960106] text-white px-4 py-2 rounded">Update</button>
                     </div>
                 </form>
             </div>
@@ -316,10 +139,31 @@
                     @csrf
                     @method('DELETE')
                     <div class="flex justify-end">
-                        <button type="button" onclick="event.preventDefault(); closeDeleteModal()" 
-                                class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
-                        <button type="submit" 
-                                class="bg-[#960106] text-white px-4 py-2 rounded">Delete</button>
+                        <button type="button" onclick="event.preventDefault(); closeDeleteModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
+                        <button type="submit" class="bg-[#960106] text-white px-4 py-2 rounded">Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Complete Modal -->
+        <div id="completeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+            <div class="bg-white p-8 rounded-lg shadow-xl">
+                <h2 class="text-xl font-bold mb-4">Mark as Complete</h2>
+                <p class="mb-4">Are you sure you want to mark this request as complete?</p>
+                <form id="completeForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="status" value="completed">
+                    <input type="hidden" name="date_finished" id="completeDateFinished">
+                    <input type="hidden" name="time_finished" id="completeTimeFinished">
+                    <input type="hidden" name="technician_id" value="{{ auth()->user()->id }}">
+                    <input type="hidden" name="remarks" value="Marked as completed">
+                    <input type="hidden" name="redirect" value="completed">
+
+                    <div class="flex justify-end">
+                        <button type="button" onclick="closeCompleteModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Complete</button>
                     </div>
                 </form>
             </div>
@@ -327,19 +171,75 @@
 
         <!-- Add this to your existing script section -->
         <script>
+            function openCompleteModal(requestId) {
+                const modal = document.getElementById('completeModal');
+                const form = document.getElementById('completeForm');
+                form.action = `/repair-requests/${requestId}`;
+
+                // Set current date and time
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().slice(0, 5);
+
+                document.getElementById('completeDateFinished').value = dateStr;
+                document.getElementById('completeTimeFinished').value = timeStr;
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeCompleteModal() {
+                const modal = document.getElementById('completeModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
             function openUpdateModal(requestId) {
                 const modal = document.getElementById('updateModal');
                 const form = document.getElementById('updateForm');
                 form.action = `/repair-requests/${requestId}`;
-                
-                // Set current date and time as default
-                const now = new Date();
-                const dateStr = now.toISOString().split('T')[0];
-                const timeStr = now.toTimeString().slice(0, 5);
-                
-                document.getElementById('date_finished').value = dateStr;
-                document.getElementById('time_finished').value = timeStr;
-                
+
+                // Find the request in the table
+                const row = document.querySelector(`tr[id="request-${requestId}"]`);
+
+                // Get current status from the status cell's text content
+                const statusCell = row.querySelector('td:nth-child(6) span');
+                let currentStatus = statusCell.textContent.trim().toLowerCase();
+
+                // Convert display text to status value
+                switch (currentStatus) {
+                    case 'in progress':
+                        currentStatus = 'in_progress';
+                        break;
+                    case 'pulled out':
+                        currentStatus = 'pulled_out';
+                        break;
+                        // other statuses don't need conversion
+                }
+
+                // Set current status
+                const statusSelect = document.getElementById('status');
+                if (statusSelect.querySelector(`option[value="${currentStatus}"]`)) {
+                    statusSelect.value = currentStatus;
+                }
+
+                // Set current technician if one is assigned
+                const technicianName = row.querySelector('td:nth-child(7)').textContent.trim();
+                const technicianSelect = document.getElementById('technician_id');
+
+                if (technicianName !== 'Not Assigned') {
+                    Array.from(technicianSelect.options).forEach(option => {
+                        if (option.text === technicianName) {
+                            option.selected = true;
+                        }
+                    });
+                } else {
+                    technicianSelect.value = ''; // Reset to "Select Technician"
+                }
+
+                // Clear remarks field
+                document.getElementById('remarks').value = '';
+
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             }
@@ -353,8 +253,8 @@
             function openDeleteModal(requestId) {
                 const modal = document.getElementById('deleteModal');
                 const form = document.getElementById('deleteForm');
-                form.action = `/repair-requests/delete/${requestId}`;  // Updated route
-                
+                form.action = `/repair-requests/delete/${requestId}`; // Updated route
+
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             }
@@ -364,6 +264,7 @@
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }
+
         </script>
 
         <div class="p-4 flex items-center justify-between border-t">
@@ -386,38 +287,22 @@
         // Initialize table data
         function initializeTable() {
             const rows = Array.from(document.querySelectorAll('#tableBody tr'));
-            tableData = rows;  // Store the rows directly instead of creating objects
+            tableData = rows; // Store the rows directly instead of creating objects
             updateTable();
         }
 
         // Update table display
+        // Remove the updateTable function and replace with this simplified version
         function updateTable() {
             const startIndex = (currentPage - 1) * entriesPerPage;
             const endIndex = Math.min(startIndex + entriesPerPage, tableData.length);
-            
+
             const tableBody = document.getElementById('tableBody');
             tableBody.innerHTML = '';
 
             for (let i = startIndex; i < endIndex; i++) {
                 const originalRow = tableData[i];
-                const requestId = originalRow.getAttribute('data-id');
-                
                 const newRow = originalRow.cloneNode(true);
-                newRow.addEventListener('click', function(e) {
-                    if (!e.target.closest('button')) {
-                        openUpdateModal(requestId);
-                    }
-                });
-
-                const deleteButton = newRow.querySelector('button');
-                if (deleteButton) {
-                    deleteButton.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openDeleteModal(requestId);
-                    };
-                }
-
                 tableBody.appendChild(newRow);
             }
 
@@ -429,12 +314,12 @@
         function updateTableInfo(start, end, total) {
             document.getElementById('startEntry').textContent = total === 0 ? 0 : start;
             document.getElementById('endEntry').textContent = end;
-            document.getElementById('totalEntries').textContent = tableData.length;  // Use actual table data length
+            document.getElementById('totalEntries').textContent = tableData.length; // Use actual table data length
         }
 
         // Update pagination controls
         function updatePagination(totalItems) {
-            const totalPages = Math.ceil(tableData.length / entriesPerPage);  // Use actual table data length
+            const totalPages = Math.ceil(tableData.length / entriesPerPage); // Use actual table data length
             const pageNumbers = document.getElementById('pageNumbers');
             pageNumbers.innerHTML = '';
 
@@ -455,14 +340,10 @@
             document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // Remove these event listeners since we removed the elements
-        // document.getElementById('entriesPerPage').addEventListener('change', ...);
-        // document.getElementById('tableSearch').addEventListener('input', ...);
-
         document.getElementById('prevPage').addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
-                updateTable();  // Remove searchTerm parameter
+                updateTable(); // Remove searchTerm parameter
             }
         });
 
@@ -470,11 +351,190 @@
             const totalPages = Math.ceil(tableData.length / entriesPerPage);
             if (currentPage < totalPages) {
                 currentPage++;
-                updateTable();  // Remove searchTerm parameter
+                updateTable(); // Remove searchTerm parameter
             }
         });
 
         // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', initializeTable);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table first
+            initializeTable();
+
+            // Check for stored request ID from urgent repairs page
+            const highlightRequestId = sessionStorage.getItem('highlightRequestId');
+            if (highlightRequestId) {
+                // Clear the stored ID
+                sessionStorage.removeItem('highlightRequestId');
+
+                // Find the row index
+                const targetRow = tableData.find(row => row.id === `request-${highlightRequestId}`);
+                if (targetRow) {
+                    // Calculate which page the row should be on
+                    const rowIndex = tableData.indexOf(targetRow);
+                    currentPage = Math.ceil((rowIndex + 1) / entriesPerPage);
+
+                    // Update table to show correct page
+                    updateTable();
+
+                    // After table updates, highlight the row
+                    setTimeout(() => {
+                        const element = document.getElementById(`request-${highlightRequestId}`);
+                        if (element) {
+                            element.scrollIntoView({
+                                behavior: 'smooth'
+                                , block: 'center'
+                            });
+                            element.classList.add('bg-yellow-100');
+                            setTimeout(() => {
+                                element.classList.remove('bg-yellow-100');
+                            }, 2000);
+                        }
+                    }, 100);
+                }
+            }
+        });
+
+        // Modify the complete form submission handler
+        document.getElementById('completeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const requestId = this.action.split('/').pop();
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                    method: 'POST'
+                    , body: formData
+                    , headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                        , 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                    , credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessMessage(data.message);
+
+                        // Close modal
+                        closeCompleteModal();
+
+                        // Remove from main table and update
+                        const tableBody = document.getElementById('tableBody');
+                        const rows = Array.from(tableBody.getElementsByTagName('tr'));
+
+                        for (let i = 0; i < rows.length; i++) {
+                            if (rows[i].querySelector(`button[onclick*="${requestId}"]`)) {
+                                rows[i].remove();
+                                break;
+                            }
+                        }
+
+                        // Update table data and display
+                        tableData = Array.from(document.querySelectorAll('#tableBody tr'));
+                        if (currentPage > Math.ceil(tableData.length / entriesPerPage)) {
+                            currentPage = Math.max(1, Math.ceil(tableData.length / entriesPerPage));
+                        }
+                        updateTable();
+
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        // Add this new event listener for the update form
+        document.getElementById('updateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const requestId = this.action.split('/').pop();
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                    method: 'POST'
+                    , body: formData
+                    , headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                        , 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                    , credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessMessage(data.message);
+
+                        // Close modal
+                        closeUpdateModal();
+
+                        // Find and update the row in tableData array
+                        const rowIndex = tableData.findIndex(row => row.id === `request-${requestId}`);
+                        if (rowIndex !== -1) {
+                            const row = tableData[rowIndex];
+                            // Update status cell
+                            const statusCell = row.querySelector('td:nth-child(6)');
+                            const newStatus = document.getElementById('status').value;
+                            statusCell.innerHTML = getStatusBadgeHTML(newStatus);
+
+                            // Update technician cell
+                            const technicianCell = row.querySelector('td:nth-child(7)');
+                            const technicianSelect = document.getElementById('technician_id');
+                            const selectedTechnician = technicianSelect.options[technicianSelect.selectedIndex];
+                            technicianCell.textContent = selectedTechnician.text;
+
+                            // Update the tableData array
+                            tableData[rowIndex] = row;
+                        }
+
+                        // Update the table display
+                        updateTable();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        // Helper function to generate status badge HTML
+        function getStatusBadgeHTML(status) {
+            const statusMap = {
+                'urgent': ['bg-red-100 text-red-800', 'Urgent']
+                , 'in_progress': ['bg-yellow-100 text-yellow-800', 'In Progress']
+                , 'pulled_out': ['bg-gray-100 text-gray-800', 'Pulled Out']
+                , 'disposed': ['bg-gray-100 text-gray-800', 'Disposed']
+                , 'pending': ['bg-gray-100 text-gray-800', 'Pending']
+            };
+
+            const [classes, label] = statusMap[status] || statusMap['pending'];
+            return `
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classes}">
+                    ${label}
+                </span>
+            `;
+        }
+
+        function showSuccessMessage(message) {
+            // Remove any existing success messages
+            const existingAlerts = document.querySelectorAll('.bg-green-100.border-green-400');
+            existingAlerts.forEach(alert => alert.remove());
+
+            // Create and show new success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
+            alertDiv.innerHTML = `
+                <strong class="font-bold">Success!</strong>
+                <span class="block sm:inline">${message}</span>
+            `;
+
+            // Insert alert at the top of the content
+            const content = document.querySelector('.flex-1.p-8.ml-72');
+            content.insertBefore(alertDiv, content.firstChild);
+
+            // Automatically remove the message after 3 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+
     </script>
     @endsection

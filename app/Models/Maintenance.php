@@ -2,31 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Maintenance extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'asset_id',
-        'task',
+        'lab_number',
+        'maintenance_task',
         'technician_id',
-        'status',
         'scheduled_date',
-        'completion_date',  // Changed from completed_date to completion_date
-        'serial_number'
+        'status',
+        'action_by_id',
+        'completed_at'
     ];
 
     protected $casts = [
-        'scheduled_date' => 'datetime',
-        'completion_date' => 'datetime'  // Changed from completed_date to completion_date
+        'maintenance_task' => 'array'
     ];
 
-    public function asset()
+    public function actionBy()
     {
-        return $this->belongsTo(Asset::class);
+        return $this->belongsTo(User::class, 'action_by_id');
     }
 
     public function technician()

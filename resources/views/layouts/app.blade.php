@@ -119,23 +119,28 @@
                         <span>Categories</span>
                     </a>
 
-                    <!-- Asset Maintenance -->
+                    <!-- Assets -->
+                    <!-- Asset List -->
+                    <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 hover:bg-red-700 rounded-md text-[#D5999B] text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                        </svg>
+                        <span>Asset List</span>
+                    </a>
+
+                    <!-- Lab Maintenance -->
                     <div class="space-y-1.5">
                         <button onclick="toggleMaintenanceMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            <span>Asset Maintenance</span>
+                            <span>Lab Maintenance</span>
                             <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
-                        <!-- Asset Maintenance Dropdown Items -->
                         <div id="maintenanceMenu" class="hidden ml-8 space-y-1.5">
-                            <a href="{{ route('assets.index') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                Asset List
-                            </a>
                             <a href="{{ route('maintenance.schedule') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Schedule Maintenance
                             </a>
@@ -163,6 +168,9 @@
                             <a href="{{ route('repair.request') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Repair Request
                             </a>
+                            <a href="{{ route('repair.urgent') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Urgent Repairs
+                            </a>
                             <a href="{{ route('repair.status') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Repair Status
                             </a>
@@ -173,12 +181,31 @@
                     </div>
 
                     <!-- View Reports -->
-                    <a href="#" class="flex items-center space-x-2 px-4 py-1.5 hover:bg-red-700 rounded-md text-[#D5999B] text-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>View Reports</span>
-                    </a>
+                    <div class="space-y-1.5">
+                        <button onclick="toggleReportMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>View Reports</span>
+                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="reportMenu" class="hidden ml-8 space-y-1.5">
+                            <a href="{{ route('reports.category') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Category-Based Report
+                            </a>
+                            <a href="{{ route('reports.location') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Location-Based Report
+                            </a>
+                            <a href="{{ route('reports.disposal-history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Disposal History
+                            </a>
+                            <a href="{{ route('reports.procurement-history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                                Procurement History
+                            </a>
+                        </div>
+                    </div>
 
                     <!-- Others section -->
                     <div class="mt-8">
@@ -257,18 +284,19 @@
             }
 
             // Check if current path is within a dropdown and open it
-            function toggleRepairMenu() {
-                const menu = document.getElementById('repairMenu');
+            function toggleReportMenu() {
+                const menu = document.getElementById('reportMenu');
                 menu.classList.toggle('hidden');
-                localStorage.setItem('repairMenu', menu.classList.contains('hidden') ? 'closed' : 'open');
+                localStorage.setItem('reportMenu', menu.classList.contains('hidden') ? 'closed' : 'open');
             }
 
-            // Update the checkAndOpenDropdown function
+            // Update the dropdowns object in checkAndOpenDropdown function
             function checkAndOpenDropdown() {
                 const dropdowns = {
                     'userMenu': ['/users', '/groups']
-                    , 'maintenanceMenu': ['/assets', '/maintenance']
-                    , 'repairMenu': ['/repair'] // Add this line
+                    , 'maintenanceMenu': ['/maintenance']
+                    , 'repairMenu': ['/repair']
+                    , 'reportMenu': ['/reports'] // Add this line
                 };
 
                 for (const [menuId, paths] of Object.entries(dropdowns)) {

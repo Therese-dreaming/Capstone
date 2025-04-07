@@ -2,227 +2,270 @@
 
 @section('content')
 <div class="flex-1 p-8 ml-72">
-    <h2 class="text-2xl font-semibold mb-6">SCHEDULE MAINTENANCE</h2>
-
     @if(session('success'))
-    <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-        {{ session('success') }}
-    </div>
+        <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+            {{ session('success') }}
+        </div>
     @endif
 
-    @if(session('warning'))
-    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="confirmation-modal">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Warning</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">This asset already has a scheduled maintenance. Do you want to overwrite it?</p>
+    @if($errors->any())
+        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold mb-6">SCHEDULE LAB MAINTENANCE</h2>
+        <div class="border-b-2 border-red-800 mb-6"></div>
+        <form id="maintenanceForm" action="{{ route('maintenance.store') }}" method="POST" class="space-y-6">
+            @csrf
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Select Computer Laboratory</label>
+                        <select name="lab_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50">
+                            <option value="">Select a laboratory...</option>
+                            @foreach($labs as $number => $name)
+                            <option value="{{ $number }}">{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @error('lab_number')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Schedule Date</label>
+                        <input type="date" name="scheduled_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50" min="{{ date('Y-m-d') }}">
+                        @error('scheduled_date')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Assign Technician</label>
+                        <select name="technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50">
+                            <option value="">Select a technician...</option>
+                            @foreach($technicians as $technician)
+                            <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('technician_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
-                <div class="items-center px-4 py-3">
-                    <form action="{{ route('maintenance.schedule.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="asset_id" value="{{ session('form_data.asset_id') }}">
-                        <input type="hidden" name="maintenance_task" value="{{ session('form_data.maintenance_task') }}">
-                        <input type="hidden" name="technician_id" value="{{ session('form_data.technician_id') }}">
-                        <input type="hidden" name="scheduled_date" value="{{ session('form_data.scheduled_date') }}">
-                        <input type="hidden" name="confirm_completion" value="1">
-                        <input type="hidden" name="confirm_overwrite" value="1">
-                        <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            Yes, Overwrite
-                        </button>
-                        <a href="{{ route('maintenance.schedule') }}" class="ml-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 inline-block">
-                            Cancel
-                        </a>
-                    </form>
+
+                <!-- Right Column -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Maintenance Tasks</label>
+                    <div class="border border-gray-300 rounded-md bg-gray-50 p-4">
+                        <!-- Add New Task Input -->
+                        <div class="mb-4 flex space-x-2">
+                            <input type="text" id="newTask" 
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white" 
+                                placeholder="Enter new maintenance task">
+                            <button type="button" onclick="return addNewTask(event)" 
+                                class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 
+                                focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+                                Add Task
+                            </button>
+                        </div>
+                        <div class="task-container space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                            @foreach($maintenanceTasks as $task)
+                            <div class="flex items-center bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer" 
+                                onclick="toggleCheckbox(this)">
+                                <input type="checkbox" name="maintenance_tasks[]" value="{{ $task }}" 
+                                    class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                                <label class="ml-3 text-sm text-gray-700 font-medium flex-1 cursor-pointer">{{ $task }}</label>
+                            </div>
+                            @endforeach
+                        </div>
+                        @error('maintenance_tasks')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <div class="pt-4 border-t border-gray-200">
+                <button type="button" onclick="showConfirmationModal()" class="w-full bg-red-800 text-white py-3 px-4 rounded-md hover:bg-red-700 
+                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
+                    font-medium transition-colors duration-200">
+                    Schedule Maintenance
+                </button>
+            </div>
+        </form>
     </div>
-    @endif
 
-    <div class="flex gap-6">
-        <!-- Left Column - Form -->
-        <div class="flex-1 bg-white rounded-lg shadow-md p-6">
-            <form action="{{ route('maintenance.schedule.store') }}" method="POST" class="space-y-6">
-                @csrf
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Asset Category</label>
-                    <select name="category_id" id="category_select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                        <option value="">Select a category...</option>
-                        @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Asset for Maintenance</label>
-                    <div class="relative">
-                        <input type="text" id="asset_search" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Search by serial number..." autocomplete="off">
-                        <input type="hidden" name="asset_id" id="asset_id">
-                        <div id="search_results" class="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md hidden">
-                        </div>
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Confirm Maintenance Schedule</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500 text-center mb-4">Please review the maintenance schedule details below:</p>
+                    <div id="scheduleDetails" class="bg-gray-50 p-4 rounded-md text-sm space-y-3">
+                        <!-- Details will be filled by JavaScript -->
                     </div>
-                    @error('asset_id')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign Maintenance Task</label>
-                    <input type="text" name="maintenance_task" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter maintenance task">
-                    @error('maintenance_task')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Date</label>
-                    <input type="date" name="scheduled_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" min="{{ date('Y-m-d') }}">
-                    @error('scheduled_date')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign Technician</label>
-                    <select name="technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                        <option value="">Select a technician...</option>
-                        @foreach($technicians as $technician)
-                        <option value="{{ $technician->id }}">{{ $technician->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('technician_id')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" name="confirm_completion" id="confirm_completion" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
-                    <label for="confirm_completion" class="ml-2 block text-sm text-gray-700">Confirm</label>
-                    @error('confirm_completion')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <button type="submit" class="w-full bg-red-800 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                        Submit
+                <div class="flex justify-center space-x-3 mt-6">
+                    <button id="confirmButton" class="px-6 py-2 bg-red-800 text-white text-base font-medium rounded-md 
+                        hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 
+                        transition-colors duration-200">
+                        Confirm Schedule
                     </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Right Column - Asset Details -->
-        <div class="flex-1 bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">Asset Details</h3>
-            <div id="asset_details" class="space-y-4">
-                <div class="text-center text-gray-500">
-                    Select an asset to view details
+                    <button onclick="hideConfirmationModal()" class="px-6 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md 
+                        hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 
+                        transition-colors duration-200">
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let assets = [];
+        function showConfirmationModal() {
+            const form = document.getElementById('maintenanceForm');
+            // Fix the optional chaining syntax
+            const lab = form.lab_number.options[form.lab_number.selectedIndex]?.text || 'Not selected';
+            const selectedTasks = Array.from(form.querySelectorAll('input[name="maintenance_tasks[]"]:checked'))
+                .map(checkbox => checkbox.value);
+            const date = form.scheduled_date.value ? new Date(form.scheduled_date.value).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : 'Not selected';
+            // Fix the optional chaining syntax
+            const technician = form.technician_id.options[form.technician_id.selectedIndex]?.text || 'Not selected';
 
-        document.getElementById('category_select').addEventListener('change', function() {
-            const categoryId = this.value;
-            const assetSearch = document.getElementById('asset_search');
-            const searchResults = document.getElementById('search_results');
-            const assetDetails = document.getElementById('asset_details');
-
-            if (categoryId) {
-                assetSearch.disabled = false;
-
-                fetch(`/categories/${categoryId}/assets`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    assets = data;
-                    assetSearch.value = '';
-                    document.getElementById('asset_id').value = '';
-                    searchResults.innerHTML = '';
-                    assetDetails.innerHTML = '<div class="text-center text-gray-500">Search and select an asset</div>';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    assetSearch.value = 'Error loading assets';
-                    assetSearch.disabled = true;
-                });
-            } else {
-                assetSearch.disabled = true;
-                assetSearch.value = '';
-                document.getElementById('asset_id').value = '';
-                searchResults.innerHTML = '';
-                assets = [];
+            if (!form.lab_number.value || selectedTasks.length === 0 || !form.scheduled_date.value || !form.technician_id.value) {
+                alert('Please fill in all required fields');
+                return;
             }
-        });
 
-        document.getElementById('asset_search').addEventListener('input', function() {
-            const searchResults = document.getElementById('search_results');
-            const query = this.value.toLowerCase();
-
-            if (query.length > 0) {
-                const filtered = assets.filter(asset =>
-                    asset.serial_number.toLowerCase().includes(query)
-                );
-
-                searchResults.innerHTML = filtered.map(asset => `
-                    <div class="p-2 hover:bg-gray-100 cursor-pointer" 
-                         onclick="selectAsset('${asset.id}', '${asset.serial_number}')">
-                        ${asset.serial_number}
+            document.getElementById('scheduleDetails').innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-gray-600 font-medium mb-1">Laboratory:</p>
+                        <p class="text-gray-800">${lab}</p>
                     </div>
-                `).join('');
-
-                searchResults.classList.remove('hidden');
-            } else {
-                searchResults.classList.add('hidden');
-            }
-        });
-
-        function selectAsset(id, serialNumber) {
-            document.getElementById('asset_search').value = serialNumber;
-            document.getElementById('asset_id').value = id;
-            document.getElementById('search_results').classList.add('hidden');
-
-            fetch(`/assets/${id}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(asset => {
-                document.getElementById('asset_details').innerHTML = `
-                    <div class="space-y-4">
-                        <div class="flex justify-center">
-                            <img src="${asset.photo_url || '/images/no-image.png'}" 
-                                 alt="${asset.name}" 
-                                 class="w-64 h-64 object-cover rounded-lg shadow-md">
-                        </div>
-                        <div class="space-y-2">
-                            <p class="text-lg font-semibold">${asset.name}</p>
-                            <p class="text-gray-600">Serial Number: ${asset.serial_number || 'N/A'}</p>
-                            <p class="text-gray-600">Status: ${asset.status || 'N/A'}</p>
-                        </div>
+                    <div>
+                        <p class="text-gray-600 font-medium mb-1">Scheduled Date:</p>
+                        <p class="text-gray-800">${date}</p>
                     </div>
-                `;
-            });
+                    <div>
+                        <p class="text-gray-600 font-medium mb-1">Assigned Technician:</p>
+                        <p class="text-gray-800">${technician}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-medium mb-2">Maintenance Tasks:</p>
+                        <ul class="list-disc ml-4 text-gray-800 space-y-1">
+                            ${selectedTasks.map(task => `<li>${task}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('confirmationModal').classList.remove('hidden');
         }
 
-        // Close search results when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('#asset_search')) {
-                document.getElementById('search_results').classList.add('hidden');
-            }
+        function hideConfirmationModal() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+        }
+
+        document.getElementById('confirmButton').addEventListener('click', function() {
+            const form = document.getElementById('maintenanceForm');
+            form.submit();
+            document.getElementById('confirmationModal').classList.add('hidden');
+            showNotification('Processing your request...', 'success');
         });
+
+        function toggleCheckbox(container) {
+            const checkbox = container.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+        }
+
+        function addNewTask(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const newTaskInput = document.getElementById('newTask');
+            const task = newTaskInput.value.trim();
+            
+            if (!task) {
+                showNotification('Please enter a task', 'error');
+                return false;
+            }
+
+            // Send AJAX request to add new task
+            fetch('{{ route("maintenance.addNewTask") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ task: task })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add new task to the list
+                    const tasksContainer = document.querySelector('.task-container'); // Ensure this is the correct task list
+                    const newTaskElement = document.createElement('div');
+                    newTaskElement.className = 'flex items-center bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer';
+                    newTaskElement.onclick = function() { toggleCheckbox(this); };
+                    newTaskElement.innerHTML = `
+                        <input type="checkbox" name="maintenance_tasks[]" value="${data.task}" 
+                            class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
+                        <label class="ml-3 text-sm text-gray-700 font-medium flex-1 cursor-pointer">${data.task}</label>
+                    `;
+                    tasksContainer.insertBefore(newTaskElement, tasksContainer.firstChild);
+                    newTaskInput.value = '';
+                    showNotification(data.message, 'success');
+                } else {
+                    showNotification(data.message || 'Failed to add task', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Failed to add task. Please try again.', 'error');
+            });
+
+            return false;
+        }
+
+        // Add new notification function
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.remove('hidden', 'bg-green-100', 'border-green-400', 'text-green-700', 
+                'bg-red-100', 'border-red-400', 'text-red-700');
+            
+            if (type === 'success') {
+                notification.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
+            } else {
+                notification.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+            }
+            
+            // Show notification
+            notification.classList.remove('hidden');
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
     </script>
 </div>
 @endsection

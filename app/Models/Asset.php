@@ -14,18 +14,30 @@ class Asset extends Model
         'location',
         'status',
         'model',
-        'serial_number',
         'specification',
         'vendor',
         'purchase_date',
         'warranty_period',
         'lifespan',
         'photo',
-        'qr_code'
+        'serial_number',
+        'qr_code',
+        'purchase_price', // Add this if not already present
+        'disposal_date',
+        'disposal_reason',
+    ];
+
+    protected $dates = [
+        'disposal_date',
     ];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function repairs()
+    {
+        return $this->hasMany(RepairRequest::class);
     }
 }

@@ -36,8 +36,8 @@
                 @endif
 
                 <div class="mb-4">
-                    <label for="username" class="block text-gray-700"></label>
-                    <input type="text" id="username" name="username" required class="w-full px-3 py-3 bg-gray-100 font-medium" placeholder="Username" style="font-family: 'Inter', sans-serif;">
+                    <label for="ID Number" class="block text-gray-700"></label>
+                    <input type="text" id="username" name="username" required class="w-full px-3 py-3 bg-gray-100 font-medium" placeholder="ID Number" style="font-family: 'Inter', sans-serif;">
                 </div>
 
                 <div class="mb-4">

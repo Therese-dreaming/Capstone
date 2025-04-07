@@ -9,8 +9,9 @@
         </div>
 
         <div class="bg-white rounded-lg shadow-lg p-6">
-            <form action="{{ route('assets.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('assets.store') }}" method="POST" enctype="multipart/form-data" id="assetForm">
                 @csrf
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
                 <!-- Add max file size warning -->
                 <div class="mb-4 text-sm text-gray-600">
                     Note: Maximum file size allowed is 2MB
@@ -28,14 +29,24 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                <input type="text" name="location" required value="{{ old('location') }}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
+                                <select name="location_select" id="locationSelect" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 mb-2">
+                                    <option value="">Select Location</option>
+                                    <option value="Computer Lab 401">Computer Lab 401</option>
+                                    <option value="Computer Lab 402">Computer Lab 402</option>
+                                    <option value="Computer Lab 403">Computer Lab 403</option>
+                                    <option value="Computer Lab 404">Computer Lab 404</option>
+                                    <option value="Computer Lab 405">Computer Lab 405</option>
+                                    <option value="Computer Lab 406">Computer Lab 406</option>
+                                    <option value="others">Others (Specify)</option>
+                                </select>
+                                <input type="text" name="location" id="otherLocation" placeholder="Please specify location" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 hidden">
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                 <select name="status" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                                     <option value="">Select Status</option>
-                                    @foreach(['IN USE', 'UNDER REPAIR', 'DISPOSED', 'UPGRADE', 'PENDING DEPLOYMENT'] as $status)
+                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PENDING DEPLOYMENT'] as $status)
                                     <option value="{{ $status }}" {{ old('status') == $status ? 'selected' : '' }}>
                                         {{ $status }}
                                     </option>
@@ -86,6 +97,13 @@
                                 <input type="date" name="purchase_date" value="{{ old('purchase_date') }}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                             </div>
 
+                            <!-- Add this in the Right Column under Financial Information -->
+                            <!-- Purchase Price field -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Price (₱)</label>
+                                <input type="number" name="purchase_price" id="purchase_price" min="0" step="0.01" value="{{ old('purchase_price') }}" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
+                            </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Warranty Period</label>
                                 <input type="date" name="warranty_period" value="{{ old('warranty_period') }}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
@@ -122,8 +140,9 @@
                     <a href="{{ route('assets.index') }}" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                         Cancel
                     </a>
-                    <button type="submit" class="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
-                        Add Asset
+                    <button type="submit" id="submitButton" class="px-6 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
+                        <span id="buttonText">Add Asset</span>
+                        <span id="loadingIndicator" class="hidden">Loading...</span>
                     </button>
                 </div>
             </form>
@@ -191,63 +210,57 @@
     // Form submission handling
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector('form');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = document.getElementById('buttonText');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const submitButton = document.getElementById('submitButton');
-            const buttonText = document.getElementById('buttonText');
-            const loadingIndicator = document.getElementById('loadingIndicator');
+            // Validate required fields
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+
+            if (!isValid) {
+                document.getElementById('errorMessageText').textContent = 'Please fill in all required fields.';
+                document.getElementById('errorModal').classList.remove('hidden');
+                return;
+            }
 
             // Show loading state
             submitButton.disabled = true;
             buttonText.textContent = 'Adding Asset...';
             loadingIndicator.classList.remove('hidden');
 
-            // Get CSRF token
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-            // Submit form using fetch
-            fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: {
-                    'X-CSRF-TOKEN': token,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data && data.error) {
-                    throw new Error(data.error);
-                }
-                // If we get here and haven't redirected, manually redirect
-                window.location.href = '{{ route('assets.index') }}';
-            })
-            .catch(error => {
-                // If this is a redirect, don't show error
-                if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
-                    window.location.href = '{{ route('assets.index') }}';
-                    return;
-                }
-                
-                // Show error in modal
-                document.getElementById('errorMessageText').textContent =
-                    error.message || 'An error occurred while creating the asset. Please try again.';
-                document.getElementById('errorModal').classList.remove('hidden');
-
-                // Reset button state
-                submitButton.disabled = false;
-                buttonText.textContent = 'Add Asset';
-                loadingIndicator.classList.add('hidden');
-            });
+            // Submit form
+            form.submit();
         });
+    });
+
+    document.getElementById('locationSelect').addEventListener('change', function() {
+        const otherLocation = document.getElementById('otherLocation');
+        const locationValue = this.value;
+
+        if (locationValue === 'others') {
+            otherLocation.classList.remove('hidden');
+            otherLocation.required = true;
+            otherLocation.value = ''; // Clear the other location input
+            document.querySelector('input[name="location"]').value = ''; // Clear the main location value
+        } else {
+            otherLocation.classList.add('hidden');
+            otherLocation.required = false;
+            otherLocation.value = '';
+            document.querySelector('input[name="location"]').value = locationValue;
+        }
     });
 
 </script>
