@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
@@ -16,13 +18,25 @@ class LoginController extends Controller
             'password' => 'required'
         ]);
 
+        // Try username login first
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             $user->forceFill([
                 'last_login' => Carbon::now()
             ])->save();
 
-            return redirect()->intended('/assets');  // Change this to your desired landing page
+            return redirect()->intended('/assets');
+        }
+
+        // Try RFID login if username login fails
+        $user = User::where('rfid_number', $credentials['username'])->first();
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            Auth::login($user);
+            $user->forceFill([
+                'last_login' => Carbon::now()
+            ])->save();
+
+            return redirect()->intended('/assets');
         }
 
         return back()->withErrors([

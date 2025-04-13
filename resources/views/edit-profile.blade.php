@@ -65,6 +65,20 @@
                             placeholder="Enter username">
                     </div>
 
+                    <div>
+                        <label for="department" class="block text-base font-medium text-gray-700 mb-2">Department</label>
+                        <input type="text" id="department" name="department" value="{{ old('department', auth()->user()->department) }}"
+                            class="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 @error('department') border-red-500 @enderror"
+                            placeholder="Enter department">
+                    </div>
+
+                    <div>
+                        <label for="position" class="block text-base font-medium text-gray-700 mb-2">Position</label>
+                        <input type="text" id="position" name="position" value="{{ old('position', auth()->user()->position) }}"
+                            class="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 @error('position') border-red-500 @enderror"
+                            placeholder="Enter position">
+                    </div>
+
                     <div class="space-y-4">
                         <div>
                             <label for="current_password" class="block text-base font-medium text-gray-700 mb-2">Current Password</label>

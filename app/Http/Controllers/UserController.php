@@ -32,19 +32,24 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required',
                 'username' => 'required|unique:users',
+                'department' => 'required|string|max:255',
+                'position' => 'required|string|max:255',
                 'password' => 'required|confirmed|min:6',
                 'group_id' => 'required|exists:groups,id',
                 'status' => 'required|in:Active,Inactive'
             ]);
 
+            // Validate RFID number for faculty/teacher positions
+            if (in_array(strtolower($request->position), ['teacher', 'faculty'])) {
+                $request->validate([
+                    'rfid_number' => 'required|unique:users,rfid_number'
+                ]);
+                $validated['rfid_number'] = $request->rfid_number;
+            }
+
             $validated['password'] = Hash::make($validated['password']);
             
-            // Debug information
-            \Log::info('Validation passed', $validated);
-            
             $user = User::create($validated);
-            
-            \Log::info('User created', ['user_id' => $user->id]);
 
             return redirect()->route('users.index')
                 ->with('success', 'User "' . $validated['name'] . '" has been created successfully.');
@@ -74,9 +79,21 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required',
                 'username' => 'required|unique:users,username,' . $user->id,
+                'department' => 'required|string|max:255',
+                'position' => 'required|string|max:255',
                 'group_id' => 'required|exists:groups,id',
                 'status' => 'required|in:Active,Inactive'
             ]);
+
+            // Validate RFID number for faculty/teacher positions
+            if (in_array(strtolower($request->position), ['teacher', 'faculty'])) {
+                $request->validate([
+                    'rfid_number' => 'required|unique:users,rfid_number,' . $user->id
+                ]);
+                $validated['rfid_number'] = $request->rfid_number;
+            } else {
+                $validated['rfid_number'] = null; // Clear RFID if position is changed from faculty/teacher
+            }
 
             if ($request->filled('password')) {
                 $request->validate([

@@ -12,10 +12,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'username',
+        'rfid_number',  // Add this line
         'password',
+        'department',
+        'position',
         'group_id',
-        'status',
-        'last_login'
+        'status'
     ];
 
     protected $casts = [

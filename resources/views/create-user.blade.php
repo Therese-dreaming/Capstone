@@ -78,6 +78,34 @@
                 </div>
 
                 <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input type="text" name="department" value="{{ old('department') }}" required
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                    <input type="text" name="position" id="position" value="{{ old('position') }}" required
+                        onchange="toggleRFIDField()"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                </div>
+
+                <div class="col-span-2 sm:col-span-1" id="rfid_field" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">RFID Number</label>
+                    <input type="text" name="rfid_number" value="{{ old('rfid_number') }}"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                </div>
+
+                <script>
+                    function toggleRFIDField() {
+                        const position = document.getElementById('position').value.toLowerCase();
+                        const rfidField = document.getElementById('rfid_field');
+                        rfidField.style.display = (position === 'teacher' || position === 'faculty') ? 'block' : 'none';
+                    }
+                    // Run on page load
+                    toggleRFIDField();
+                </script>
+                <div class="col-span-2 sm:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <input type="password" name="password" required
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
@@ -132,6 +160,8 @@
 
         const name = document.getElementsByName('name')[0].value;
         const username = document.getElementsByName('username')[0].value;
+        const department = document.getElementsByName('department')[0].value;
+        const position = document.getElementsByName('position')[0].value;
         const roleSelect = document.getElementsByName('group_id')[0];
         const role = roleSelect.options[roleSelect.selectedIndex].text;
         const status = document.getElementsByName('status')[0].value;
@@ -140,6 +170,8 @@
             <ul class="list-disc list-inside">
                 <li>Name: ${name}</li>
                 <li>Username: ${username}</li>
+                <li>Department: ${department}</li>
+                <li>Position: ${position}</li>
                 <li>Role: ${role}</li>
                 <li>Status: ${status}</li>
             </ul>

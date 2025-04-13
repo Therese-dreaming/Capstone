@@ -37,12 +37,14 @@
 
                 <div class="mb-4">
                     <label for="ID Number" class="block text-gray-700"></label>
-                    <input type="text" id="username" name="username" required class="w-full px-3 py-3 bg-gray-100 font-medium" placeholder="ID Number" style="font-family: 'Inter', sans-serif;">
+                    <input type="text" id="username" name="username" required class="w-full px-3 py-3 bg-gray-100 font-medium" 
+                        placeholder="ID Number or RFID Number" style="font-family: 'Inter', sans-serif;">
                 </div>
 
                 <div class="mb-4">
                     <label for="password" class="block text-gray-700"></label>
-                    <input type="password" id="password" name="password" required class="w-full px-3 py-3 bg-gray-100 font-medium" placeholder="Password" style="font-family: 'Inter', sans-serif;">
+                    <input type="password" id="password" name="password" required class="w-full px-3 py-3 bg-gray-100 font-medium" 
+                        placeholder="Password" style="font-family: 'Inter', sans-serif;">
                 </div>
 
                 <button type="submit" class="w-full bg-red-800 text-white py-2 rounded-lg hover:bg-red-600 font-semibold" style="font-family: 'Inter', sans-serif;">Login</button>

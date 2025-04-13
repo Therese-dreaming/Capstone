@@ -19,6 +19,8 @@ class ProfileController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'department' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ];
 
@@ -38,6 +40,8 @@ class ProfileController extends Controller
 
         $user->name = $validated['name'];
         $user->username = $validated['username'];
+        $user->department = $validated['department'];
+        $user->position = $validated['position'];
         
         if ($request->filled('password')) {
             $user->password = Hash::make($validated['password']);

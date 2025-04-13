@@ -1,85 +1,118 @@
-CREATE DATABASE IF NOT EXISTS capstone;
-USE capstone;
+-- Create Groups Table
+CREATE TABLE `groups` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `level` int(11) NOT NULL,
+    `status` enum('Active','Inactive') NOT NULL DEFAULT 'Active',
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Categories table
-CREATE TABLE IF NOT EXISTS categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+-- Create Users Table
+CREATE TABLE `users` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `username` varchar(255) NOT NULL UNIQUE,
+    `rfid_number` varchar(255) NULL UNIQUE,
+    `department` varchar(255) NULL,
+    `position` varchar(255) NULL,
+    `password` varchar(255) NOT NULL,
+    `group_id` bigint(20) UNSIGNED NOT NULL,
+    `status` enum('Active','Inactive') NOT NULL DEFAULT 'Active',
+    `profile_picture` varchar(255) NULL,
+    `last_login` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`group_id`) REFERENCES `groups`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insert default categories
-INSERT INTO categories (name) VALUES
-('Hardware'),
-('Software'),
-('Network'),
-('Peripherals');
+-- Create Assets Table
+CREATE TABLE `assets` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `serial_number` varchar(255) NULL UNIQUE,
+    `category_id` bigint(20) UNSIGNED NOT NULL,
+    `status` varchar(255) NOT NULL,
+    `purchase_price` decimal(10,2) NULL,
+    `location` varchar(255) NULL,
+    `photo` varchar(255) NULL,
+    `qr_code` varchar(255) NULL,
+    `disposal_date` timestamp NULL DEFAULT NULL,
+    `disposal_reason` varchar(255) NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Assets table with foreign key to categories
-CREATE TABLE IF NOT EXISTS asset_list (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    photo VARCHAR(255),
-    category_id INT,
-    location VARCHAR(255),
-    status ENUM('IN USE', 'UNDER REPAIR', 'DISPOSED', 'UPGRADE', 'PENDING DEPLOYMENT'),
-    description TEXT,
-    model VARCHAR(100),
-    serial_number VARCHAR(100) UNIQUE,
-    specification TEXT,
-    vendor VARCHAR(255),
-    purchase_date DATE,
-    warranty_period DATE,
-    lifespan INT,
-    qr_code VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id)
-);
+-- Create Asset Histories Table
+CREATE TABLE `asset_histories` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `asset_id` bigint(20) UNSIGNED NOT NULL,
+    `change_type` varchar(255) NOT NULL,
+    `old_value` varchar(255) NULL,
+    `new_value` varchar(255) NULL,
+    `remarks` text NULL,
+    `changed_by` bigint(20) UNSIGNED NOT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`changed_by`) REFERENCES `users`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS users (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    username VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'user') NOT NULL,
-    status ENUM('Active', 'Inactive') DEFAULT 'Active',
-    email_verified_at TIMESTAMP NULL,
-    last_login TIMESTAMP NULL,
-    remember_token VARCHAR(100) NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
-);
+-- Create Repair Requests Table
+CREATE TABLE `repair_requests` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `asset_id` bigint(20) UNSIGNED NULL,
+    `department` varchar(255) NULL,
+    `status` varchar(255) NOT NULL,
+    `remarks` text NULL,
+    `technician_id` bigint(20) UNSIGNED NULL,
+    `completed_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`technician_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    email VARCHAR(255) PRIMARY KEY,
-    token VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NULL
-);
+-- Create Maintenance Tasks Table
+CREATE TABLE `maintenance_tasks` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL UNIQUE,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS sessions (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id BIGINT UNSIGNED NULL,
-    ip_address VARCHAR(45) NULL,
-    user_agent TEXT NULL,
-    payload LONGTEXT NOT NULL,
-    last_activity INT NOT NULL,
-    INDEX sessions_user_id_index (user_id),
-    INDEX sessions_last_activity_index (last_activity)
-);
+-- Create Maintenances Table
+CREATE TABLE `maintenances` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `lab_number` varchar(255) NOT NULL,
+    `maintenance_task` varchar(255) NOT NULL,
+    `status` varchar(255) NOT NULL DEFAULT 'PENDING',
+    `technician_id` bigint(20) UNSIGNED NOT NULL,
+    `scheduled_date` date NOT NULL,
+    `serial_number` varchar(255) NULL,
+    `action_by_id` bigint(20) UNSIGNED NULL,
+    `completed_at` timestamp NULL DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`technician_id`) REFERENCES `users`(`id`),
+    FOREIGN KEY (`action_by_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS failed_jobs (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    uuid VARCHAR(255) UNIQUE NOT NULL,
-    connection TEXT NOT NULL,
-    queue TEXT NOT NULL,
-    payload LONGTEXT NOT NULL,
-    exception LONGTEXT NOT NULL,
-    failed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create default admin user
-INSERT INTO users (name, email, username, password, role, status) VALUES
-('Administrator', 'admin@example.com', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'Active');
+-- Insert Default Maintenance Tasks
+INSERT INTO `maintenance_tasks` (`name`, `created_at`, `updated_at`) VALUES
+('Format and Software Installation', NOW(), NOW()),
+('Physical Checking', NOW(), NOW()),
+('Windows Update', NOW(), NOW()),
+('General Cleaning', NOW(), NOW()),
+('Antivirus Update', NOW(), NOW()),
+('Scan for Virus', NOW(), NOW()),
+('Disk Cleanup', NOW(), NOW()),
+('Cleaning', NOW(), NOW()),
+('Disk Maintenance', NOW(), NOW());

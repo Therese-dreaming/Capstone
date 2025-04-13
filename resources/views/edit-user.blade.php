@@ -12,6 +12,12 @@
             </a>
         </div>
 
+        @if(session('success'))
+            <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
+                {{ session('success') }}
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
                 <ul class="list-disc list-inside">
@@ -37,6 +43,37 @@
                     <input type="text" name="username" value="{{ old('username', $user->username) }}"
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
                 </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input type="text" name="department" value="{{ old('department', $user->department) }}"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                </div>
+
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                    <input type="text" name="position" id="position" value="{{ old('position', $user->position) }}"
+                        onchange="toggleRFIDField()"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                </div>
+
+                <div class="col-span-2 sm:col-span-1" id="rfid_field">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">RFID Number</label>
+                    <input type="text" name="rfid_number" value="{{ old('rfid_number', $user->rfid_number) }}"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                </div>
+
+                <script>
+                    function toggleRFIDField() {
+                        const position = document.getElementById('position').value.toLowerCase();
+                        const rfidField = document.getElementById('rfid_field');
+                        rfidField.style.display = (position === 'teacher' || position === 'faculty') ? 'block' : 'none';
+                    }
+                    // Run on page load
+                    document.addEventListener('DOMContentLoaded', function() {
+                        toggleRFIDField();
+                    });
+                </script>
 
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
