@@ -45,6 +45,12 @@ CREATE TABLE `assets` (
     `serial_number` varchar(255) NULL UNIQUE,
     `category_id` bigint(20) UNSIGNED NOT NULL,
     `status` varchar(255) NOT NULL,
+    `model` varchar(255) NULL,
+    `specification` text NULL,
+    `vendor` varchar(255) NULL,
+    `purchase_date` date NULL,
+    `warranty_period` varchar(255) NULL,
+    `lifespan` varchar(255) NULL,
     `purchase_price` decimal(10,2) NULL,
     `location` varchar(255) NULL,
     `photo` varchar(255) NULL,
@@ -78,7 +84,14 @@ CREATE TABLE `repair_requests` (
     `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     `asset_id` bigint(20) UNSIGNED NULL,
     `department` varchar(255) NULL,
+    `office_room` varchar(255) NOT NULL,
+    `equipment` varchar(255) NOT NULL,
+    `category_id` bigint(20) UNSIGNED NOT NULL,
+    `issue` text NOT NULL,
     `status` varchar(255) NOT NULL,
+    `ongoing_activity` enum('yes','no') NOT NULL DEFAULT 'no',
+    `date_called` date NOT NULL,
+    `time_called` time NOT NULL,
     `remarks` text NULL,
     `technician_id` bigint(20) UNSIGNED NULL,
     `completed_at` timestamp NULL DEFAULT NULL,
@@ -86,7 +99,8 @@ CREATE TABLE `repair_requests` (
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`technician_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+    FOREIGN KEY (`technician_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Create Maintenance Tasks Table
@@ -115,7 +129,7 @@ CREATE TABLE `sessions` (
 CREATE TABLE `maintenances` (
     `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     `lab_number` varchar(255) NOT NULL,
-    `maintenance_task` varchar(255) NOT NULL,
+    `maintenance_task` json NOT NULL,
     `status` varchar(255) NOT NULL DEFAULT 'PENDING',
     `technician_id` bigint(20) UNSIGNED NOT NULL,
     `scheduled_date` date NOT NULL,
