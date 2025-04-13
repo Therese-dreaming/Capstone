@@ -9,6 +9,16 @@ CREATE TABLE `groups` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Create Categories Table
+CREATE TABLE `categories` (
+    `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `description` text NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    `updated_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Create Users Table
 CREATE TABLE `users` (
     `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -43,7 +53,8 @@ CREATE TABLE `assets` (
     `disposal_reason` varchar(255) NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Create Asset Histories Table
@@ -85,6 +96,19 @@ CREATE TABLE `maintenance_tasks` (
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create Sessions Table
+CREATE TABLE `sessions` (
+    `id` varchar(255) NOT NULL,
+    `user_id` bigint(20) UNSIGNED NULL,
+    `ip_address` varchar(45) NULL,
+    `user_agent` text NULL,
+    `payload` longtext NOT NULL,
+    `last_activity` int NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `sessions_user_id_index` (`user_id`),
+    KEY `sessions_last_activity_index` (`last_activity`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Create Maintenances Table
