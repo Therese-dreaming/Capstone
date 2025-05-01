@@ -12,6 +12,18 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div class="font-semibold">Error!</div>
+        <div>{{ session('error') }}</div>
+    </div>
+    @endif
+
+    <div id="assetMessage" class="mb-4 p-4 rounded hidden">
+        <div class="font-semibold message-title"></div>
+        <div class="message-content"></div>
+    </div>
+
     <div class="bg-white rounded-lg shadow-md p-6">
         <form action="{{ route('repair.store') }}" method="POST" class="space-y-6" id="repairForm">
             @csrf
@@ -32,6 +44,18 @@
                         </label>
                     </div>
                     <p class="mt-2 text-sm text-gray-500">Toggle this if there is an ongoing class or event that requires immediate attention.</p>
+                </div>
+
+                <!-- Replace the serial number input section -->
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asset Serial Number (Optional)</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="serial_number" id="serial_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter asset serial number if available">
+                        <button type="button" onclick="fetchAssetDetails()" class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
+                            Search
+                        </button>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">If this repair is for a tracked asset, enter its serial number.</p>
                 </div>
 
                 <!-- Date Called -->
@@ -56,141 +80,15 @@
                     </div>
                 </div>
 
-                <!-- Department -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                    <select id="department_select" name="department" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" onchange="handleDepartmentSelect()" required>
-                        <option value="">Select Department</option>
-                        <option value="Academic Affairs Office">Academic Affairs Office</option>
-                        <option value="Accounting Unit">Accounting Unit</option>
-                        <option value="Alumni Office">Alumni Office</option>
-                        <option value="Aula Minor Auditorium">Aula Minor Auditorium</option>
-                        <option value="Bookstore Unit">Bookstore Unit</option>
-                        <option value="Budget & Control Unit">Budget & Control Unit</option>
-                        <option value="Campus Ministry Office">Campus Ministry Office</option>
-                        <option value="Canteen Unit">Canteen Unit</option>
-                        <option value="Caregiver & College Dean's Office">Caregiver & College Dean's Office</option>
-                        <option value="Christian Formation Office">Christian Formation Office</option>
-                        <option value="Control Booth">Control Booth</option>
-                        <option value="CPArts">CPArts</option>
-                        <option value="Electrician">Electrician</option>
-                        <option value="Executive Vice-President's Office/Marketing">Executive Vice-President's Office/Marketing</option>
-                        <option value="Finance and Business Affairs Office">Finance and Business Affairs Office</option>
-                        <option value="General Services Unit">General Services Unit</option>
-                        <option value="Grade School - Principal's Office">Grade School - Principal's Office</option>
-                        <option value="Grade School - STL">Grade School - STL</option>
-                        <option value="Grade School - E.C.E">Grade School - E.C.E</option>
-                        <option value="Grade School - Faculty">Grade School - Faculty</option>
-                        <option value="Grade School - Guidance">Grade School - Guidance</option>
-                        <option value="Grade School - Library">Grade School - Library</option>
-                        <option value="Grade School - Academics">Grade School - Academics</option>
-                        <option value="Grade School - OSA">Grade School - OSA</option>
-                        <option value="Human Resource Management Office">Human Resource Management Office</option>
-                        <option value="Institutional OSA">Institutional OSA</option>
-                        <option value="Junior High School - Principal's Office">Junior High School - Principal's Office</option>
-                        <option value="Junior High School - Guidance Office">Junior High School - Guidance Office</option>
-                        <option value="Junior High School - Academics">Junior High School - Academics</option>
-                        <option value="Junior High School - Faculty">Junior High School - Faculty</option>
-                        <option value="Junior High School - Laboratory">Junior High School - Laboratory</option>
-                        <option value="Junior High School - Library">Junior High School - Library</option>
-                        <option value="Junior High School - OSA">Junior High School - OSA</option>
-                        <option value="Junior High School - Reading Center">Junior High School - Reading Center</option>
-                        <option value="Medical - Dental Office">Medical - Dental Office</option>
-                        <option value="Mini Hotel">Mini Hotel</option>
-                        <option value="Pastoral Office Coordinator">Pastoral Office Coordinator</option>
-                        <option value="President's Office">President's Office</option>
-                        <option value="Physical Plant and General Services">Physical Plant and General Services</option>
-                        <option value="Printing Unit">Printing Unit</option>
-                        <option value="Purchasing Unit">Purchasing Unit</option>
-                        <option value="Registrar's Office">Registrar's Office</option>
-                        <option value="Research and Development Office">Research and Development Office</option>
-                        <option value="San Pedro Calungsod Hall">San Pedro Calungsod Hall</option>
-                        <option value="School of Graduate Studies">School of Graduate Studies</option>
-                        <option value="Security Office">Security Office</option>
-                        <option value="Senior High School - Principal's Office">Senior High School - Principal's Office</option>
-                        <option value="Senior High School - Faculty">Senior High School - Faculty</option>
-                        <option value="Senior High School - Guidance">Senior High School - Guidance</option>
-                        <option value="Senior High School - OSA">Senior High School - OSA</option>
-                        <option value="SGS Library/College Library">SGS Library/College Library</option>
-                        <option value="Sisters Quarter">Sisters Quarter</option>
-                        <option value="Sport Development Office">Sport Development Office</option>
-                        <option value="Stock Issuance Section">Stock Issuance Section</option>
-                        <option value="Treasury Unit">Treasury Unit</option>
-                        <option value="custom">Other (Specify Below)</option>
-                    </select>
-                    <input type="text" id="department_input" name="department" class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Specify department if not in list above" style="display: none;">
-                </div>
-
-                <!-- Add this to your existing script section -->
-                <script>
-                    // Add this new function to your existing script
-                    function handleDepartmentSelect() {
-                        const select = document.getElementById('department_select');
-                        const input = document.getElementById('department_input');
-
-                        if (select.value === 'custom') {
-                            select.removeAttribute('name');
-                            input.style.display = 'block';
-                            input.required = true;
-                            input.value = '';
-                            input.focus();
-                        } else {
-                            select.setAttribute('name', 'department');
-                            input.style.display = 'none';
-                            input.required = false;
-                            input.value = select.value;
-                        }
-                    }
-
-                    // Initialize department input display
-                    document.getElementById('department_input').style.display = 'none';
-
-                </script>
-
-                <!-- Office/Room -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Office/Room</label>
-                    <input type="text" name="office_room" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter office or room number" required>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input type="text" name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter the location (e.g., Room 101, Library, Admin Office)" required>
                 </div>
 
                 <!-- Equipment -->
                 <div class="relative">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Equipment</label>
-                    <select id="equipment_select" name="equipment" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" onchange="handleEquipmentSelect()" required>
-                        <option value="">Select Equipment</option>
-                        <optgroup label="Hardware" class="font-medium text-gray-700 bg-gray-50">
-                            <option value="Projector" class="py-2">Projector</option>
-                            <option value="Hardware Parts" class="py-2">Hardware Parts</option>
-                            <option value="Laptop" class="py-2">Laptop</option>
-                            <option value="Printer" class="py-2">Printer</option>
-                            <option value="Mouse" class="py-2">Mouse</option>
-                            <option value="Keyboard" class="py-2">Keyboard</option>
-                            <option value="Monitor" class="py-2">Monitor</option>
-                            <option value="Scanner" class="py-2">Scanner</option>
-                            <option value="UPS" class="py-2">UPS</option>
-                            <option value="CPU" class="py-2">CPU</option>
-                        </optgroup>
-                        <optgroup label="Network" class="font-medium text-gray-700 bg-gray-50">
-                            <option value="Router" class="py-2">Router</option>
-                            <option value="Switch" class="py-2">Switch</option>
-                            <option value="Network Cable" class="py-2">Network Cable</option>
-                            <option value="WiFi Access Point" class="py-2">WiFi Access Point</option>
-                        </optgroup>
-                        <optgroup label="Peripherals" class="font-medium text-gray-700 bg-gray-50">
-                            <option value="Webcam" class="py-2">Webcam</option>
-                            <option value="Headset" class="py-2">Headset</option>
-                            <option value="Speaker" class="py-2">Speaker</option>
-                            <option value="Microphone" class="py-2">Microphone</option>
-                        </optgroup>
-                        <optgroup label="Software" class="font-medium text-gray-700 bg-gray-50">
-                            <option value="Orange Apps Account" class="py-2">Orange Apps Account</option>
-                            <option value="MS Teams Account" class="py-2">MS Teams Account</option>
-                            <option value="Chrome Browser" class="py-2">Chrome Browser</option>
-                            <option value="Windows OS" class="py-2">Windows OS</option>
-                        </optgroup>
-                        <option value="custom" class="font-medium text-gray-700">Other (Specify Below)</option>
-                    </select>
-                    <input type="text" id="equipment_input" name="equipment" class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Specify equipment if not in list above" style="display: none;">
+                    <input type="text" id="equipment" name="equipment" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter equipment name" required>
                 </div>
 
                 <!-- Category -->
@@ -204,6 +102,19 @@
                     </select>
                 </div>
 
+                <!-- Technician Selection (Admin/Secretary only) -->
+                @if(auth()->user()->group_id <= 2)
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign Technician (Optional)</label>
+                    <select name="technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <option value="">Select Technician</option>
+                        @foreach($technicians as $technician)
+                        <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+
                 <!-- Issue -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Issue</label>
@@ -211,78 +122,12 @@
                 </div>
             </div> <!-- End of grid -->
 
-            <!-- Add this to your script section -->
-            <script>
-                // Update the isUrgentRequest function
-                function isUrgentRequest() {
-                    const department = document.getElementById('department_select').value;
-                    const hasOngoingActivity = document.querySelector('input[name="ongoing_activity"]').checked;
-
-                    return urgentDepartments.includes(department) || hasOngoingActivity;
-                }
-
-                // Add this for toggle text update
-                document.querySelector('input[name="ongoing_activity"]').addEventListener('change', function() {
-                    const statusText = document.querySelector('.ongoing-status');
-                    const departmentSelect = document.getElementById('department_select');
-                    const departmentInput = document.getElementById('department_input');
-
-                    statusText.textContent = this.checked ? 'Yes' : 'No';
-
-                    if (this.checked) {
-                        // If ongoing activity, disable and clear department
-                        departmentSelect.disabled = true;
-                        departmentSelect.value = '';
-                        departmentSelect.removeAttribute('required');
-                        departmentSelect.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
-                        if (departmentInput) {
-                            departmentInput.style.display = 'none';
-                            departmentInput.value = '';
-                            departmentInput.removeAttribute('required');
-                        }
-                    } else {
-                        // If no ongoing activity, enable department
-                        departmentSelect.disabled = false;
-                        departmentSelect.setAttribute('required', 'required');
-                        departmentSelect.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
-                    }
-                });
-
-            </script>
-
             <!-- Replace the existing Submit Buttons div -->
             <div class="mt-6 flex gap-4">
                 <button type="button" onclick="handleSubmission()" class="flex-1 bg-red-800 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                     Submit Request
                 </button>
             </div>
-
-            <!-- Add to your script section -->
-            <script>
-                const urgentDepartments = [
-                    'Accounting Unit'
-                    , 'Caregiver & College Dean\'s Office'
-                    , 'Executive Vice-President\'s Office/Marketing'
-                    , 'Grade School - Principal\'s Office'
-                    , 'Junior High School - Principal\'s Office'
-                    , 'President\'s Office'
-                    , 'Registrar\'s Office'
-                    , 'Senior High School - Principal\'s Office'
-                ];
-
-                function isUrgentRequest() {
-                    const department = document.getElementById('department_select').value;
-                    const hasOngoingActivity = document.querySelector('input[name="ongoing_activity"]').checked;
-
-                    return urgentDepartments.includes(department) || hasOngoingActivity;
-                }
-
-                function handleSubmission() {
-                    const status = isUrgentRequest() ? 'urgent' : 'pending';
-                    openConfirmModal(status);
-                }
-
-            </script>
         </form>
     </div>
 
@@ -303,6 +148,44 @@
     </div>
 
     <script>
+        const urgentDepartments = [
+            'Accounting Unit'
+            , 'Caregiver & College Dean\'s Office'
+            , 'Executive Vice-President\'s Office/Marketing'
+            , 'Grade School - Principal\'s Office'
+            , 'Junior High School - Principal\'s Office'
+            , 'President\'s Office'
+            , 'Registrar\'s Office'
+            , 'Senior High School - Principal\'s Office'
+        ];
+
+        function hideMessages() {
+            // Hide session messages
+            const sessionMessages = document.querySelectorAll('.mb-4.p-4.bg-green-100, .mb-4.p-4.bg-red-100');
+            sessionMessages.forEach(msg => {
+                setTimeout(() => {
+                    msg.style.transition = 'opacity 0.5s';
+                    msg.style.opacity = '0';
+                    setTimeout(() => msg.style.display = 'none', 500);
+                }, 3000);
+            });
+
+            // Hide asset message if visible
+            const assetMessage = document.getElementById('assetMessage');
+            if (!assetMessage.classList.contains('hidden')) {
+                setTimeout(() => {
+                    assetMessage.style.transition = 'opacity 0.5s';
+                    assetMessage.style.opacity = '0';
+                    setTimeout(() => {
+                        assetMessage.classList.add('hidden');
+                        assetMessage.style.opacity = '1';
+                    }, 500);
+                }, 3000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', hideMessages);
+
         let currentStatus = '';
 
         function setCurrentDate() {
@@ -318,44 +201,6 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             document.getElementById('time_called').value = `${hours}:${minutes}`;
-        }
-
-        function handleEquipmentSelect() {
-            const select = document.getElementById('equipment_select');
-            const input = document.getElementById('equipment_input');
-            const categorySelect = document.getElementById('category_select');
-
-            // Auto-select category based on equipment group
-            const selectedOption = select.options[select.selectedIndex];
-            const optgroup = selectedOption.parentElement;
-            if (optgroup && optgroup.label) {
-                const categoryOptions = categorySelect.options;
-                for (let i = 0; i < categoryOptions.length; i++) {
-                    if (categoryOptions[i].text === optgroup.label) {
-                        categorySelect.value = categoryOptions[i].value;
-                        break;
-                    }
-                }
-            }
-
-            if (select.value === 'custom') {
-                select.removeAttribute('name');
-                input.style.display = 'block';
-                input.required = true;
-                input.value = '';
-                input.focus();
-            } else {
-                select.setAttribute('name', 'equipment');
-                input.style.display = 'none';
-                input.required = false;
-                input.value = select.value;
-            }
-        }
-
-        function getEquipmentValue() {
-            const select = document.getElementById('equipment_select');
-            const input = document.getElementById('equipment_input');
-            return select.value === 'custom' ? input.value : select.value;
         }
 
         function openConfirmModal(status) {
@@ -379,30 +224,95 @@
             modal.classList.remove('flex');
         }
 
+        function isUrgentRequest() {
+            const location = document.getElementById('location').value;
+            const hasOngoingActivity = document.querySelector('input[name="ongoing_activity"]').checked;
+
+            // Check if location contains any of the urgent departments
+            return urgentDepartments.some(dept => location.includes(dept)) || hasOngoingActivity;
+        }
+
+        function handleSubmission() {
+            const status = isUrgentRequest() ? 'urgent' : 'pending';
+            openConfirmModal(status);
+        }
+
         function submitForm() {
             const form = document.getElementById('repairForm');
 
-            // Remove any existing status input to prevent duplicates
-            const existingStatus = form.querySelector('input[name="status"]');
-            if (existingStatus) {
-                existingStatus.remove();
+            // Create and append the status input if it doesn't exist
+            let statusInput = form.querySelector('input[name="status"]');
+            if (!statusInput) {
+                statusInput = document.createElement('input');
+                statusInput.type = 'hidden';
+                statusInput.name = 'status';
+                form.appendChild(statusInput);
             }
 
-            // Create and append the new status input
-            const statusInput = document.createElement('input');
-            statusInput.type = 'hidden';
-            statusInput.name = 'status';
+            // Set the current status
             statusInput.value = currentStatus;
-            form.appendChild(statusInput);
+
+            // Close the modal
+            closeConfirmModal();
+
+            // Debug log
+            console.log('Submitting form with status:', currentStatus);
 
             // Submit the form
             form.submit();
         }
 
-        // Initialize equipment input display
-        document.getElementById('equipment_input').style.display = 'none';
+        async function fetchAssetDetails() {
+            const serialNumber = document.getElementById('serial_number').value;
+            const messageDiv = document.getElementById('assetMessage');
+            const messageTitle = messageDiv.querySelector('.message-title');
+            const messageContent = messageDiv.querySelector('.message-content');
+
+            if (!serialNumber) {
+                messageDiv.className = 'mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
+                messageTitle.textContent = 'Error!';
+                messageContent.textContent = 'Please enter a serial number';
+                messageDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/assets/fetch/${serialNumber}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error('Asset not found');
+                }
+
+                // Auto-fill location
+                document.getElementById('location').value = data.location || '';
+
+                if (data.name) {
+                    document.getElementById('equipment').value = data.name;
+                }
+
+                // Handle category selection
+                if (data.category_id) {
+                    document.getElementById('category_select').value = data.category_id;
+                }
+
+                // Show success message
+                messageDiv.className = 'mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded';
+                messageTitle.textContent = 'Success!';
+                messageContent.textContent = 'Asset details found and filled in';
+                messageDiv.classList.remove('hidden');
+                hideMessages();
+
+            } catch (error) {
+                console.error('Error fetching asset details:', error);
+                messageDiv.className = 'mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
+                messageTitle.textContent = 'Error!';
+                messageContent.textContent = 'No asset found with this serial number. Please check and try again.';
+                messageDiv.classList.remove('hidden');
+                hideMessages();
+            }
+        }
 
     </script>
-</div>
 </div>
 @endsection

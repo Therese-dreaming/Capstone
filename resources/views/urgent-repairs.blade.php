@@ -16,44 +16,6 @@
         </a>
     </div>
 
-    <!-- Statistics Section -->
-    <div class="grid grid-cols-2 gap-6 mb-6">
-        <!-- Status Overview -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Status Overview</h3>
-            <div class="grid grid-cols-3 gap-4">
-                <div class="bg-red-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-600">Open Requests</p>
-                    <p class="text-2xl font-bold text-red-600">{{ $totalOpen }}</p>
-                </div>
-                <div class="bg-green-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-600">Completed This Month</p>
-                    <p class="text-2xl font-bold text-green-600">{{ $completedThisMonth }}</p>
-                </div>
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-600">Avg. Response Time</p>
-                    <p class="text-2xl font-bold text-blue-600">{{ round($avgResponseTime) }} days</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Technician Performance -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-2">Technician Performance</h3>
-            <p class="text-sm text-gray-600 mb-4">Assigned technicians and their current workload</p>
-            <div class="space-y-2">
-                @foreach($technicians as $technician)
-                <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span class="font-medium">{{ $technician->name }}</span>
-                    <span class="text-sm text-gray-600">
-                        {{ $technician->repair_requests()->where('status', '!=', 'completed')->count() }} active requests
-                    </span>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-
     <!-- Urgent Repairs Table -->
     @if($urgentRepairs->count() > 0)
     <div class="bg-white rounded-lg shadow">

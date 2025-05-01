@@ -20,22 +20,27 @@
             <!-- Header Section -->
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold">ALL ASSETS</h1>
-                <!-- Add this in the header section where your other buttons are -->
-                <div class="flex space-x-3">
-                    <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
-                        Add New Asset
-                    </a>
-                    <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
-                        Procurement History
-                    </a>
-                    <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
-                        Disposal History
-                    </a>
-                    <button onclick="openFullList()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                        </svg>
-                    </button>
+                <!-- Add search input -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search by Serial Number" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                    </div>
+                    <div class="flex space-x-3">
+                        <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                            Add New Asset
+                        </a>
+                        <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                            Procurement History
+                        </a>
+                        <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                            Disposal History
+                        </a>
+                        <button onclick="openFullList()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -108,30 +113,22 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ?? '' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex space-x-2">
-                                    <a href="{{ route('reports.asset-history', $asset->id) }}" 
-                                       class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip"
-                                       title="History">
+                                    <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </a>
-                                    <a href="{{ route('assets.edit', $asset->id) }}" 
-                                       class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip"
-                                       title="Edit">
+                                    <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </a>
-                                    <button onclick="confirmDelete({{ $asset->id }})" 
-                                            class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip"
-                                            title="Delete">
+                                    <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                     </button>
-                                    <button onclick="confirmDispose({{ $asset->id }})" 
-                                            class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip"
-                                            title="Dispose">
+                                    <button onclick="confirmDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                                         </svg>
@@ -146,10 +143,7 @@
         </div>
     </div>
 </div>
-</div>
-</div>
 
-<!-- Image Modal -->
 <!-- Move imageModal outside and adjust z-index -->
 <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
     <div class="relative" onclick="event.stopPropagation();">
@@ -178,9 +172,106 @@
             </button>
         </div>
 
+        <!-- Search Bar -->
+        <div class="mb-4">
+            <input type="text" id="modalSearchInput" placeholder="Search by Serial Number" class="px-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-1 focus:ring-red-500">
+        </div>
+
+        <!-- Filter -->
+        <div class="flex justify-between items-center mb-4">
+            <div class="relative">
+                <button id="columnFilterBtn" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    Show/Hide Columns
+                </button>
+                <!-- Update the column filter menu -->
+                <div id="columnFilterMenu" class="hidden absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-50 p-4 border border-gray-200">
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- Add Select All option -->
+                        <label class="flex items-center space-x-2 pb-2 border-b border-gray-200 mb-2">
+                            <input type="checkbox" checked id="selectAll" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                            <span class="font-medium">Select All</span>
+                        </label>
+
+                        <!-- Update existing checkboxes to match styling -->
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="0" class="column-toggle rounded border-gray-300 text-red-600 focus:ring-red-500">
+                            <span>#</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="1" class="column-toggle">
+                            <span>Photo</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="2" class="column-toggle">
+                            <span>QR Code</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="3" class="column-toggle">
+                            <span>Asset Name</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="4" class="column-toggle">
+                            <span>Serial Number</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="5" class="column-toggle">
+                            <span>Purchase Price</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="6" class="column-toggle">
+                            <span>Category</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="7" class="column-toggle">
+                            <span>Location</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="8" class="column-toggle">
+                            <span>Status</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="9" class="column-toggle">
+                            <span>Description</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="10" class="column-toggle">
+                            <span>Model</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="11" class="column-toggle">
+                            <span>Specification</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="12" class="column-toggle">
+                            <span>Vendor</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="13" class="column-toggle">
+                            <span>Purchase Date</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="14" class="column-toggle">
+                            <span>Warranty Period</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="15" class="column-toggle">
+                            <span>Lifespan (Yrs)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="16" class="column-toggle">
+                            <span>Asset Life Remaining</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Table Container -->
         <div class="overflow-y-auto max-h-[70vh] rounded-lg border border-gray-200">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 full-list-table">
                 <!-- Add to full list table header -->
                 <thead class="bg-gray-50 sticky top-0 shadow-sm z-10">
                     <tr>
@@ -274,18 +365,13 @@
     </div>
 </div>
 
-<!-- Move the script section outside the fullListModal div and place it at the end of the content section -->
-</div> <!-- end of fullListModal -->
-
-<!-- Add these modals before the closing </div> of your main content -->
-
 <!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3 text-center">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
             <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Asset</h3>
@@ -305,12 +391,12 @@
 </div>
 
 <!-- Dispose Confirmation Modal -->
-<div id="disposeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+<div id="disposeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3 text-center">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
                 <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
             <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Dispose Asset</h3>
@@ -447,11 +533,109 @@
             redirectInput.value = '{{ route("reports.disposal-history") }}';
 
             form.appendChild(csrfInput);
-            form.appendChild(reasonInput);  // Add the reason input to the form
+            form.appendChild(reasonInput); // Add the reason input to the form
             form.appendChild(redirectInput);
             document.body.appendChild(form);
             form.submit();
         }
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const modalSearchInput = document.getElementById('modalSearchInput');
+
+        function filterTables(searchValue) {
+            searchValue = searchValue.toLowerCase();
+
+            // Search in preview table
+            const previewTable = document.querySelector('table:not(.full-list-table)');
+            const previewRows = previewTable.querySelectorAll('tbody tr');
+            previewRows.forEach(row => {
+                const serialNumber = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                row.style.display = serialNumber.includes(searchValue) ? '' : 'none';
+            });
+
+            // Search in full list table
+            const fullListTable = document.querySelector('.full-list-table');
+            const fullListRows = fullListTable.querySelectorAll('tbody tr');
+            fullListRows.forEach(row => {
+                const serialNumber = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+                row.style.display = serialNumber.includes(searchValue) ? '' : 'none';
+            });
+        }
+
+        // Main search input event listener
+        searchInput.addEventListener('input', function() {
+            filterTables(this.value);
+            if (modalSearchInput) modalSearchInput.value = this.value;
+        });
+
+        // Modal search input event listener
+        modalSearchInput.addEventListener('input', function() {
+            filterTables(this.value);
+            if (searchInput) searchInput.value = this.value;
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAll');
+        const columnFilterBtn = document.getElementById('columnFilterBtn');
+        const columnFilterMenu = document.getElementById('columnFilterMenu');
+        const fullListTable = document.querySelector('.full-list-table');
+        const toggles = document.querySelectorAll('.column-toggle');
+
+        // Toggle menu
+        columnFilterBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            columnFilterMenu.classList.toggle('hidden');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!columnFilterMenu.contains(e.target) && !columnFilterBtn.contains(e.target)) {
+                columnFilterMenu.classList.add('hidden');
+            }
+        });
+
+        // Select All functionality
+        selectAll.addEventListener('change', function() {
+            const isChecked = this.checked;
+            toggles.forEach(toggle => {
+                toggle.checked = isChecked;
+                updateColumnVisibility(toggle);
+            });
+        });
+
+        // Individual toggle functionality
+        toggles.forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                updateColumnVisibility(this);
+                updateSelectAllState();
+            });
+        });
+
+        function updateColumnVisibility(toggle) {
+            const columnIndex = toggle.dataset.column;
+            const isVisible = toggle.checked;
+
+            // Toggle header
+            const headers = fullListTable.querySelectorAll('th');
+            if (headers[columnIndex]) {
+                headers[columnIndex].style.display = isVisible ? '' : 'none';
+            }
+
+            // Toggle cells
+            const cells = fullListTable.querySelectorAll(`td:nth-child(${parseInt(columnIndex) + 1})`);
+            cells.forEach(cell => {
+                cell.style.display = isVisible ? '' : 'none';
+            });
+        }
+
+        function updateSelectAllState() {
+            selectAll.checked = Array.from(toggles).every(toggle => toggle.checked);
+        }
+    });
+
 </script>
 @endsection
+</div>

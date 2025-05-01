@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Maintenance;
 
 class Asset extends Model
 {
@@ -36,8 +37,26 @@ class Asset extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function repairs()
+    public function repairRequests()
     {
         return $this->hasMany(RepairRequest::class);
+    }
+
+    // Add this new method
+    public function maintenances()
+    {
+        $labNumber = substr($this->location, -3); // Extract lab number from location
+        return Maintenance::where('lab_number', $labNumber)
+            ->where('status', 'completed')
+            ->where(function($query) {
+                $query->whereNull('excluded_assets')
+                    ->orWhereRaw('NOT JSON_CONTAINS(COALESCE(excluded_assets, "[]"), ?)', [(string) $this->id]);
+            });
+    }
+
+    // Add this accessor
+    public function getLabNumberAttribute()
+    {
+        return substr($this->location, -3);
     }
 }

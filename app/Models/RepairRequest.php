@@ -13,21 +13,31 @@ class RepairRequest extends Model
         'ticket_number',
         'date_called',
         'time_called',
-        'department',
-        'office_room',
+        'location',
         'category_id',
         'equipment',
+        'serial_number',
         'issue',
         'status',
         'technician_id',
         'remarks',
-        'completed_at'
+        'completed_at',
+        'created_at',
+        'updated_at'
     ];
 
-    protected $dates = [
-        'completed_at'
+    protected $casts = [
+        'completed_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
+    // Add this relationship
+    public function asset()
+    {
+        return $this->belongsTo(Asset::class, 'serial_number', 'serial_number');
+    }
+    
     public function category()
     {
         return $this->belongsTo(Category::class);

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\CategoryController;
@@ -9,12 +10,20 @@ use App\Http\Controllers\RepairRequestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\LabScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('login');
-})->name('login');
+    if (auth()->check()) {
+        return redirect()->intended('/assets');
+    }
+    return redirect('/login');
+});
 
+// Add this route before the login POST route
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('auth.login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -26,9 +35,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
     Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
-    Route::get('/groups/{group}/edit', [GroupController::class, 'edit'])->name('groups.edit');
-    Route::put('/groups/{group}', [GroupController::class, 'update'])->name('groups.update');
-    Route::delete('/groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
     Route::resource('users', UserController::class);
     Route::get('/qr-list', [AssetController::class, 'qrList'])->name('qr.list');
     Route::post('/qrcodes/export', [AssetController::class, 'exportQrCodes'])->name('qrcodes.export');
@@ -41,6 +47,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/assets/{asset}', [AssetController::class, 'update'])->name('assets.update');
     Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->name('assets.destroy');
     Route::post('/assets/{asset}/dispose', [AssetController::class, 'dispose'])->name('assets.dispose');
+    Route::get('/assets/fetch/{serial_number}', [AssetController::class, 'fetchBySerial'])->name('assets.fetch');
 
     // Maintenance Routes
     Route::get('/maintenance/schedule', [MaintenanceController::class, 'schedule'])->name('maintenance.schedule');
@@ -62,16 +69,20 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/maintenance/{lab}/date/{date}/complete-all', [MaintenanceController::class, 'completeAllByDate'])->name('maintenance.completeAllByDate');
     Route::delete('/maintenance/{lab}/date/{date}/cancel-all', [MaintenanceController::class, 'cancelAllByDate'])
         ->name('maintenance.cancelAllByDate');
-
+    Route::delete('/maintenance/{id}', [MaintenanceController::class, 'destroy'])->name('maintenance.destroy');
+    Route::post('/maintenance/destroy-multiple', [MaintenanceController::class, 'destroyMultiple'])->name('maintenance.destroyMultiple');    
+    
     // Repair Request Routes
     Route::get('/repair/request', [RepairRequestController::class, 'create'])->name('repair.request');
     Route::post('/repair/store', [RepairRequestController::class, 'store'])->name('repair.store');
     Route::get('/repair-status', [RepairRequestController::class, 'status'])->name('repair.status');
     Route::get('/repair-completed', [RepairRequestController::class, 'completed'])->name('repair.completed');
+    Route::delete('/repair-completed/{id}', [RepairRequestController::class, 'destroy'])->name('repair-requests.destroy');
     Route::put('/repair-requests/{id}', [RepairRequestController::class, 'update'])->name('repair-requests.update');
     Route::delete('/repair-requests/delete/{id}', [RepairRequestController::class, 'destroy'])->name('repair-requests.destroy');
+    Route::post('/repair-requests/destroy-multiple', [RepairRequestController::class, 'destroyMultiple'])->name('repair.destroyMultiple');
     Route::get('/repair-requests/urgent', [RepairRequestController::class, 'urgent'])->name('repair.urgent');
-    
+
     // Add these new routes for repair exports
     Route::get('/repair-completed/preview-pdf', [RepairRequestController::class, 'previewPDF'])->name('repair.previewPDF');
     Route::get('/repair-completed/export-pdf', [RepairRequestController::class, 'exportPDF'])->name('repair.exportPDF');
@@ -89,4 +100,34 @@ Route::middleware(['auth'])->group(function () {
         ->middleware(['auth']);
     Route::get('/reports/procurement-history', [ReportController::class, 'procurementHistory'])->name('reports.procurement-history');
     Route::get('/reports/disposal-history', [ReportController::class, 'disposalHistory'])->name('reports.disposal-history');
+    Route::get('/reports/asset-history/{asset}/maintenance', [ReportController::class, 'assetMaintenanceHistory'])
+        ->name('reports.asset-maintenance-history');
+    Route::get('/reports/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])
+        ->name('reports.asset-repair-history');
+
+    Route::get('/maintenance/get-lab-assets/{labNumber}', [MaintenanceController::class, 'getLabAssets'])->name('maintenance.getLabAssets');
+   
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
+
+// Replace the role middleware route with this
+Route::middleware(['auth'])->group(function () {
+    Route::get('/my-tasks', [TaskController::class, 'index'])->name('my.tasks');
+    
+    // Notification Routes
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unreadCount');
+    
+    // Lab Schedule Routes
+    // Add these routes within your auth middleware group
+    Route::get('/lab-schedule', [LabScheduleController::class, 'index'])->name('lab.schedule');
+    Route::post('/lab-schedule', [LabScheduleController::class, 'store']);
+    Route::get('/lab-schedule/events', [LabScheduleController::class, 'getEvents']);
+    Route::get('/lab-logging', [LabScheduleController::class, 'logging'])->name('lab.logging');
+    Route::post('/lab-logging/get-schedule', [LabScheduleController::class, 'getScheduleByRfid'])->name('lab.logging.schedule');
+    Route::post('/lab-logging/submit', [LabScheduleController::class, 'submitLog'])->name('lab.logging.submit');
+    Route::get('/lab-history', [LabScheduleController::class, 'history'])->name('lab.history');
+    Route::post('/lab-schedule/delete', [LabScheduleController::class, 'destroy'])->name('lab.delete');
 });

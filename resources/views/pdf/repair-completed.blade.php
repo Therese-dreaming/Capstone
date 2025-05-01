@@ -48,8 +48,7 @@
                 <th class="whitespace-nowrap">Completion Date</th>
                 <th>Item</th>
                 <th>Ticket No.</th>
-                <th>Department</th>
-                <th>Lab Room</th>
+                <th>Location</th>
                 <th>Technician</th>
                 <th>Remarks</th>
             </tr>
@@ -61,8 +60,7 @@
                 <td class="whitespace-nowrap">{{ \Carbon\Carbon::parse($request->completed_at)->format('m/d/Y') }}</td>
                 <td>{{ $request->equipment }}</td>
                 <td>{{ $request->ticket_number }}</td>
-                <td>{{ $request->department }}</td>
-                <td>{{ $request->office_room }}</td>
+                <td>{{ $request->location }}</td>
                 <td>{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
                 <td>{{ $request->remarks }}</td>
             </tr>

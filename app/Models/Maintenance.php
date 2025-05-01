@@ -13,10 +13,13 @@ class Maintenance extends Model
         'scheduled_date',
         'status',
         'action_by_id',
-        'completed_at'
+        'completed_at',
+        'excluded_assets'
     ];
 
     protected $casts = [
+        'excluded_assets' => 'array',
+        'scheduled_date' => 'datetime',
         'maintenance_task' => 'array'
     ];
 
@@ -28,5 +31,16 @@ class Maintenance extends Model
     public function technician()
     {
         return $this->belongsTo(User::class, 'technician_id');
+    }
+
+    // Add this new method
+    public function assets()
+    {
+        return Asset::where('location', 'LIKE', '%' . $this->lab_number)
+            ->where('status', '!=', 'DISPOSED')
+            ->where(function($query) {
+                $query->whereNull('excluded_assets')
+                    ->orWhereRaw('NOT JSON_CONTAINS(COALESCE(?, "[]"), CAST(id AS CHAR))', [$this->excluded_assets]);
+            });
     }
 }

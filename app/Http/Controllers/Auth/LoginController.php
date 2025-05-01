@@ -8,9 +8,25 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redirect;
 
 class LoginController extends Controller
 {
+    public function __construct()
+    {
+        if (Auth::check()) {
+            Redirect::to('/assets')->send();
+        }
+    }
+
+    public function showLoginForm()
+    {
+        if (Auth::check()) {
+            return redirect('/assets');
+        }
+        return view('auth.login');
+    }
+
     public function login(Request $request)
     {
         $credentials = $request->validate([

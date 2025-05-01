@@ -3,168 +3,209 @@
 @section('content')
 <div class="flex-1 ml-80">
     <div class="p-6">
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold mb-6">Edit Asset</h2>
+        <!-- Main Container -->
+        <div class="bg-white rounded-lg shadow-lg p-8 max-w-5xl mx-auto">
+            <!-- Header -->
+            <div class="border-b border-gray-200 pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Edit Asset</h2>
+                <p class="text-sm text-gray-600 mt-1">Update the information for this asset</p>
+            </div>
 
             <form action="{{ route('assets.update', $asset->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
-                <!-- Add this right after the form opening tag -->
+                <!-- Error Messages -->
                 @if ($errors->any())
-                    <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
+                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                    <p class="font-medium">Please correct the following errors:</p>
+                    <ul class="mt-2 list-disc list-inside text-sm">
+                        @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
                 @endif
 
-                <div class="grid grid-cols-2 gap-6">
-                    <!-- Asset Name field -->
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
-                            Asset Name
-                        </label>
-                        <input type="text" name="name" id="name" value="{{ old('name', $asset->name) }}"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <!-- Form Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <!-- Basic Information Section -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Basic Information</h3>
+
+                            <!-- Example of consistent error handling for each field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                                    Asset Name
+                                </label>
+                                <input type="text" name="name" id="name" 
+                                    value="{{ old('name', $asset->name) }}" 
+                                    class="w-full p-2.5 border @error('name') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                                @error('name')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Apply to all input fields including selects -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="category_id">
+                                    Category
+                                </label>
+                                <select name="category_id" id="category_id" 
+                                    class="w-full p-2.5 border @error('category_id') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ $asset->category_id == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('category_id')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Location & Status Section -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Location & Status</h3>
+
+                            <!-- Location field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="location">
+                                    Location
+                                </label>
+                                <select name="location_select" id="locationSelect" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors mb-2">
+                                    <option value="">Select Location</option>
+                                    @foreach(['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406'] as $lab)
+                                    <option value="{{ $lab }}" {{ $asset->location == $lab ? 'selected' : '' }}>
+                                        {{ $lab }}
+                                    </option>
+                                    @endforeach
+                                    <option value="others" {{ !in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? 'selected' : '' }}>
+                                        Others (Specify)
+                                    </option>
+                                </select>
+                                <input type="text" name="location" id="otherLocation" value="{{ !in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? $asset->location : '' }}" placeholder="Please specify location" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors mt-2 {{ in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? 'hidden' : '' }}">
+                            </div>
+
+                            <!-- Status field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="status">
+                                    Status
+                                </label>
+                                <select name="status" id="status" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PENDING DEPLOYMENT'] as $status)
+                                    <option value="{{ $status }}" {{ $asset->status == $status ? 'selected' : '' }}>
+                                        {{ $status }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Serial Number field -->
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="serial_number">
-                            Serial Number
-                        </label>
-                        <input type="text" name="serial_number" id="serial_number" value="{{ old('serial_number', $asset->serial_number) }}"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline 
-                            @error('serial_number') border-red-500 @enderror">
-                        @error('serial_number')
-                            <p class="text-red-500 text-xs italic mt-1">{{ $message }}</p>
-                        @enderror
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <!-- Purchase Details Section -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Purchase Details</h3>
+
+                            <!-- Purchase Price field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="purchase_price">
+                                    Purchase Price
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-600">₱</span>
+                                    <input type="number" step="0.01" name="purchase_price" id="purchase_price" value="{{ old('purchase_price', $asset->purchase_price) }}" class="w-full pl-8 p-2.5 border @error('purchase_price') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">                                </div>
+                            </div>
+
+                            <!-- Purchase Date field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="purchase_date">
+                                    Purchase Date
+                                </label>
+                                <input type="date" name="purchase_date" id="purchase_date" value="{{ old('purchase_date', $asset->purchase_date) }}" class="w-full p-2.5 border @error('purchase_date') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                            </div>
+
+                            <!-- Vendor field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="vendor">
+                                    Vendor
+                                </label>
+                                <input type="text" name="vendor" id="vendor" value="{{ old('vendor', $asset->vendor) }}" class="w-full p-2.5 border @error('vendor') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                            </div>
+                        </div>
+
+                        <!-- Technical Details Section -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Technical Details</h3>
+
+                            <!-- Serial Number field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="serial_number">
+                                    Serial Number
+                                </label>
+                                <input type="text" name="serial_number" id="serial_number" 
+                                    value="{{ old('serial_number', $asset->serial_number) }}" 
+                                    class="w-full p-2.5 border @error('serial_number') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                                @error('serial_number')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Model field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="model">
+                                    Model
+                                </label>
+                                <input type="text" name="model" id="model" value="{{ old('model', $asset->model) }}" class="w-full p-2.5 border @error('model') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                            </div>
+
+                            <!-- Specification field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="specification">
+                                    Specification
+                                </label>
+                                <textarea name="specification" id="specification" rows="3" class="w-full p-2.5 border @error('specification') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">{{ old('specification', $asset->specification) }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Warranty & Lifespan Section -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Warranty & Lifespan</h3>
+
+                            <!-- Warranty Period field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="warranty_period">
+                                    Warranty Period
+                                </label>
+                                <input type="date" name="warranty_period" id="warranty_period" value="{{ old('warranty_period', $asset->warranty_period) }}" class="w-full p-2.5 border @error('warranty_period') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                            </div>
+
+                            <!-- Lifespan field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="lifespan">
+                                    Lifespan (in years)
+                                </label>
+                                <input type="number" name="lifespan" id="lifespan" value="{{ old('lifespan', $asset->lifespan) }}" class="w-full p-2.5 border @error('lifespan') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                            </div>
+                        </div>
                     </div>
-
-                    <!-- Category field -->
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="category_id">
-                            Category
-                        </label>
-                        <select name="category_id" id="category_id"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}" {{ $asset->category_id == $category->id ? 'selected' : '' }}>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Purchase Price field -->
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="purchase_price">
-                            Purchase Price
-                        </label>
-                        <input type="number" step="0.01" name="purchase_price" id="purchase_price" value="{{ old('purchase_price', $asset->purchase_price) }}"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    </div>
-
-                    <!-- Location field -->
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="location">
-                            Location
-                        </label>
-                        <select name="location_select" id="locationSelect" 
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2">
-                            <option value="">Select Location</option>
-                            <option value="Computer Lab 401" {{ $asset->location == 'Computer Lab 401' ? 'selected' : '' }}>Computer Lab 401</option>
-                            <option value="Computer Lab 402" {{ $asset->location == 'Computer Lab 402' ? 'selected' : '' }}>Computer Lab 402</option>
-                            <option value="Computer Lab 403" {{ $asset->location == 'Computer Lab 403' ? 'selected' : '' }}>Computer Lab 403</option>
-                            <option value="Computer Lab 404" {{ $asset->location == 'Computer Lab 404' ? 'selected' : '' }}>Computer Lab 404</option>
-                            <option value="Computer Lab 405" {{ $asset->location == 'Computer Lab 405' ? 'selected' : '' }}>Computer Lab 405</option>
-                            <option value="Computer Lab 406" {{ $asset->location == 'Computer Lab 406' ? 'selected' : '' }}>Computer Lab 406</option>
-                            <option value="others" {{ !in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? 'selected' : '' }}>Others (Specify)</option>
-                        </select>
-                        <input type="text" name="location" id="otherLocation" 
-                            value="{{ !in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? $asset->location : '' }}"
-                            placeholder="Please specify location" 
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline {{ in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? 'hidden' : '' }}">
-                    </div>
-
-                    <!-- Status field -->
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="status">
-                            Status
-                        </label>
-                        <select name="status" id="status"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            <option value="IN USE" {{ $asset->status == 'IN USE' ? 'selected' : '' }}>In Use</option>
-                            <option value="UNDER REPAIR" {{ $asset->status == 'UNDER REPAIR' ? 'selected' : '' }}>Under Repair</option>
-                            <option value="UPGRADE" {{ $asset->status == 'UPGRADE' ? 'selected' : '' }}>Upgrade</option>
-                            <option value="PENDING DEPLOYMENT" {{ $asset->status == 'PENDING DEPLOYMENT' ? 'selected' : '' }}>Pending Deployment</option>
-                        </select>
-                    </div>
                 </div>
 
-                <!-- Model field -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="model">
-                        Model
-                    </label>
-                    <input type="text" name="model" id="model" value="{{ old('model', $asset->model) }}"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <!-- Form Actions -->
+                <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+                    <a href="{{ route('assets.index') }}" class="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Update Asset
+                    </button>
                 </div>
-
-                <!-- Specification field -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="specification">
-                        Specification
-                    </label>
-                    <input type="text" name="specification" id="specification" value="{{ old('specification', $asset->specification) }}"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-
-                <!-- Vendor field -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="vendor">
-                        Vendor
-                    </label>
-                    <input type="text" name="vendor" id="vendor" value="{{ old('vendor', $asset->vendor) }}"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-
-                <!-- Purchase Date field -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="purchase_date">
-                        Purchase Date
-                    </label>
-                    <input type="date" name="purchase_date" id="purchase_date" value="{{ old('purchase_date', $asset->purchase_date) }}"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-
-                <!-- Warranty Period field -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="warranty_period">
-                        Warranty Period
-                    </label>
-                    <input type="date" name="warranty_period" id="warranty_period" value="{{ old('warranty_period', $asset->warranty_period) }}"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-
-                <!-- Lifespan field -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="lifespan">
-                        Lifespan (in years)
-                    </label>
-                    <input type="number" name="lifespan" id="lifespan" value="{{ old('lifespan', $asset->lifespan) }}"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-            </div>
-
-            <div class="flex justify-end mt-6">
-                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    Update Asset
-                </button>
-            </div>
+            </form>
         </div>
     </div>
 </div>
@@ -186,5 +227,6 @@
             document.querySelector('input[name="location"]').value = locationValue;
         }
     });
+
 </script>
 @endsection

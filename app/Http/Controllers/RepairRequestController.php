@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\RepairRequest;
-use App\Models\User;  // Add this line
+use App\Models\User;
+use App\Models\AssetHistory;  // Add this import
+use App\Models\Asset;  // Add this import
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;  // Change this line
@@ -14,7 +17,10 @@ class RepairRequestController extends Controller
     public function create()
     {
         $categories = Category::all();
-        return view('repair-request', compact('categories'));
+        $technicians = User::whereIn('group_id', [1, 2])
+            ->where('status', 'active')
+            ->get();
+        return view('repair-request', compact('categories', 'technicians'));
     }
 
     public function store(Request $request)
@@ -22,19 +28,31 @@ class RepairRequestController extends Controller
         $rules = [
             'date_called' => 'required|date',
             'time_called' => 'required',
-            'office_room' => 'required|string',
+            'location' => 'required|string',
             'category_id' => 'required|exists:categories,id',
             'equipment' => 'required|string',
+            'serial_number' => 'nullable|string',
             'issue' => 'required|string',
-            'status' => 'required|in:pending,urgent'
+            'status' => 'required|in:pending,urgent',
+            'technician_id' => 'nullable|exists:users,id'  // Add this line
         ];
 
-        // Only require department if there's no ongoing activity
-        if ($request->input('ongoing_activity') !== 'yes') {
-            $rules['department'] = 'required|string';
-        }
-
         $request->validate($rules);
+
+        // If serial_number is empty string, set it to null
+        $serialNumber = $request->serial_number ? $request->serial_number : null;
+
+        // Check for existing active repair request
+        $existingRequest = RepairRequest::where('location', $request->location)
+            ->where('equipment', $request->equipment)
+            ->whereNotIn('status', ['completed', 'disposed', 'cancelled'])
+            ->first();
+
+        if ($existingRequest) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'There is already an active repair request for this equipment in this location. Ticket number: ' . $existingRequest->ticket_number);
+        }
 
         // Generate ticket number (format: REQ-YYYYMMDD-XXXX)
         $date = date('Ymd');
@@ -53,99 +71,134 @@ class RepairRequestController extends Controller
         // Combine date and time into a single datetime string
         $created_at = date('Y-m-d H:i:s', strtotime($request->date_called . ' ' . $request->time_called));
 
-        RepairRequest::create([
+        $repairRequest = RepairRequest::create([
             'ticket_number' => $ticketNumber,
             'date_called' => $request->date_called,
             'time_called' => $request->time_called,
-            'department' => $request->input('ongoing_activity') === 'yes' ? null : $request->department,
-            'office_room' => $request->office_room,
+            'location' => $request->location,
             'category_id' => $request->category_id,
             'equipment' => $request->equipment,
+            'serial_number' => $serialNumber,
             'issue' => $request->issue,
             'status' => $request->status,
+            'technician_id' => $request->technician_id,  // Add this line
             'created_at' => $created_at,
             'updated_at' => $created_at
         ]);
+
+        // Create notification for technician if assigned
+        if ($request->technician_id) {
+            Notification::create([
+                'user_id' => $request->technician_id,
+                'type' => 'repair_assigned',
+                'message' => "New repair request assigned: {$ticketNumber} - {$request->equipment}",
+                'is_read' => false,
+                'link' => '/repair/status'
+            ]);
+        }
+
+        // Create notification for all technicians if urgent
+        if ($request->status === 'urgent') {
+            $technicians = User::whereIn('group_id', [1, 2])->get();
+            foreach ($technicians as $technician) {
+                Notification::create([
+                    'user_id' => $technician->id,
+                    'type' => 'urgent_repair',
+                    'message' => "Urgent repair request: {$ticketNumber} - {$request->equipment}",
+                    'is_read' => false,
+                    'link' => '/repair/status'
+                ]);
+            }
+        }
 
         return redirect()->back()->with('success', 'Repair request submitted successfully. Your ticket number is: ' . $ticketNumber);
     }
 
     public function status(Request $request)
     {
-        // Change to use group_id instead of role
         $technicians = User::whereIn('group_id', [1, 2])
             ->where('status', 'active')
             ->get();
 
         $urgentRepairs = RepairRequest::where('status', 'urgent')
-            // Remove the whereNull('technician_id') condition
             ->latest()
             ->get();
 
-        $requests = RepairRequest::where('status', '!=', 'completed')
+        // Update this line to exclude both completed and cancelled requests
+        $requests = RepairRequest::whereNotIn('status', ['completed', 'cancelled'])
             ->latest()
             ->get();
-
-        // Calculate statistics
-        $totalOpen = RepairRequest::whereIn('status', ['pending', 'urgent', 'in_progress'])->count();
-        $completedThisMonth = RepairRequest::where('status', 'completed')
-            ->whereMonth('created_at', now()->month)
-            ->count();
-
-        // Fix the average response time calculation
-        $avgResponseTime = RepairRequest::where('status', 'completed')
-            ->whereNotNull('completed_at')
-            ->select(DB::raw('ROUND(AVG(DATEDIFF(completed_at, created_at)), 1) as avg_days'))
-            ->value('avg_days') ?? 0;
 
         return view('repair-status', compact(
             'urgentRepairs',
             'requests',
-            'totalOpen',
-            'completedThisMonth',
-            'avgResponseTime',
             'technicians'
         ));
     }
 
     public function update(Request $request, $id)
     {
+        // Find the repair request
+        $repairRequest = RepairRequest::findOrFail($id);
+    
+        // Validate request
         $request->validate([
-            'technician_id' => 'required|exists:users,id',
-            'remarks' => 'required|string',
-            'status' => 'required|in:urgent,in_progress,pulled_out,disposed,completed'
+            'status' => 'required|in:pending,urgent,in_progress,completed,cancelled,pulled_out,disposed',
+            'remarks' => 'required_if:status,completed,cancelled|string|nullable',
+            'technician_id' => 'nullable|exists:users,id',
+            'date_finished' => 'required_if:status,completed,cancelled|date|nullable',
+            'time_finished' => 'required_if:status,completed,cancelled|nullable',
         ]);
 
-        $repairRequest = RepairRequest::findOrFail($id);
-        
+        // Update repair request with all fields
         $updateData = [
-            'technician_id' => $request->technician_id,
+            'status' => $request->status,
             'remarks' => $request->remarks,
-            'status' => $request->status
+            'technician_id' => $request->technician_id,
+            'updated_at' => now()
         ];
-
-        // Add completed_at if status is completed
-        if ($request->status === 'completed') {
-            $updateData['completed_at'] = now();
+    
+        if (in_array($request->status, ['completed', 'cancelled']) && $request->date_finished && $request->time_finished) {
+            $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
+            
+            // Create asset history record if serial number exists
+            if ($repairRequest->serial_number) {
+                $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+                if ($asset) {
+                    AssetHistory::create([
+                        'asset_id' => $asset->id,
+                        'change_type' => 'REPAIR',
+                        'remarks' => "Ticket: {$repairRequest->ticket_number}\n" .
+                                   "Issue: {$repairRequest->issue}\n" .
+                                   "Remarks: {$request->remarks}",
+                        'changed_by' => auth()->id()
+                    ]);
+                }
+            }
         }
 
-        $repairRequest->update($updateData);
-
-        // Reload the repair request with technician relationship
-        $repairRequest = $repairRequest->fresh()->load(['technician' => function($query) {
-            $query->select('id', 'name');
-        }]);
-
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Request updated successfully',
-                'request' => $repairRequest,
-                'technician_name' => $repairRequest->technician->name
-            ]);
+        // Set completion/cancellation datetime if applicable
+        if (in_array($request->status, ['completed', 'cancelled']) && $request->date_finished && $request->time_finished) {
+            $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
         }
-
-        return redirect()->back()->with('success', 'Request updated successfully.');
+    
+        // Perform the update
+        try {
+            $repairRequest->update($updateData);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $request->status === 'cancelled' ? 'Request cancelled successfully' : 'Request updated successfully',
+                    'request' => $repairRequest
+                ]);
+            }
+            
+            $message = $request->status === 'cancelled' ? 'Request cancelled successfully' : 'Request updated successfully';
+            return redirect()->back()->with('success', $message);
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     public function destroy($id)
@@ -157,9 +210,20 @@ class RepairRequestController extends Controller
             ->with('success', 'Repair request deleted successfully.');
     }
 
+    public function destroyMultiple(Request $request)
+    {
+        try {
+            RepairRequest::whereIn('id', $request->ids)->delete();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
     public function completed()
     {
-        $completedRequests = RepairRequest::where('status', 'completed')
+        // Update this line to include both completed and cancelled requests
+        $completedRequests = RepairRequest::whereIn('status', ['completed', 'cancelled'])
             ->with('technician')
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -205,11 +269,8 @@ class RepairRequestController extends Controller
             ->with('technician');
 
         // Apply filters
-        if ($request->department) {
-            $query->where('department', $request->department);
-        }
-        if ($request->lab_room) {
-            $query->where('office_room', $request->lab_room);
+        if ($request->location) {
+            $query->where('location', $request->location);
         }
         if ($request->start_date) {
             $query->whereDate('created_at', '>=', $request->start_date);
@@ -228,7 +289,6 @@ class RepairRequestController extends Controller
 
         $completedRequests = $query->orderBy('created_at', 'desc')->get();
 
-        // Return HTML response for preview
         return view('pdf.repair-completed', compact('completedRequests'))->render();
     }
 
@@ -238,11 +298,8 @@ class RepairRequestController extends Controller
             ->with('technician');
 
         // Apply same filters as preview
-        if ($request->department) {
-            $query->where('department', $request->department);
-        }
-        if ($request->lab_room) {
-            $query->where('office_room', $request->lab_room);
+        if ($request->location) {
+            $query->where('location', $request->location);
         }
         if ($request->start_date) {
             $query->whereDate('created_at', '>=', $request->start_date);

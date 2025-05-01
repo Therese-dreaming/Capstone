@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Maintenance;
 use App\Models\User;
+use App\Models\Asset;
+use App\Models\Notification;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class MaintenanceController extends Controller
@@ -68,17 +70,31 @@ class MaintenanceController extends Controller
             'maintenance_tasks' => 'required|array|min:1',
             'technician_id' => 'required',
             'scheduled_date' => 'required|date|after_or_equal:today',
+            'excluded_assets' => 'nullable|string',  // For JSON string
         ]);
 
         try {
+            // Decode the excluded assets JSON string
+            $excludedAssets = $request->excluded_assets ? json_decode($request->excluded_assets, true) : [];
+
             // Create separate maintenance records for each task
             foreach ($request->maintenance_tasks as $task) {
-                Maintenance::create([
+                $maintenance = Maintenance::create([
                     'lab_number' => $request->lab_number,
-                    'maintenance_task' => $task,  // Changed from 'task' to 'maintenance_task'
+                    'maintenance_task' => $task,
                     'technician_id' => $request->technician_id,
                     'scheduled_date' => $request->scheduled_date,
-                    'status' => 'scheduled'
+                    'status' => 'scheduled',
+                    'excluded_assets' => $excludedAssets
+                ]);
+
+                // Create notification for assigned technician
+                Notification::create([
+                    'user_id' => $request->technician_id,
+                    'type' => 'maintenance_assigned',
+                    'message' => "You have been assigned maintenance task: {$task} in Lab {$request->lab_number}",
+                    'is_read' => false,
+                    'link' => '/maintenance/upcoming'
                 ]);
             }
 
@@ -122,13 +138,21 @@ class MaintenanceController extends Controller
 
     public function destroy($id)
     {
-        $maintenance = Maintenance::findOrFail($id);
-        $maintenance->update([
-            'status' => 'cancelled',
-            'action_by_id' => auth()->id(),
-            'completed_at' => null
-        ]);
-        return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance cancelled successfully');
+        try {
+            $maintenance = Maintenance::findOrFail($id);
+            // Delete the record from the database
+            $maintenance->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Maintenance deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting maintenance: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function edit($id)
@@ -391,5 +415,52 @@ class MaintenanceController extends Controller
 
         $pdf = PDF::loadView('exports.maintenance-history-pdf', compact('maintenances'));
         return $pdf->download('maintenance-history.pdf');
+    }
+
+    public function destroyMultiple(Request $request)
+    {
+        try {
+            $ids = $request->ids;
+            Maintenance::whereIn('id', $ids)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => count($ids) . ' maintenance records deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting maintenance records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getLabAssets($lab)
+    {
+        // Convert lab number to full laboratory name
+        $labName = 'Computer Lab ' . $lab;
+
+        $assets = Asset::where('location', $labName)
+            ->where('status', '!=', 'DISPOSED')  // Changed from 'active' to match your asset status format
+            ->get(['id', 'serial_number', 'name']);
+
+        return response()->json($assets);
+    }
+    // Add this new method to get maintenance records for a specific asset
+    public function getAssetMaintenances($assetId)
+    {
+        $asset = Asset::findOrFail($assetId);
+
+        // Get all maintenances from the asset's laboratory that weren't excluded
+        $maintenances = Maintenance::where('lab_number', $asset->laboratory)
+            ->where(function ($query) use ($asset) {
+                $query->whereNull('excluded_assets')
+                    ->orWhereRaw('NOT JSON_CONTAINS(excluded_assets, ?)', ['"' . $asset->id . '"']);
+            })
+            ->where('status', 'completed')
+            ->orderBy('scheduled_date', 'desc')
+            ->get();
+
+        return $maintenances;
     }
 }

@@ -21,7 +21,7 @@
             
             <!-- Tab Buttons -->
             <div class="mb-6 border-b border-gray-200">
-                <nav class="grid grid-cols-4 w-full gap-1">
+                <nav class="grid grid-cols-5 w-full gap-1">
                     <button onclick="showTab('status')" class="tab-button !py-6 active bg-red-800 !text-white !font-bold" data-tab="status">
                         Status Changes
                     </button>
@@ -32,26 +32,13 @@
                         Price Changes
                     </button>
                     <button onclick="showTab('maintenance')" class="tab-button !py-6" data-tab="maintenance">
-                        Maintenance & Repairs
+                        Maintenance
+                    </button>
+                    <button onclick="showTab('repairs')" class="tab-button !py-6" data-tab="repairs">
+                        Repairs
                     </button>
                 </nav>
             </div>
-
-<!-- Remove the first style block and keep only one at the bottom -->
-
-<style>
-    .tab-button {
-        @apply px-4 py-6 text-sm font-medium text-gray-500 
-               hover:text-white hover:bg-red-700 
-               border-b-2 border-transparent transition-all duration-200;
-    }
-
-    .tab-button.active {
-        @apply border-red-900 text-white bg-red-800 font-bold !important;
-    }
-</style>
-
-            <!-- Remove the first style block here -->
 
             <!-- Tab Contents -->
             <div id="status" class="tab-content">
@@ -64,7 +51,10 @@
                 @include('partials.asset-history.price-changes', ['history' => $history])
             </div>
             <div id="maintenance" class="tab-content hidden">
-                @include('partials.asset-history.maintenance-repairs', ['history' => $history])
+                @include('partials.asset-history.maintenance', ['history' => $history])
+            </div>
+            <div id="repairs" class="tab-content hidden">
+                @include('partials.asset-history.repairs', ['history' => $history])
             </div>
         </div>
     </div>

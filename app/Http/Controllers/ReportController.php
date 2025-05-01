@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\Category;
 use App\Models\AssetHistory;
+use App\Models\Maintenance;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -85,13 +86,35 @@ class ReportController extends Controller
 
     public function assetHistory(Asset $asset)
     {
+        // Add debug logging
+        \Log::info('Fetching history for asset: ' . $asset->id);
+
+        // Get general history with eager loading
         $history = AssetHistory::with(['asset', 'user'])
             ->where('asset_id', $asset->id)
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->groupBy('change_type');
+            ->get();
 
-        return view('reports.asset-history', compact('asset', 'history'));
+        // Get maintenance history - use the correct model namespace
+        $assetMaintenances = \App\Models\Maintenance::where('lab_number', substr($asset->location, -3))
+            ->where('status', 'completed')
+            ->where(function($query) use ($asset) {
+                $query->whereNull('excluded_assets')
+                    ->orWhereRaw('NOT JSON_CONTAINS(excluded_assets, ?)', ['"' . $asset->id . '"']);
+            })
+            ->orderBy('scheduled_date', 'desc')
+            ->get();
+
+        // Debug the history records
+        \Log::info('History records:', [
+            'total_records' => $history->count(),
+            'repair_records' => $history->where('change_type', 'REPAIR')->count(),
+            'all_change_types' => $history->pluck('change_type')->unique()->toArray()
+        ]);
+
+        $history = $history->groupBy('change_type');
+
+        return view('reports.asset-history', compact('asset', 'history', 'assetMaintenances'));
     }
 
     public function procurementHistory(Request $request)
