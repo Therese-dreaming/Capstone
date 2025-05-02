@@ -98,7 +98,7 @@
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Start Time</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">End Time</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Collaborator</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Coordinator</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
                     </tr>
                 </thead>

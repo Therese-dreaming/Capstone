@@ -10,8 +10,23 @@
 <body class="flex h-screen">
 
     <!-- Left Side -->
-    <div class="w-1/2 bg-red-800 flex items-center justify-center">
-        <img src="{{ asset('images/logo-big.png') }}" alt="Left Side Image" width="746" height="763">
+    <div class="w-1/2 bg-red-800 flex flex-col items-center justify-center relative">
+        <!-- Content container -->
+        <div class="relative z-10 text-center">
+            <h1 class="text-white text-4xl font-bold mb-6">Laboratory Management</h1>
+            <p class="text-white/80 text-lg mb-8 max-w-md mx-auto">
+                Access the laboratory logging system quickly and easily
+            </p>
+            <a href="{{ route('lab.logging') }}" 
+               class="inline-flex items-center bg-white text-red-800 px-8 py-4 rounded-lg hover:bg-gray-100 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 group">
+                <svg class="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Lab Logging
+            </a>
+        </div>
+        <!-- Background gradient -->
+        <div class="absolute inset-0 opacity-10 bg-gradient-to-br from-white/10 to-transparent"></div>
     </div>
 
     <!-- Right Side -->

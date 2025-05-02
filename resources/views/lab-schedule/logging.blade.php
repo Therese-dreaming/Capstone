@@ -23,6 +23,11 @@
                     <h1 class="text-2xl font-bold">Laboratory Logging</h1>
                     <p class="text-gray-600">Tap your RFID card to log laboratory usage</p>
                 </div>
+                @guest
+                <a href="{{ route('login') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                    Login
+                </a>
+                @endguest
             </div>
 
             <!-- RFID Input Section -->

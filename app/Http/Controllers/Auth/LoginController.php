@@ -15,14 +15,14 @@ class LoginController extends Controller
     public function __construct()
     {
         if (Auth::check()) {
-            Redirect::to('/assets')->send();
+            $this->redirectBasedOnRole();
         }
     }
 
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return redirect('/assets');
+            return $this->redirectBasedOnRole();
         }
         return view('auth.login');
     }
@@ -41,7 +41,7 @@ class LoginController extends Controller
                 'last_login' => Carbon::now()
             ])->save();
 
-            return redirect()->intended('/assets');
+            return $this->redirectBasedOnRole();
         }
 
         // Try RFID login if username login fails
@@ -52,12 +52,25 @@ class LoginController extends Controller
                 'last_login' => Carbon::now()
             ])->save();
 
-            return redirect()->intended('/assets');
+            return $this->redirectBasedOnRole();
         }
 
         return back()->withErrors([
             'username' => 'The provided credentials do not match our records.',
         ]);
+    }
+
+    protected function redirectBasedOnRole()
+    {
+        $user = Auth::user();
+        
+        if ($user->group_id <= 2) {
+            return redirect('/my-tasks')->with('auth_redirect', true);
+        } elseif ($user->group_id === 4) { // Coordinator
+            return redirect('/lab-schedule')->with('auth_redirect', true);
+        } else {
+            return redirect('/')->with('error', 'Unauthorized access.');
+        }
     }
 
     public function logout()

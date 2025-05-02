@@ -37,7 +37,7 @@ class LabScheduleController extends Controller
                 'College'
             ],
             'faculty' => $faculty,
-            'coordinators' => $coordinators
+            'coordinators' => $coordinators  // Changed from 'coordinator' to 'coordinators'
         ]);
     }
 
@@ -62,29 +62,38 @@ class LabScheduleController extends Controller
             $endHour = (int)$endTime->format('H');
 
             if ($startHour < 5 || $startHour >= 23) {
-                return redirect()->route('lab-schedule.logging') // Redirect to the logging page
-                    ->with('error', 'Start time must be between 5:00 AM and 11:00 PM');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Start time must be between 5:00 AM and 11:00 PM'
+                ], 422);
             }
 
             if ($endHour < 5 || $endHour > 23) {
-                return redirect()->route('lab-schedule.logging') // Redirect to the logging page
-                    ->with('error', 'End time must be between 5:00 AM and 11:00 PM');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'End time must be between 5:00 AM and 11:00 PM'
+                ], 422);
             }
 
             // Check for schedule conflicts
             $conflict = LabSchedule::where('laboratory', $validated['laboratory'])
                 ->where(function ($query) use ($validated) {
-                    $query->whereBetween('start', [$validated['start'], $validated['end']])
-                        ->orWhereBetween('end', [$validated['start'], $validated['end']])
-                        ->orWhere(function ($q) use ($validated) {
-                            $q->where('start', '<=', $validated['start'])
-                                ->where('end', '>=', $validated['end']);
-                        });
-                })->exists();
+                    $query->where(function($q) use ($validated) {
+                        $q->where('start', '<', $validated['end'])
+                            ->where('end', '>', $validated['start']);
+                    });
+                })
+                ->where(function($query) {
+                    $query->where('status', '!=', 'Completed')
+                        ->orWhereNull('status');
+                })
+                ->exists();
 
             if ($conflict) {
-                return redirect()->route('lab-schedule.logging') // Redirect to the logging page
-                    ->with('error', 'There is already a schedule for this laboratory during the selected time period.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'There is already a schedule for this laboratory during the selected time period.'
+                ], 422);
             }
 
             // Get professor name from id
@@ -94,14 +103,21 @@ class LabScheduleController extends Controller
 
             $schedule = LabSchedule::create($validated);
 
-            return redirect()->route('lab-schedule.logging') // Redirect to the logging page
-                ->with('success', 'Schedule logged successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Schedule logged successfully.',
+                'data' => $schedule
+            ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->route('lab-schedule.logging') // Redirect to the logging page
-                ->with('error', 'Validation failed: ' . implode(', ', $e->errors()));
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed: ' . implode(', ', $e->errors())
+            ], 422);
         } catch (\Exception $e) {
-            return redirect()->route('lab-schedule.logging') // Redirect to the logging page
-                ->with('error', 'An error occurred while creating the schedule: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while creating the schedule: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -112,10 +128,17 @@ class LabScheduleController extends Controller
         // If user is Admin (group_id = 1) or Secretary (group_id = 2), show all schedules
         // regardless of their position
         if ($user->group_id <= 2) {
-            $events = LabSchedule::get();
+            $events = LabSchedule::where('status', '!=', 'Completed')
+                ->orWhereNull('status')
+                ->get();
         } else {
             // For other users who are Faculty, only show their schedules
-            $events = LabSchedule::where('professor', $user->name)->get();
+            $events = LabSchedule::where('professor', $user->name)
+                ->where(function($query) {
+                    $query->where('status', '!=', 'Completed')
+                        ->orWhereNull('status');
+                })
+                ->get();
         }
 
         return response()->json($events->map(function ($schedule) {
@@ -268,6 +291,62 @@ class LabScheduleController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while saving the log: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function update(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'laboratory' => 'required|string',
+                'start' => 'required|date',
+                'end' => 'required|date|after:start',
+                'collaborator_id' => 'required|exists:users,id',
+                'department' => 'required|string',
+                'subject_course' => 'required|string',
+                'professor_id' => 'required|exists:users,id'
+            ]);
+
+            $schedule = LabSchedule::findOrFail($id);
+
+            // Check for schedule conflicts excluding the current schedule
+            $conflict = LabSchedule::where('laboratory', $validated['laboratory'])
+                ->where('id', '!=', $id)
+                ->where(function ($query) use ($validated) {
+                    $query->where(function($q) use ($validated) {
+                        $q->where('start', '<', $validated['end'])
+                            ->where('end', '>', $validated['start']);
+                    });
+                })
+                ->where(function($query) {
+                    $query->where('status', '!=', 'Completed')
+                        ->orWhereNull('status');
+                })
+                ->exists();
+
+            if ($conflict) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'There is already a schedule for this laboratory during the selected time period.'
+                ], 422);
+            }
+
+            // Get professor name from id
+            $professor = User::findOrFail($validated['professor_id']);
+            $validated['professor'] = $professor->name;
+            unset($validated['professor_id']); // Remove professor_id from validated data
+
+            $schedule->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Schedule updated successfully.',
+                'data' => $schedule
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating the schedule: ' . $e->getMessage()
             ], 500);
         }
     }

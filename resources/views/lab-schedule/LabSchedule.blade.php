@@ -438,11 +438,18 @@
                     },
                     body: JSON.stringify(data)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    if (!data) return; // If redirected, data will be undefined
                     if (data.message) {
-                        closeModal(); // Close the modal first
-                        showMessage(data.message, 'error'); // Then show the error message
+                        closeModal();
+                        showMessage(data.message, 'error');
                         return;
                     }
                     closeModal();
@@ -451,7 +458,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    closeModal(); // Close the modal on error
+                    closeModal();
                     showMessage('An error occurred while creating the schedule', 'error');
                 });
         }
