@@ -29,8 +29,8 @@
                                 @case('UPGRADE')
                                     bg-blue-100 text-blue-800
                                     @break
-                                @case('PENDING DEPLOYMENT')
-                                    bg-purple-100 text-purple-800
+                                @case('PULLED OUT')
+                                    bg-orange-100 text-orange-800
                                     @break
                                 @default
                                     bg-gray-100 text-gray-800
@@ -53,8 +53,8 @@
                                 @case('UPGRADE')
                                     bg-blue-100 text-blue-800
                                     @break
-                                @case('PENDING DEPLOYMENT')
-                                    bg-purple-100 text-purple-800
+                                @case('PULLED OUT')
+                                    bg-orange-100 text-orange-800
                                     @break
                                 @default
                                     bg-gray-100 text-gray-800

@@ -10,12 +10,99 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;  // Add this import
 
 class AssetController extends Controller
 {
+    private function getLifeStatus($remainingLife, $totalLifespan)
+    {
+        // Prevent division by zero
+        if ($totalLifespan <= 0) {
+            return 'out of date'; // Changed from 'critical' to 'out of date'
+        }
+        
+        // For very short lifespans (less than 3 months), always return warning or out of date
+        if ($totalLifespan < 0.25) { // Less than 3 months
+            return $remainingLife <= 0.08 ? 'out of date' : 'warning'; // Changed from 'critical' to 'out of date'
+        }
+        
+        $percentage = ($remainingLife / $totalLifespan) * 100;
+        
+        if ($percentage <= 0) {
+            return 'out of date'; // Changed from 'critical' to 'out of date'
+        } elseif ($percentage <= 25) {
+            return 'warning';
+        } else {
+            return 'good';
+        }
+    }
+
     public function index()
     {
-        $assets = Asset::all();
+        $assets = Asset::all()->map(function ($asset) {
+            // Step 1: Calculate Warranty Years
+            $purchaseDate = Carbon::parse($asset->purchase_date);
+            $warrantyDate = Carbon::parse($asset->warranty_period);
+            $warrantyYears = $purchaseDate->diffInDays($warrantyDate) / 365.25;
+            
+            // Calculate salvage value (10% of purchase price)
+            $purchasePrice = $asset->purchase_price ?? 0;
+            $salvageValue = $purchasePrice * 0.1;
+            
+            // Step 2: Calculate Annual Depreciation based on warranty period
+            $calculationYears = max(0.01, $warrantyYears);
+            $annualDepreciation = ($purchasePrice - $salvageValue) / $calculationYears;
+            
+            // Step 3: Calculate Useful Life (Lifespan) using depreciation formula
+            // Useful Life = (Purchase Price - Salvage Value) / Annual Depreciation
+            // This will give us the actual lifespan based on depreciation
+            $usefulLife = $annualDepreciation > 0 
+                ? ($purchasePrice - $salvageValue) / $annualDepreciation 
+                : $calculationYears;
+            
+            // Extend the lifespan beyond warranty period (1.5 times the warranty period)
+            $extendedLifespan = $warrantyYears * 1.5;
+            
+            // Use the maximum of calculated lifespan and extended warranty period
+            $finalLifespan = max($usefulLife, $extendedLifespan);
+            
+            // Step 4: Calculate Age in Years
+            $today = Carbon::now();
+            $ageInYears = $purchaseDate->diffInDays($today) / 365.25;
+            
+            // Step 5: Calculate Remaining Life
+            $remainingLife = max(0, $finalLifespan - $ageInYears); // Ensure remaining life is never negative
+            
+            // Calculate end of life date based on the final lifespan
+            $endOfLifeDate = $purchaseDate->copy()->addDays($finalLifespan * 365.25);
+            
+            // Debug logging
+            \Log::debug("Asset calculation debug:", [
+                'id' => $asset->id,
+                'purchase_date' => $purchaseDate->toDateString(),
+                'warranty_date' => $warrantyDate->toDateString(),
+                'warranty_years' => $warrantyYears,
+                'extended_lifespan' => $extendedLifespan,
+                'purchase_price' => $purchasePrice,
+                'salvage_value' => $salvageValue,
+                'annual_depreciation' => $annualDepreciation,
+                'depreciation_lifespan' => $usefulLife,
+                'final_lifespan' => $finalLifespan,
+                'age_in_years' => $ageInYears,
+                'remaining_life' => $remainingLife
+            ]);
+            
+            // Add calculated fields to the asset
+            $asset->calculated_lifespan = round($finalLifespan, 2);
+            $asset->remaining_life = round($remainingLife, 2); // This will now never be negative
+            $asset->end_of_life_date = $endOfLifeDate;
+            
+            // Add a status indicator for remaining life
+            $asset->life_status = $this->getLifeStatus($remainingLife, $finalLifespan);
+            
+            return $asset;
+        });
+    
         return view('asset-list', compact('assets'));
     }
 
@@ -26,16 +113,14 @@ class AssetController extends Controller
                 'name' => 'required|string|max:255',
                 'category_id' => 'required|exists:categories,id',
                 'location' => 'required|string|max:255',
-                'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PENDING DEPLOYMENT',
+                'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
                 'model' => 'required|string|max:255',
                 'serial_number' => 'required|string|max:255|unique:assets,serial_number',
                 'specification' => 'required|string',
                 'vendor' => 'required|string|max:255',
                 'purchase_date' => 'required|date',
                 'warranty_period' => 'required|date|after_or_equal:purchase_date',
-                'lifespan' => 'required|integer|min:1',
                 'purchase_price' => 'required|numeric|min:0',
-                'description' => 'nullable|string',
                 'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
@@ -177,28 +262,31 @@ class AssetController extends Controller
             ->with('success', 'Asset has been deleted successfully');
     }
 
-    public function dispose(Asset $asset, Request $request)
+    public function dispose(Request $request, Asset $asset)
     {
-        $asset->status = 'DISPOSED';
-        $asset->disposal_date = now();
-        $asset->disposal_reason = $request->disposal_reason;
-        $asset->save();
+        $request->validate([
+            'disposal_reason' => 'required|string|max:255'
+        ]);
+
+        // Update asset status and disposal information
+        $asset->update([
+            'status' => 'DISPOSED',
+            'disposal_date' => now(),
+            'disposal_reason' => $request->disposal_reason
+        ]);
 
         // Create asset history record
         AssetHistory::create([
             'asset_id' => $asset->id,
-            'change_type' => 'STATUS',
-            'old_value' => 'IN USE',
+            'change_type' => 'disposal',
+            'old_value' => 'active',
             'new_value' => 'DISPOSED',
-            'remarks' => 'Asset marked as disposed. Reason: ' . $request->disposal_reason,
+            'remarks' => $request->disposal_reason,
             'changed_by' => auth()->id()
         ]);
 
-        if ($request->has('redirect')) {
-            return redirect($request->redirect)->with('success', 'Asset has been marked as disposed.');
-        }
-
-        return redirect()->route('assets.index')->with('success', 'Asset has been marked as disposed.');
+        return redirect($request->input('redirect', route('reports.disposal-history')))
+            ->with('success', 'Asset has been marked as disposed.');
     }
 
     public function edit(Asset $asset)
@@ -214,14 +302,12 @@ class AssetController extends Controller
             'serial_number' => 'required',
             'category_id' => 'required|exists:categories,id',
             'purchase_price' => 'required|numeric',
-            // In both store and update methods, update the status validation:
-            'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PENDING DEPLOYMENT',
+            'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
             'model' => 'required',
             'specification' => 'required',
             'vendor' => 'required',
             'purchase_date' => 'required|date',
             'warranty_period' => 'required|date',
-            'lifespan' => 'required|integer',
         ]);
 
         // Handle location field
@@ -242,6 +328,23 @@ class AssetController extends Controller
         }
 
         $oldValues = $asset->getAttributes();
+
+        // Update the asset with validated data
+        $asset->update($validated);
+
+        // Record the changes in asset history
+        foreach ($validated as $field => $newValue) {
+            if (isset($oldValues[$field]) && $oldValues[$field] !== $newValue) {
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => strtoupper($field),
+                    'old_value' => $oldValues[$field],
+                    'new_value' => $newValue,
+                    'remarks' => "Updated $field",
+                    'changed_by' => auth()->id()
+                ]);
+            }
+        }
 
         // Check if any QR-relevant fields are being updated
         $qrRelevantFields = ['name', 'serial_number', 'category_id'];
@@ -303,28 +406,18 @@ class AssetController extends Controller
             ->with('success', 'Asset updated successfully');
     }
 
-    public function fetchBySerial($serial_number)
+    public function fetch($serialNumber)
     {
-        try {
-            $asset = Asset::where('serial_number', $serial_number)->first();
-            
-            if (!$asset) {
-                return response()->json([
-                    'error' => 'No asset found with this serial number'
-                ], 404);
-            }
-    
-            return response()->json([
-                'success' => true,
-                'location' => $asset->location,
-                'name' => $asset->name,
-                'category_id' => $asset->category_id
-            ]);
-    
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'An error occurred while fetching the asset'
-            ], 500);
+        $asset = Asset::where('serial_number', $serialNumber)->first();
+
+        if (!$asset) {
+            return response()->json(['message' => 'Asset not found'], 404);
         }
+
+        return response()->json([
+            'name' => $asset->name,
+            'location' => $asset->location,
+            'category_id' => $asset->category_id
+        ]);
     }
 }

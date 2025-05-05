@@ -164,17 +164,103 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mt-6">
-            <!-- Status Distribution -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold mb-4">Status Distribution</h3>
-                <div class="flex justify-between items-center">
-                    <div class="h-64">
-                        <canvas id="statusDistributionChart"></canvas>
-                    </div>
-                </div>
+            <!-- Lab Utilization Analysis -->
+    <div class="bg-white p-6 rounded-lg shadow mt-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Lab Utilization Analysis</h2>
+        </div>
+
+        <!-- Lab Usage Statistics -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Total Lab Hours</p>
+                <p class="text-2xl font-bold text-blue-600">{{ $totalLabHours }} hrs</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Most Used Lab</p>
+                <p class="text-2xl font-bold text-green-600">{{ $mostUsedLab }}</p>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Average Daily Usage</p>
+                <p class="text-2xl font-bold text-purple-600">{{ $avgDailyUsage }} hrs</p>
             </div>
         </div>
+
+        <!-- Lab Usage Chart -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="h-64">
+                <canvas id="labUsageChart"></canvas>
+            </div>
+            <div class="h-64">
+                <canvas id="departmentUsageChart"></canvas>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Lab Usage Chart
+                new Chart(document.getElementById('labUsageChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: @json($labUsageData->pluck('laboratory')),
+                        datasets: [{
+                            label: 'Hours Used',
+                            data: @json($labUsageData->pluck('hours')),
+                            backgroundColor: '#4F46E5',
+                            borderColor: '#4F46E5',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Hours'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Laboratory Usage Distribution'
+                            }
+                        }
+                    }
+                });
+
+                // Department Usage Chart
+                new Chart(document.getElementById('departmentUsageChart').getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: @json($deptUsageData->pluck('department')),
+                        datasets: [{
+                            data: @json($deptUsageData->pluck('hours')),
+                            backgroundColor: [
+                                '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Usage by Department'
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+    </div>
 
         <!-- Warranty Status Section -->
         <div class="bg-white p-6 rounded-lg shadow mt-6">
@@ -213,3 +299,47 @@
                 </table>
             </div>
         </div>
+
+        <!-- Add this after the Warranty Status Section -->
+        <div class="bg-white p-6 rounded-lg shadow mt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Asset Lifespan Status</h2>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End of Life Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($criticalAndWarningAssets as $asset)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ $asset->end_of_life_date->format('M d, Y') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ ($asset->days_left <= 0 || $asset->life_status === 'out of date') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ max(0, $asset->days_left) }} days
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ ($asset->days_left <= 0 || $asset->life_status === 'out of date') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ $asset->days_left <= 0 ? 'Out of date' : ucfirst($asset->life_status) }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+</div>
+@endsection

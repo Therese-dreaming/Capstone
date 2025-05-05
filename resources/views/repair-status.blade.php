@@ -206,15 +206,90 @@
                     </div>
 
                     <div class="flex justify-end">
-                        <button type="button" onclick="closeCancelModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Back</button>
-                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded">Cancel Request</button>
+                        <button type="button" onclick="closeCancelModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">No</button>
+                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded" onclick="showPullOutConfirmation(event)">Yes</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Add this to your existing script section -->
+        <!-- Pull Out Confirmation Modal -->
+        <div id="pullOutModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-[51]">
+            <div class="bg-white p-8 rounded-lg shadow-xl relative">
+                <h2 class="text-xl font-bold mb-4">Pull Out Asset</h2>
+                <p class="mb-4">Do you want to pull out this asset?</p>
+                <div class="flex justify-end">
+                    <button type="button" onclick="closePullOutModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">No</button>
+                    <button type="button" onclick="confirmPullOut()" class="bg-red-600 text-white px-4 py-2 rounded">Yes</button>
+                </div>
+            </div>
+        </div>
+
         <script>
+            function showPullOutConfirmation(event) {
+                event.preventDefault();
+                document.getElementById('pullOutModal').classList.remove('hidden');
+                document.getElementById('pullOutModal').classList.add('flex');
+            }
+
+            function closePullOutModal() {
+                document.getElementById('pullOutModal').classList.remove('flex');
+                document.getElementById('pullOutModal').classList.add('hidden');
+            }
+
+            function confirmPullOut() {
+                // Get the form data
+                const form = document.getElementById('cancelForm');
+                const formData = new FormData(form);
+                formData.set('status', 'pulled_out');
+
+                // Set current date and time
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().slice(0, 5);
+                formData.set('date_finished', dateStr);
+                formData.set('time_finished', timeStr);
+
+                // Submit the form with updated status
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close both modals
+                        closePullOutModal();
+                        closeCancelModal();
+                        // Remove the request row from the table
+                        const requestId = form.action.split('/').pop();
+                        const row = document.getElementById(`request-${requestId}`);
+                        if (row) row.remove();
+                        // Show success message
+                        const successMessage = document.createElement('div');
+                        successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
+                        successMessage.innerHTML = `
+                            <strong class="font-bold">Success!</strong>
+                            <span class="block sm:inline">Asset has been successfully pulled out.</span>
+                        `;
+                        document.querySelector('.flex-1').insertBefore(successMessage, document.querySelector('.flex-1').firstChild);
+                        // Auto-hide the message after 5 seconds
+                        setTimeout(() => {
+                            successMessage.remove();
+                        }, 5000);
+                    } else {
+                        throw new Error(data.message || 'Failed to pull out asset');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || 'An error occurred while pulling out the asset');
+                });
+            }
+
             function openCompleteModal(requestId) {
                 const modal = document.getElementById('completeModal');
                 const form = document.getElementById('completeForm');

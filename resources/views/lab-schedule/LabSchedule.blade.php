@@ -268,12 +268,12 @@
                             successCallback([]);
                             return;
                         }
-                        
+
                         // Filter events based on laboratory
                         let filteredEvents = events.filter(event => {
                             return event.laboratory === selectedLab;
                         });
-                        
+
                         successCallback(filteredEvents);
                     })
                     .catch(error => {
@@ -402,11 +402,70 @@
         closeBtn.addEventListener('click', closeModal);
         closeXBtn.addEventListener('click', closeModal);
 
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            submitSchedule(data);
+            try {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                console.log('Form data:', data); // Add this line to debug
+
+                // Add department from the select element
+                data.department = form.querySelector('select[name="department"]').value;
+                
+                const response = await fetch('/lab-schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Create and show success message with correct styling
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700';
+                    successDiv.textContent = result.message;
+
+                    // Insert the message at the top of the content area
+                    const contentArea = document.querySelector('.p-6');
+                    contentArea.insertBefore(successDiv, contentArea.firstChild);
+
+                    // Hide modal and refresh calendar
+                    modal.classList.add('hidden');
+                    calendar.refetchEvents();
+
+                    // Remove the message after 3 seconds
+                    setTimeout(() => {
+                        successDiv.remove();
+                    }, 3000);
+                } else {
+                    // Create and show error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
+                    errorDiv.textContent = result.message;
+
+                    // Insert the message at the top of the content area
+                    const contentArea = document.querySelector('.p-6');
+                    contentArea.insertBefore(errorDiv, contentArea.firstChild);
+
+                    // Remove the message after 3 seconds
+                    setTimeout(() => {
+                        errorDiv.remove();
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Show error message to user
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
+                errorDiv.textContent = 'An error occurred while saving the schedule. Please try again.';
+                const contentArea = document.querySelector('.p-6');
+                contentArea.insertBefore(errorDiv, contentArea.firstChild);
+                setTimeout(() => errorDiv.remove(), 3000);
+            }
         });
 
         function setModalTimes(startStr, endStr) {
@@ -427,40 +486,6 @@
             setTimeout(() => {
                 messageContainer.remove();
             }, 5000);
-        }
-
-        function submitSchedule(data) {
-            fetch('/lab-schedule', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                        return;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (!data) return; // If redirected, data will be undefined
-                    if (data.message) {
-                        closeModal();
-                        showMessage(data.message, 'error');
-                        return;
-                    }
-                    closeModal();
-                    calendar.refetchEvents();
-                    showMessage('Schedule created successfully!', 'success');
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    closeModal();
-                    showMessage('An error occurred while creating the schedule', 'error');
-                });
         }
     });
 

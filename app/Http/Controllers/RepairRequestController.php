@@ -39,8 +39,38 @@ class RepairRequestController extends Controller
 
         $request->validate($rules);
 
-        // If serial_number is empty string, set it to null
-        $serialNumber = $request->serial_number ? $request->serial_number : null;
+        // If serial_number is empty string or null, set it to null
+        $serialNumber = $request->serial_number ? trim($request->serial_number) : null;
+
+        // If serial number is provided, verify it exists in assets
+        if ($serialNumber) {
+            $asset = Asset::where('serial_number', $serialNumber)->first();
+            if (!$asset) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Error! No asset found with this serial number. Please check and try again.');
+            }
+            // Use the exact serial number from the database
+            $serialNumber = $asset->serial_number;
+            
+            // Store the current status before updating
+            $oldStatus = $asset->status;
+            
+            // Update asset status to UNDER REPAIR
+            $asset->update([
+                'status' => 'UNDER REPAIR'
+            ]);
+            
+            // Create asset history record
+            AssetHistory::create([
+                'asset_id' => $asset->id,
+                'change_type' => 'STATUS',
+                'old_value' => $oldStatus,
+                'new_value' => 'UNDER REPAIR',
+                'remarks' => "Asset status changed to UNDER REPAIR due to repair request",
+                'changed_by' => auth()->id()
+            ]);
+        }
 
         // Check for existing active repair request
         $existingRequest = RepairRequest::where('location', $request->location)
@@ -124,8 +154,8 @@ class RepairRequestController extends Controller
             ->latest()
             ->get();
 
-        // Update this line to exclude both completed and cancelled requests
-        $requests = RepairRequest::whereNotIn('status', ['completed', 'cancelled'])
+        // Update this line to exclude pulled_out requests as well
+        $requests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
             ->latest()
             ->get();
 
@@ -144,12 +174,12 @@ class RepairRequestController extends Controller
         // Validate request
         $request->validate([
             'status' => 'required|in:pending,urgent,in_progress,completed,cancelled,pulled_out,disposed',
-            'remarks' => 'required_if:status,completed,cancelled|string|nullable',
+            'remarks' => 'required_if:status,completed,cancelled,pulled_out|string|nullable',
             'technician_id' => 'nullable|exists:users,id',
-            'date_finished' => 'required_if:status,completed,cancelled|date|nullable',
-            'time_finished' => 'required_if:status,completed,cancelled|nullable',
+            'date_finished' => 'required_if:status,completed,cancelled,pulled_out|date|nullable',
+            'time_finished' => 'required_if:status,completed,cancelled,pulled_out|nullable',
         ]);
-
+    
         // Update repair request with all fields
         $updateData = [
             'status' => $request->status,
@@ -158,22 +188,116 @@ class RepairRequestController extends Controller
             'updated_at' => now()
         ];
     
-        if (in_array($request->status, ['completed', 'cancelled']) && $request->date_finished && $request->time_finished) {
-            $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
-            
-            // Create asset history record if serial number exists
-            if ($repairRequest->serial_number) {
-                $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
-                if ($asset) {
-                    AssetHistory::create([
-                        'asset_id' => $asset->id,
-                        'change_type' => 'REPAIR',
-                        'remarks' => "Ticket: {$repairRequest->ticket_number}\n" .
-                                   "Issue: {$repairRequest->issue}\n" .
-                                   "Remarks: {$request->remarks}",
-                        'changed_by' => auth()->id()
-                    ]);
-                }
+        // Handle asset status updates for pulled out requests
+        if ($request->status === 'pulled_out' && $repairRequest->serial_number) {
+            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+            if ($asset) {
+                $oldStatus = $asset->status;
+                // Update asset status to PULLED OUT
+                $asset->update([
+                    'status' => 'PULLED OUT'
+                ]);
+                
+                // Create repair history record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'REPAIR',
+                    'old_value' => $request->issue ?? 'Not specified',
+                    'new_value' => $request->status,
+                    'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}",
+                    'changed_by' => auth()->id()
+                ]);
+
+                // Add status change record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'STATUS',
+                    'old_value' => $oldStatus,
+                    'new_value' => 'PULLED OUT',
+                    'remarks' => "Asset status changed to PULLED OUT due to repair request",
+                    'changed_by' => auth()->id()
+                ]);
+            }
+        } elseif ($request->status === 'in_progress' && $repairRequest->serial_number) {
+            // If the user clicks 'No' in pull out modal, set status back to IN USE
+            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+            if ($asset) {
+                // Update asset status back to IN USE
+                $asset->update([
+                    'status' => 'IN USE'
+                ]);
+                
+                // Create asset history record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'REPAIR',
+                    'old_value' => $request->issue ?? 'Not specified',
+                    'new_value' => $request->status,
+                    'remarks' => "Ticket: {$this->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}",
+                    'changed_by' => auth()->id()
+                ]);
+            }
+        }
+
+        // Handle asset status updates for completed requests
+        if ($request->status === 'completed' && $repairRequest->serial_number) {
+            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+            if ($asset) {
+                // Update asset status to IN USE
+                $asset->update([
+                    'status' => 'IN USE'
+                ]);
+                
+                // Create repair history record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'REPAIR',
+                    'old_value' => $repairRequest->issue ?? 'Not specified',
+                    'new_value' => 'completed',
+                    'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                    'changed_by' => auth()->id()
+                ]);
+
+                // Create status change record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'STATUS',
+                    'old_value' => 'UNDER REPAIR',
+                    'new_value' => 'IN USE',
+                    'remarks' => "Asset repair completed: " . ($request->remarks ?? 'No remarks provided'),
+                    'changed_by' => auth()->id()
+                ]);
+            }
+        }
+
+        // Handle asset status updates for cancelled requests
+        if ($request->status === 'cancelled' && $repairRequest->serial_number) {
+            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+            if ($asset) {
+                // Update asset status back to IN USE
+                $asset->update([
+                    'status' => 'IN USE'
+                ]);
+                
+                // Create repair history record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'REPAIR',
+                    'old_value' => $repairRequest->issue ?? 'Not specified',
+                    'new_value' => 'cancelled',
+                    'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                    'changed_by' => auth()->id()
+                ]);
+
+                // Create status change record
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'STATUS',
+                    'old_value' => 'UNDER REPAIR',
+                    'new_value' => 'IN USE',
+                    'remarks' => "Asset repair cancelled: " . ($request->remarks ?? 'No remarks provided'),
+                    'changed_by' => auth()->id()
+                ]);
             }
         }
 
@@ -201,6 +325,32 @@ class RepairRequestController extends Controller
         }
     }
 
+    // Add new method to handle asset disposal
+    public function disposeAsset(Request $request, $serialNumber)
+    {
+        $asset = Asset::where('serial_number', $serialNumber)->firstOrFail();
+        
+        // Update asset status to DISPOSED
+        $asset->update([
+            'status' => 'DISPOSED'
+        ]);
+        
+        // Create asset history record
+        AssetHistory::create([
+            'asset_id' => $asset->id,
+            'change_type' => 'REPAIR',  // Change this from 'STATUS' to 'REPAIR'
+            'old_value' => $request->issue ?? 'Not specified',  // Store the issue instead of status
+            'new_value' => $request->status,
+            'remarks' => "Ticket: {$this->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}",
+            'changed_by' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asset marked for disposal successfully'
+        ]);
+    }
+
     public function destroy($id)
     {
         $request = RepairRequest::findOrFail($id);
@@ -223,7 +373,7 @@ class RepairRequestController extends Controller
     public function completed()
     {
         // Update this line to include both completed and cancelled requests
-        $completedRequests = RepairRequest::whereIn('status', ['completed', 'cancelled'])
+        $completedRequests = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
             ->with('technician')
             ->orderBy('updated_at', 'desc')
             ->get();

@@ -96,7 +96,7 @@
                                     Status
                                 </label>
                                 <select name="status" id="status" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
-                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PENDING DEPLOYMENT'] as $status)
+                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PULLED OUT'] as $status)
                                     <option value="{{ $status }}" {{ $asset->status == $status ? 'selected' : '' }}>
                                         {{ $status }}
                                     </option>
@@ -183,14 +183,6 @@
                                     Warranty Period
                                 </label>
                                 <input type="date" name="warranty_period" id="warranty_period" value="{{ old('warranty_period', $asset->warranty_period) }}" class="w-full p-2.5 border @error('warranty_period') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
-                            </div>
-
-                            <!-- Lifespan field -->
-                            <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-bold mb-2" for="lifespan">
-                                    Lifespan (in years)
-                                </label>
-                                <input type="number" name="lifespan" id="lifespan" value="{{ old('lifespan', $asset->lifespan) }}" class="w-full p-2.5 border @error('lifespan') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
                             </div>
                         </div>
                     </div>

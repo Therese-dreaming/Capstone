@@ -48,10 +48,10 @@ class LabScheduleController extends Controller
                 'laboratory' => 'required|string',
                 'start' => 'required|date',
                 'end' => 'required|date|after:start',
-                'collaborator_id' => 'required|exists:users,id',
                 'department' => 'required|string',
                 'subject_course' => 'required|string',
-                'professor_id' => 'required|exists:users,id'
+                'professor_id' => 'required',
+                'collaborator_id' => 'required'
             ]);
 
             // Validate time range (5 AM to 11 PM)
@@ -96,23 +96,19 @@ class LabScheduleController extends Controller
                 ], 422);
             }
 
-            // Get professor name from id
+            // Get professor name from id and set it in the schedule
             $professor = User::findOrFail($validated['professor_id']);
             $validated['professor'] = $professor->name;
+            $validated['status'] = 'Scheduled'; // Set initial status
             unset($validated['professor_id']); // Remove professor_id from validated data
 
             $schedule = LabSchedule::create($validated);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Schedule logged successfully.',
+                'message' => 'Schedule created successfully.',
                 'data' => $schedule
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed: ' . implode(', ', $e->errors())
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -202,11 +198,12 @@ class LabScheduleController extends Controller
             // Get current date and time
             $now = now();
 
-            // Find the schedule for this user, including "On Going" schedules
+            // Find today's schedule for this user
             $schedule = LabSchedule::where('professor', $user->name)
-                ->whereDate('start', $now->toDateString())
+                ->whereDate('start', $now->toDateString()) // Only check today's date
                 ->where(function ($query) {
                     $query->whereNull('status')
+                        ->orWhere('status', 'Scheduled')
                         ->orWhere('status', 'On Going');
                 })
                 ->first();

@@ -68,9 +68,11 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware([\App\Http\Middleware\CheckRole::class.':1,2'])->group(function () {
         // Asset management routes
         Route::resource('assets', AssetController::class);
+        Route::get('/assets/fetch/{serialNumber}', [AssetController::class, 'fetch'])->name('assets.fetch');
         Route::get('/qr-list', [AssetController::class, 'qrList'])->name('qr.list');
         Route::post('/qrcodes/export', [AssetController::class, 'exportQrCodes'])->name('qrcodes.export');
         Route::post('/qrcodes/preview', [AssetController::class, 'previewQrCodes'])->name('qrcodes.preview');
+        Route::post('/assets/{asset}/dispose', [AssetController::class, 'dispose'])->name('assets.dispose');
         
         // Maintenance routes
         Route::get('/maintenance/schedule', [MaintenanceController::class, 'schedule'])->name('maintenance.schedule');
@@ -136,7 +138,7 @@ Route::middleware(['auth'])->group(function () {
     // Coordinator routes (group_id = 4) - Remove duplicate routes
     Route::middleware([\App\Http\Middleware\CoordinatorMiddleware::class])->group(function () {
         Route::get('/lab-schedule', [LabScheduleController::class, 'index'])->name('lab.schedule');
-        Route::post('/lab-schedule', [LabScheduleController::class, 'store']);
+        Route::post('/lab-schedule', [LabScheduleController::class, 'store'])->name('lab-schedule.store');
         Route::get('/lab-schedule/events', [LabScheduleController::class, 'getEvents']);
         Route::get('/lab-history', [LabScheduleController::class, 'history'])->name('lab.history');
         Route::post('/lab-schedule/delete', [LabScheduleController::class, 'destroy'])->name('lab.delete');

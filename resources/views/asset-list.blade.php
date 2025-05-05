@@ -103,6 +103,9 @@
                                                 @case('PENDING DEPLOYMENT')
                                                     bg-purple-100 text-purple-800
                                                     @break
+                                                @case('PULLED OUT')
+                                                    bg-orange-100 text-orange-800
+                                                    @break
                                                 @default
                                                     bg-gray-100 text-gray-800
                                             @endswitch">
@@ -234,35 +237,31 @@
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="9" class="column-toggle">
-                            <span>Description</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="10" class="column-toggle">
                             <span>Model</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="11" class="column-toggle">
+                            <input type="checkbox" checked data-column="10" class="column-toggle">
                             <span>Specification</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="12" class="column-toggle">
+                            <input type="checkbox" checked data-column="11" class="column-toggle">
                             <span>Vendor</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="13" class="column-toggle">
+                            <input type="checkbox" checked data-column="12" class="column-toggle">
                             <span>Purchase Date</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="14" class="column-toggle">
+                            <input type="checkbox" checked data-column="13" class="column-toggle">
                             <span>Warranty Period</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="15" class="column-toggle">
+                            <input type="checkbox" checked data-column="14" class="column-toggle">
                             <span>Lifespan (Yrs)</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="16" class="column-toggle">
-                            <span>Asset Life Remaining</span>
+                            <input type="checkbox" checked data-column="15" class="column-toggle">
+                            <span>End of Lifespan Date</span>
                         </label>
                     </div>
                 </div>
@@ -284,14 +283,13 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Description</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Model</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Specification</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Vendor</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Date</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Warranty Period</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Lifespan (Yrs)</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Asset Life Remaining</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">End of Lifespan Date</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -343,20 +341,54 @@
                                         @case('PENDING DEPLOYMENT')
                                             bg-purple-100 text-purple-800
                                             @break
+                                        @case('PULLED OUT')
+                                            bg-orange-100 text-orange-800
+                                            @break
                                         @default
                                             bg-gray-100 text-gray-800
                                     @endswitch">
                                 {{ $asset->status ?? 'N/A' }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->description ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->model ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->specification ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->vendor ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->purchase_date ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->warranty_period ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->lifespan ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->life_remaining ?? '' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                            @switch($asset->life_status)
+                                @case('critical')
+                                    bg-red-100 text-red-800
+                                    @break
+                                @case('warning')
+                                    bg-yellow-100 text-yellow-800
+                                    @break
+                                @default
+                                    bg-green-100 text-green-800
+                        @endswitch">
+                                {{ $asset->calculated_lifespan }} year(s)
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                            @switch($asset->life_status)
+                                @case('critical')
+                                    bg-red-100 text-red-800
+                                    @break
+                                @case('warning')
+                                    bg-yellow-100 text-yellow-800
+                                    @break
+                                @default
+                                    bg-green-100 text-green-800
+                            @endswitch">
+                                {{ \Carbon\Carbon::parse($asset->end_of_life_date)->format('M d, Y') }}
+                            </span>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>

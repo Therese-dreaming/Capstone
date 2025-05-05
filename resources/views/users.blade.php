@@ -7,7 +7,7 @@
         <div class="mt-3 text-center">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
             <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete User</h3>
@@ -38,23 +38,22 @@
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-2xl font-bold">USERS</h1>
                 @if(Auth::user()->group->name === 'Admin')
-                    <a href="{{ route('users.create') }}" 
-                       class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
-                        Add New User
-                    </a>
+                <a href="{{ route('users.create') }}" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                    Add New User
+                </a>
                 @endif
             </div>
 
             @if(session('success'))
-                <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
-                    {{ session('success') }}
-                </div>
+            <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
+                {{ session('success') }}
+            </div>
             @endif
 
             @if(session('error'))
-                <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                    {{ session('error') }}
-                </div>
+            <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+                {{ session('error') }}
+            </div>
             @endif
 
             <!-- Divider Line -->
@@ -88,9 +87,9 @@
                             <td class="px-6 py-4 whitespace-nowrap">{{ $user->group->name ?? 'No Group' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($user->position === 'Teacher' || $user->position === 'Faculty')
-                                    {{ $user->rfid_number ?? 'Not Set' }}
+                                {{ $user->rfid_number ?? 'Not Set' }}
                                 @else
-                                    -
+                                -
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -98,49 +97,55 @@
                                     {{ $user->status }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ $user->last_login }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($user->last_login)->format('M j, Y') }}</div>
+                                    <div class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($user->last_login)->format('g:i A') }}</div>
+                                </div>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 @if(Auth::user()->group->name === 'Admin')
-                                    <a href="{{ route('users.edit', $user->id) }}" class="text-yellow-600 hover:text-yellow-900 mr-3">
+                                <a href="{{ route('users.edit', $user->id) }}" class="text-yellow-600 hover:text-yellow-900 mr-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </a>
+                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <!-- Update the delete button -->
+                                    <button type="button" onclick="showDeleteModal('{{ route('users.destroy', $user->id) }}', '{{ $user->name }}')" class="text-red-600 hover:text-red-900">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
-                                    </a>
-                                    <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <!-- Update the delete button -->
-                                        <button type="button" onclick="showDeleteModal('{{ route('users.destroy', $user->id) }}', '{{ $user->name }}')" class="text-red-600 hover:text-red-900">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                                    </button>
 
-                                        <!-- Add script at the bottom -->
-                                        <script>
-                                            function showDeleteModal(formAction, userName) {
-                                                const modal = document.getElementById('deleteModal');
-                                                const deleteForm = document.getElementById('deleteForm');
-                                                const modalTitle = modal.querySelector('h3');
-                                                
-                                                modalTitle.textContent = `Delete User: ${userName}`;
-                                                deleteForm.action = formAction;
-                                                modal.classList.remove('hidden');
-                                            }
+                                    <!-- Add script at the bottom -->
+                                    <script>
+                                        function showDeleteModal(formAction, userName) {
+                                            const modal = document.getElementById('deleteModal');
+                                            const deleteForm = document.getElementById('deleteForm');
+                                            const modalTitle = modal.querySelector('h3');
 
-                                            function closeModal() {
-                                                const modal = document.getElementById('deleteModal');
-                                                modal.classList.add('hidden');
-                                            }
+                                            modalTitle.textContent = `Delete User: ${userName}`;
+                                            deleteForm.action = formAction;
+                                            modal.classList.remove('hidden');
+                                        }
 
-                                            window.onclick = function(event) {
-                                                const modal = document.getElementById('deleteModal');
-                                                if (event.target == modal) {
-                                                    closeModal();
-                                                }
+                                        function closeModal() {
+                                            const modal = document.getElementById('deleteModal');
+                                            modal.classList.add('hidden');
+                                        }
+
+                                        window.onclick = function(event) {
+                                            const modal = document.getElementById('deleteModal');
+                                            if (event.target == modal) {
+                                                closeModal();
                                             }
-                                        </script>
-                                    </form>
+                                        }
+
+                                    </script>
+                                </form>
                                 @endif
                             </td>
                         </tr>

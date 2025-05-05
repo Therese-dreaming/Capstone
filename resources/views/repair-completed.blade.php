@@ -44,6 +44,7 @@
                     <option value="">All Status</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
+                    <option value="pulled out">Pulled Out</option>
                 </select>
                 <select id="locationFilter" onchange="filterHistory()" class="h-9 w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
                     <option value="">All Locations</option>
@@ -108,6 +109,10 @@
                             @if($request->status === 'cancelled')
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                 Cancelled
+                            </span>
+                            @elseif($request->status === 'pulled_out')
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Pulled Out
                             </span>
                             @else
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

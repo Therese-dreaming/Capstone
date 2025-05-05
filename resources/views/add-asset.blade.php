@@ -82,7 +82,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                                 <select name="status" required class="w-full p-2 border @error('status') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                                     <option value="">Select Status</option>
-                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PENDING DEPLOYMENT'] as $status)
+                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PULLED OUT'] as $status)
                                     <option value="{{ $status }}" {{ old('status') == $status ? 'selected' : '' }}>
                                         {{ $status }}
                                     </option>
@@ -96,10 +96,6 @@
                             <div>
                                 <h5 class="text-lg font-medium mb-2">Physical Attributes</h5>
                                 <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                        <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200"></textarea>
-                                    </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
                                         <input type="text" name="model" value="{{ old('model') }}" class="w-full p-2 border @error('model') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
@@ -178,11 +174,6 @@
                                     @error('category_id')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                     @enderror
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Asset Life (Years)</label>
-                                    <input type="number" name="lifespan" min="0" step="1" value="{{ old('lifespan') }}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                                 </div>
 
                                 <div>
