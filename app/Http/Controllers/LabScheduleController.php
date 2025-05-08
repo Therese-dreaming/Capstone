@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\LabLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use PDF;
 
 class LabScheduleController extends Controller
 {
@@ -346,5 +347,31 @@ class LabScheduleController extends Controller
                 'message' => 'An error occurred while updating the schedule: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function previewPDF(Request $request)
+    {
+        $query = LabSchedule::with('collaborator');
+
+        // Apply filters
+        if ($request->lab) {
+            $query->where('laboratory', $request->lab);
+        }
+        if ($request->department) {
+            $query->where('department', $request->department);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+        if ($request->start_date) {
+            $query->whereDate('start', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('start', '<=', $request->end_date);
+        }
+
+        $schedules = $query->orderBy('start', 'desc')->get();
+
+        return view('exports.lab-schedule-history-pdf', compact('schedules'));
     }
 }

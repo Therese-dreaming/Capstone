@@ -9,19 +9,16 @@
     </div>
     @endif
 
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-semibold">Request Status</h2>
-        <div class="flex gap-4">
-            <div class="relative">
-                <input type="text" id="ticketSearch" placeholder="Search Ticket No." class="px-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-            </div>
-        </div>
-    </div>
-
     <!-- Requests Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="bg-[#960106] text-white p-4">
-            <h3 class="text-xl font-semibold">Requests</h3>
+    <div class="bg-white rounded-lg shadow-lg p-6">
+
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Request Status</h2>
+            <div class="flex gap-4">
+                <div class="relative">
+                    <input type="text" id="ticketSearch" placeholder="Search Ticket No." class="px-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                </div>
+            </div>
         </div>
 
         <table class="min-w-full" id="requestsTable">
@@ -40,18 +37,14 @@
             <tbody class="divide-y divide-gray-200" id="tableBody">
                 @foreach($requests as $request)
                 <tr id="request-{{ $request->id }}" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
-                    <td class="px-6 py-4 font-medium">{{ $request->ticket_number ?? 'N/A' }}</td>
-                    <td class="px-6 py-4">{{ $request->equipment }}</td>
-                    <td class="px-6 py-4">{{ $request->location }}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ $request->ticket_number ?? 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->equipment }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->location }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         @if($request->status === 'urgent')
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             Urgent
-                        </span>
-                        @elseif($request->status === 'in_progress')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            In Progress
                         </span>
                         @elseif($request->status === 'completed')
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -67,11 +60,11 @@
                         </span>
                         @endif
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {{ $request->technician ? $request->technician->name : 'Not Assigned' }}
                     </td>
-                    <td class="px-6 py-4">{{ $request->issue }}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->issue }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div class="flex space-x-2">
                             <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,50 +88,63 @@
             </tbody>
         </table>
 
-        <!-- Add these modals before the closing div -->
+        <!-- Update Modal -->
         <!-- Update Modal -->
         <div id="updateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-lg shadow-xl w-96 relative">
-                <h2 class="text-xl font-bold mb-4">Update Request</h2>
-                <form id="updateForm" method="POST">
+            <div class="bg-white rounded-lg shadow-xl w-[32rem] relative">
+                <!-- Header -->
+                <div class="bg-gray-50 p-6 rounded-t-lg border-b">
+                    <h2 class="text-xl font-bold text-gray-800">Update Request</h2>
+                    <p class="text-sm text-gray-600 mt-1">Modify the request details below</p>
+                </div>
+
+                <!-- Form Content -->
+                <form id="updateForm" method="POST" class="p-6 space-y-6">
                     @csrf
                     @method('PUT')
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="technician_id">
-                            Technician
+                    <!-- Technician Selection -->
+                    <div class="space-y-2">
+                        <label class="block text-gray-700 text-sm font-semibold" for="technician_id">
+                            Technician Assignment
                         </label>
-                        <select id="technician_id" name="technician_id" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            <option value="">Select Technician</option>
+                        <select id="technician_id" name="technician_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-150 ease-in-out">
+                            <option value="">Select a technician...</option>
                             @foreach($technicians as $technician)
                             <option value="{{ $technician->id }}">{{ $technician->name }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="status">
-                            Status
+                    <!-- Status Selection -->
+                    <div class="space-y-2">
+                        <label class="block text-gray-700 text-sm font-semibold" for="status">
+                            Request Status
                         </label>
-                        <select id="status" name="status" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                            <option value="pending">Pending</option>
-                            <option value="urgent">Urgent</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="pulled_out">Pulled Out</option>
-                            <option value="disposed">Disposed</option>
+                        <select id="status" name="status" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-150 ease-in-out">
+                            <option value="pending" class="text-gray-800">Pending</option>
+                            <option value="urgent" class="text-red-800">Urgent</option>
+                            <option value="pulled_out" class="text-yellow-800">Pulled Out</option>
+                            <option value="disposed" class="text-red-800">Disposed</option>
                         </select>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="remarks">
+                    <!-- Remarks Textarea -->
+                    <div class="space-y-2">
+                        <label class="block text-gray-700 text-sm font-semibold" for="remarks">
                             Remarks
                         </label>
-                        <textarea id="remarks" name="remarks" rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Enter reason for status change..."></textarea>
+                        <textarea id="remarks" name="remarks" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-150 ease-in-out resize-none" placeholder="Enter the reason for status change..."></textarea>
                     </div>
 
-                    <div class="flex justify-end">
-                        <button type="button" onclick="closeUpdateModal()" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
-                        <button type="submit" class="bg-[#960106] text-white px-4 py-2 rounded">Update</button>
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" onclick="closeUpdateModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-[#960106] rounded-md hover:bg-[#7d0105] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                            Update Request
+                        </button>
                     </div>
                 </form>
             </div>
@@ -233,8 +239,60 @@
             }
 
             function closePullOutModal() {
+                // Close both modals first
                 document.getElementById('pullOutModal').classList.remove('flex');
                 document.getElementById('pullOutModal').classList.add('hidden');
+                closeCancelModal();
+
+                // Get the form data
+                const form = document.getElementById('cancelForm');
+                const formData = new FormData(form);
+                formData.set('status', 'cancelled');
+
+                // Set current date and time
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().slice(0, 5);
+                formData.set('date_finished', dateStr);
+                formData.set('time_finished', timeStr);
+
+                // Submit the form with cancelled status
+                fetch(form.action, {
+                        method: 'POST'
+                        , body: formData
+                        , headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Close the cancel modal
+                            closeCancelModal();
+                            // Remove the request row from the table
+                            const requestId = form.action.split('/').pop();
+                            const row = document.getElementById(`request-${requestId}`);
+                            if (row) row.remove();
+                            // Show success message
+                            const successMessage = document.createElement('div');
+                            successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
+                            successMessage.innerHTML = `
+                <strong class="font-bold">Success!</strong>
+                <span class="block sm:inline">Request has been successfully cancelled.</span>
+            `;
+                            document.querySelector('.flex-1').insertBefore(successMessage, document.querySelector('.flex-1').firstChild);
+                            // Auto-hide the message after 5 seconds
+                            setTimeout(() => {
+                                successMessage.remove();
+                            }, 5000);
+                        } else {
+                            throw new Error(data.message || 'Failed to cancel request');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message || 'An error occurred while cancelling the request');
+                    });
             }
 
             function confirmPullOut() {
@@ -252,42 +310,42 @@
 
                 // Submit the form with updated status
                 fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Close both modals
-                        closePullOutModal();
-                        closeCancelModal();
-                        // Remove the request row from the table
-                        const requestId = form.action.split('/').pop();
-                        const row = document.getElementById(`request-${requestId}`);
-                        if (row) row.remove();
-                        // Show success message
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
-                        successMessage.innerHTML = `
+                        method: 'POST'
+                        , body: formData
+                        , headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Close both modals
+                            closePullOutModal();
+                            closeCancelModal();
+                            // Remove the request row from the table
+                            const requestId = form.action.split('/').pop();
+                            const row = document.getElementById(`request-${requestId}`);
+                            if (row) row.remove();
+                            // Show success message
+                            const successMessage = document.createElement('div');
+                            successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
+                            successMessage.innerHTML = `
                             <strong class="font-bold">Success!</strong>
                             <span class="block sm:inline">Asset has been successfully pulled out.</span>
                         `;
-                        document.querySelector('.flex-1').insertBefore(successMessage, document.querySelector('.flex-1').firstChild);
-                        // Auto-hide the message after 5 seconds
-                        setTimeout(() => {
-                            successMessage.remove();
-                        }, 5000);
-                    } else {
-                        throw new Error(data.message || 'Failed to pull out asset');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert(error.message || 'An error occurred while pulling out the asset');
-                });
+                            document.querySelector('.flex-1').insertBefore(successMessage, document.querySelector('.flex-1').firstChild);
+                            // Auto-hide the message after 5 seconds
+                            setTimeout(() => {
+                                successMessage.remove();
+                            }, 5000);
+                        } else {
+                            throw new Error(data.message || 'Failed to pull out asset');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message || 'An error occurred while pulling out the asset');
+                    });
             }
 
             function openCompleteModal(requestId) {
@@ -717,7 +775,6 @@
         function getStatusBadgeHTML(status) {
             const statusMap = {
                 'urgent': ['bg-red-100 text-red-800', 'Urgent']
-                , 'in_progress': ['bg-yellow-100 text-yellow-800', 'In Progress']
                 , 'pulled_out': ['bg-gray-100 text-gray-800', 'Pulled Out']
                 , 'disposed': ['bg-gray-100 text-gray-800', 'Disposed']
                 , 'pending': ['bg-gray-100 text-gray-800', 'Pending']

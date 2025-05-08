@@ -180,6 +180,31 @@
     </div>
 </div>
 
+<!-- PDF Preview Modal -->
+<div id="pdfPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-3/4 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">PDF Preview</h3>
+            <button onclick="closePdfPreview()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="preview-content" style="max-height: 70vh; overflow-y: auto;">
+            <!-- Preview content will be loaded here -->
+        </div>
+        <div class="mt-4 flex justify-end space-x-3">
+            <button onclick="closePdfPreview()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                Cancel
+            </button>
+            <button onclick="downloadPDF()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                Download PDF
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const labFilter = document.getElementById('labFilter');
@@ -276,58 +301,75 @@
         window.executeDelete = function() {
             // Send delete request to server
             fetch('/lab-schedule/delete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    ids: itemsToDelete
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                closeDeleteModal();
-                if (data.success) {
-                    // Remove deleted rows from the table
-                    itemsToDelete.forEach(id => {
-                        const row = document.querySelector(`input[value="${id}"]`).closest('tr');
-                        if (row) {
-                            row.remove();
-                        }
-                    });
-
-                    // Clear selection
-                    document.getElementById('selectAll').checked = false;
-                    updateSelectedCount();
-
-                    // Create and show success message
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700';
-                    successDiv.textContent = 'Schedule(s) deleted successfully';
-
-                    // Insert at the top of the content area
-                    const contentArea = document.querySelector('.flex-1.p-8');
-                    contentArea.insertBefore(successDiv, contentArea.firstChild);
-
-                    // Remove the message after 3 seconds
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 3000);
-
-                    // If all items are deleted, show the empty message
-                    const remainingRows = document.querySelectorAll('tbody tr:not([style*="display: none"])');
-                    if (remainingRows.length === 0) {
-                        const tbody = document.querySelector('tbody');
-                        const emptyRow = document.createElement('tr');
-                        emptyRow.innerHTML = '<td colspan="9" class="px-6 py-4 text-center text-gray-500">No past schedules found</td>';
-                        tbody.appendChild(emptyRow);
+                    method: 'POST'
+                    , headers: {
+                        'Content-Type': 'application/json'
+                        , 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     }
-                } else {
+                    , body: JSON.stringify({
+                        ids: itemsToDelete
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    closeDeleteModal();
+                    if (data.success) {
+                        // Remove deleted rows from the table
+                        itemsToDelete.forEach(id => {
+                            const row = document.querySelector(`input[value="${id}"]`).closest('tr');
+                            if (row) {
+                                row.remove();
+                            }
+                        });
+
+                        // Clear selection
+                        document.getElementById('selectAll').checked = false;
+                        updateSelectedCount();
+
+                        // Create and show success message
+                        const successDiv = document.createElement('div');
+                        successDiv.className = 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700';
+                        successDiv.textContent = 'Schedule(s) deleted successfully';
+
+                        // Insert at the top of the content area
+                        const contentArea = document.querySelector('.flex-1.p-8');
+                        contentArea.insertBefore(successDiv, contentArea.firstChild);
+
+                        // Remove the message after 3 seconds
+                        setTimeout(() => {
+                            successDiv.remove();
+                        }, 3000);
+
+                        // If all items are deleted, show the empty message
+                        const remainingRows = document.querySelectorAll('tbody tr:not([style*="display: none"])');
+                        if (remainingRows.length === 0) {
+                            const tbody = document.querySelector('tbody');
+                            const emptyRow = document.createElement('tr');
+                            emptyRow.innerHTML = '<td colspan="9" class="px-6 py-4 text-center text-gray-500">No past schedules found</td>';
+                            tbody.appendChild(emptyRow);
+                        }
+                    } else {
+                        // Create and show error message
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
+                        errorDiv.textContent = data.message || 'Error deleting schedule(s)';
+
+                        // Insert at the top of the content area
+                        const contentArea = document.querySelector('.flex-1.p-8');
+                        contentArea.insertBefore(errorDiv, contentArea.firstChild);
+
+                        // Remove the message after 3 seconds
+                        setTimeout(() => {
+                            errorDiv.remove();
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    closeDeleteModal();
                     // Create and show error message
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
-                    errorDiv.textContent = data.message || 'Error deleting schedule(s)';
+                    errorDiv.textContent = 'An error occurred while deleting schedule(s)';
 
                     // Insert at the top of the content area
                     const contentArea = document.querySelector('.flex-1.p-8');
@@ -337,26 +379,70 @@
                     setTimeout(() => {
                         errorDiv.remove();
                     }, 3000);
-                }
-            })
-            .catch(error => {
-                closeDeleteModal();
-                // Create and show error message
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
-                errorDiv.textContent = 'An error occurred while deleting schedule(s)';
-
-                // Insert at the top of the content area
-                const contentArea = document.querySelector('.flex-1.p-8');
-                contentArea.insertBefore(errorDiv, contentArea.firstChild);
-
-                // Remove the message after 3 seconds
-                setTimeout(() => {
-                    errorDiv.remove();
-                }, 3000);
-            });
+                });
         }
     });
+
+    function closePdfPreview() {
+        const modal = document.getElementById('pdfPreviewModal');
+        const previewContent = modal.querySelector('.preview-content');
+        modal.classList.add('hidden');
+        previewContent.innerHTML = ''; // Clear the preview content
+    }
+
+    function downloadPDF() {
+        const labFilter = document.getElementById('labFilter').value;
+        const deptFilter = document.getElementById('deptFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        const startDateFilter = document.getElementById('startDateFilter').value;
+        const endDateFilter = document.getElementById('endDateFilter').value;
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (labFilter) params.append('lab', labFilter);
+        if (deptFilter) params.append('department', deptFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        if (startDateFilter) params.append('start_date', startDateFilter);
+        if (endDateFilter) params.append('end_date', endDateFilter);
+
+        // Redirect to export URL with filters
+        window.location.href = "{{ route('lab.schedule.export') }}?" + params.toString();
+        closePdfPreview();
+    }
+
+    function exportToPDF() {
+        const modal = document.getElementById('pdfPreviewModal');
+        const previewContent = modal.querySelector('.preview-content');
+
+        // Get current filters
+        const labFilter = document.getElementById('labFilter').value;
+        const deptFilter = document.getElementById('deptFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        const startDateFilter = document.getElementById('startDateFilter').value;
+        const endDateFilter = document.getElementById('endDateFilter').value;
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (labFilter) params.append('lab', labFilter);
+        if (deptFilter) params.append('department', deptFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        if (startDateFilter) params.append('start_date', startDateFilter);
+        if (endDateFilter) params.append('end_date', endDateFilter);
+
+        // Show loading state
+        previewContent.innerHTML = '<div class="text-center py-4">Loading preview...</div>';
+        modal.classList.remove('hidden');
+
+        // Fetch preview content with filters
+        fetch(`/lab-schedule/preview-pdf?${params.toString()}`)
+            .then(response => response.text())
+            .then(html => {
+                previewContent.innerHTML = html;
+            })
+            .catch(error => {
+                previewContent.innerHTML = '<div class="text-center py-4 text-red-600">Error loading preview</div>';
+            });
+    }
 
 </script>
 @endsection

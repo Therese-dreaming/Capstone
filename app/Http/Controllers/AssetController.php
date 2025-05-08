@@ -14,96 +14,99 @@ use Carbon\Carbon;  // Add this import
 
 class AssetController extends Controller
 {
-    private function getLifeStatus($remainingLife, $totalLifespan)
-    {
-        // Prevent division by zero
-        if ($totalLifespan <= 0) {
-            return 'out of date'; // Changed from 'critical' to 'out of date'
-        }
-        
-        // For very short lifespans (less than 3 months), always return warning or out of date
-        if ($totalLifespan < 0.25) { // Less than 3 months
-            return $remainingLife <= 0.08 ? 'out of date' : 'warning'; // Changed from 'critical' to 'out of date'
-        }
-        
-        $percentage = ($remainingLife / $totalLifespan) * 100;
-        
-        if ($percentage <= 0) {
-            return 'out of date'; // Changed from 'critical' to 'out of date'
-        } elseif ($percentage <= 25) {
-            return 'warning';
-        } else {
-            return 'good';
-        }
-    }
-
     public function index()
     {
         $assets = Asset::all()->map(function ($asset) {
-            // Step 1: Calculate Warranty Years
+            $today = Carbon::now();
             $purchaseDate = Carbon::parse($asset->purchase_date);
             $warrantyDate = Carbon::parse($asset->warranty_period);
+
+            // Check if warranty has expired
+            if ($warrantyDate->isPast()) {
+                $asset->update([
+                    'calculated_lifespan' => 0,
+                    'remaining_life' => 0,
+                    'end_of_life_date' => $warrantyDate,
+                    'life_status' => 'critical'
+                ]);
+                return $asset;
+            }
+
+            // Step 1: Calculate Warranty Years
             $warrantyYears = $purchaseDate->diffInDays($warrantyDate) / 365.25;
-            
+
             // Calculate salvage value (10% of purchase price)
             $purchasePrice = $asset->purchase_price ?? 0;
             $salvageValue = $purchasePrice * 0.1;
-            
+
             // Step 2: Calculate Annual Depreciation based on warranty period
             $calculationYears = max(0.01, $warrantyYears);
             $annualDepreciation = ($purchasePrice - $salvageValue) / $calculationYears;
-            
+
             // Step 3: Calculate Useful Life (Lifespan) using depreciation formula
-            // Useful Life = (Purchase Price - Salvage Value) / Annual Depreciation
-            // This will give us the actual lifespan based on depreciation
-            $usefulLife = $annualDepreciation > 0 
-                ? ($purchasePrice - $salvageValue) / $annualDepreciation 
+            $usefulLife = $annualDepreciation > 0
+                ? ($purchasePrice - $salvageValue) / $annualDepreciation
                 : $calculationYears;
-            
+
             // Extend the lifespan beyond warranty period (1.5 times the warranty period)
             $extendedLifespan = $warrantyYears * 1.5;
-            
+
             // Use the maximum of calculated lifespan and extended warranty period
             $finalLifespan = max($usefulLife, $extendedLifespan);
-            
+
             // Step 4: Calculate Age in Years
-            $today = Carbon::now();
             $ageInYears = $purchaseDate->diffInDays($today) / 365.25;
-            
+
             // Step 5: Calculate Remaining Life
-            $remainingLife = max(0, $finalLifespan - $ageInYears); // Ensure remaining life is never negative
-            
+            $remainingLife = max(0, $finalLifespan - $ageInYears);
+
             // Calculate end of life date based on the final lifespan
             $endOfLifeDate = $purchaseDate->copy()->addDays($finalLifespan * 365.25);
             
-            // Debug logging
-            \Log::debug("Asset calculation debug:", [
-                'id' => $asset->id,
-                'purchase_date' => $purchaseDate->toDateString(),
-                'warranty_date' => $warrantyDate->toDateString(),
-                'warranty_years' => $warrantyYears,
-                'extended_lifespan' => $extendedLifespan,
-                'purchase_price' => $purchasePrice,
-                'salvage_value' => $salvageValue,
-                'annual_depreciation' => $annualDepreciation,
-                'depreciation_lifespan' => $usefulLife,
-                'final_lifespan' => $finalLifespan,
-                'age_in_years' => $ageInYears,
-                'remaining_life' => $remainingLife
+            // Determine life status
+            $lifeStatus = $endOfLifeDate->isPast()
+                ? 'critical'
+                : $this->getLifeStatus($remainingLife, $finalLifespan);
+
+            // Update the asset with calculated values
+            $asset->update([
+                'calculated_lifespan' => round($finalLifespan, 2),
+                'remaining_life' => round($remainingLife, 2),
+                'end_of_life_date' => $endOfLifeDate,
+                'life_status' => $lifeStatus
             ]);
-            
-            // Add calculated fields to the asset
-            $asset->calculated_lifespan = round($finalLifespan, 2);
-            $asset->remaining_life = round($remainingLife, 2); // This will now never be negative
-            $asset->end_of_life_date = $endOfLifeDate;
-            
-            // Add a status indicator for remaining life
-            $asset->life_status = $this->getLifeStatus($remainingLife, $finalLifespan);
             
             return $asset;
         });
     
         return view('asset-list', compact('assets'));
+    }
+
+    private function getLifeStatus($remainingLife, $totalLifespan)
+    {
+        // Prevent division by zero and handle expired assets
+        if ($totalLifespan <= 0 || $remainingLife <= 0) {
+            return 'critical';
+        }
+
+        // Calculate percentage of remaining life
+        $percentage = ($remainingLife / $totalLifespan) * 100;
+
+        // Check absolute remaining life in years
+        if ($remainingLife < 0.25) { // Less than 3 months
+            return 'critical';
+        } else if ($remainingLife < 0.5) { // Less than 6 months
+            return 'warning';
+        }
+
+        // Also check percentage-based thresholds
+        if ($percentage <= 10) {
+            return 'critical';
+        } else if ($percentage <= 25) {
+            return 'warning';
+        }
+
+        return 'good';
     }
 
     public function store(Request $request)

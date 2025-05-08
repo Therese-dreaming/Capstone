@@ -79,6 +79,13 @@ class RepairRequestController extends Controller
             ->first();
 
         if ($existingRequest) {
+            // Check if the existing request is for a pulled out asset
+            if ($existingRequest->status === 'pulled_out') {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'This asset is currently pulled out. Ticket number: ' . $existingRequest->ticket_number);
+            }
+            
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'There is already an active repair request for this equipment in this location. Ticket number: ' . $existingRequest->ticket_number);
@@ -123,7 +130,7 @@ class RepairRequestController extends Controller
                 'type' => 'repair_assigned',
                 'message' => "New repair request assigned: {$ticketNumber} - {$request->equipment}",
                 'is_read' => false,
-                'link' => '/repair/status'
+                'link' => url(route('repair.status', [], false))
             ]);
         }
 
@@ -136,7 +143,7 @@ class RepairRequestController extends Controller
                     'type' => 'urgent_repair',
                     'message' => "Urgent repair request: {$ticketNumber} - {$request->equipment}",
                     'is_read' => false,
-                    'link' => '/repair/status'
+                    'link' => url(route('repair.status', [], false))
                 ]);
             }
         }
@@ -190,6 +197,11 @@ class RepairRequestController extends Controller
     
         // Handle asset status updates for pulled out requests
         if ($request->status === 'pulled_out' && $repairRequest->serial_number) {
+            // Preserve the existing technician_id if not provided in the request
+            if (!$request->technician_id) {
+                $updateData['technician_id'] = $repairRequest->technician_id;
+            }
+            
             $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
             if ($asset) {
                 $oldStatus = $asset->status;
@@ -302,7 +314,7 @@ class RepairRequestController extends Controller
         }
 
         // Set completion/cancellation datetime if applicable
-        if (in_array($request->status, ['completed', 'cancelled']) && $request->date_finished && $request->time_finished) {
+        if (in_array($request->status, ['completed', 'cancelled', 'pulled_out']) && $request->date_finished && $request->time_finished) {
             $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
         }
     

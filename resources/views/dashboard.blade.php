@@ -139,7 +139,13 @@
                     </div>
                     <div class="bg-blue-50 p-4 rounded-lg">
                         <p class="text-sm text-gray-600">Avg. Response Time</p>
-                        <p class="text-2xl font-bold text-blue-600">{{ round($avgResponseTime) }} days</p>
+                        <p class="text-2xl font-bold text-blue-600">
+                            @if($avgResponseDays)
+                                {{ $avgResponseDays }} days
+                            @else
+                                {{ $avgResponseTime }} hrs
+                            @endif
+                        </p>
                     </div>
                 </div>
             </div>
@@ -287,9 +293,14 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}
                             </td>
+                            <!-- Update the status cell in the Warranty Status table -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->days_until_warranty_expires <= 30 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ $asset->days_until_warranty_expires }} days
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->days_until_warranty_expires <= 0 ? 'bg-red-100 text-red-800' : ($asset->days_until_warranty_expires <= 30 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') }}">
+                                    @if($asset->days_until_warranty_expires <= 0)
+                                        Expired
+                                    @else
+                                        {{ $asset->days_until_warranty_expires }} days left
+                                    @endif
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $asset->status }}</td>
@@ -301,6 +312,7 @@
         </div>
 
         <!-- Add this after the Warranty Status Section -->
+        <!-- Asset Lifespan Status Section -->
         <div class="bg-white p-6 rounded-lg shadow mt-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-semibold">Asset Lifespan Status</h2>
@@ -313,7 +325,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End of Life Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining Life</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         </tr>
                     </thead>
@@ -323,16 +335,16 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $asset->end_of_life_date->format('M d, Y') }}
+                                {{ $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : 'N/A' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ ($asset->days_left <= 0 || $asset->life_status === 'out of date') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ max(0, $asset->days_left) }} days
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ number_format($asset->remaining_life, 2) }} years
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ ($asset->days_left <= 0 || $asset->life_status === 'out of date') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ $asset->days_left <= 0 ? 'Out of date' : ucfirst($asset->life_status) }}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ ucfirst($asset->life_status) }}
                                 </span>
                             </td>
                         </tr>

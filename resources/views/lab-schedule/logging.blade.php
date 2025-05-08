@@ -93,9 +93,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const rfidInput = document.getElementById('rfidInput');
     const modal = document.getElementById('confirmationModal');
     let scheduleData = null;
+    let lastTapTime = {}; // Store last tap time for each RFID
 
     rfidInput.addEventListener('input', async function() {
         if (this.value.length >= 8) { // Assuming RFID has minimum 8 characters
+            const currentRfid = this.value;
+            const now = new Date().getTime();
+            const lastTap = lastTapTime[currentRfid] || 0;
+            const timeDiff = now - lastTap;
+
+            // Check if less than 15 minutes (900000 milliseconds) have passed since last tap
+            if (timeDiff < 900000 && lastTap !== 0) {
+                // Create and show error message for rapid tapping
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
+                errorDiv.textContent = 'Please wait 15 minutes before tapping again.';
+                
+                // Insert the message at the top of the content area
+                const contentArea = document.querySelector('.p-6');
+                contentArea.insertBefore(errorDiv, contentArea.firstChild);
+                
+                // Remove the message after 3 seconds
+                setTimeout(() => {
+                    errorDiv.remove();
+                }, 3000);
+                
+                // Clear RFID input
+                this.value = '';
+                return;
+            }
+
             try {
                 const response = await fetch('/lab-logging/get-schedule', {
                     method: 'POST',
@@ -104,13 +131,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify({
-                        rfid: this.value
+                        rfid: currentRfid
                     })
                 });
 
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Update last tap time for this RFID
+                    lastTapTime[currentRfid] = now;
+                    
                     scheduleData = data.schedule;
                     
                     // Fill modal with schedule data

@@ -25,8 +25,11 @@ class DashboardController extends Controller
             ->count();
         $avgResponseTime = RepairRequest::where('status', 'completed')
             ->whereNotNull('completed_at')
-            ->select(DB::raw('ROUND(AVG(DATEDIFF(completed_at, created_at)), 1) as avg_days'))
-            ->value('avg_days') ?? 0;
+            ->select(DB::raw('ROUND(AVG(ABS(TIMESTAMPDIFF(HOUR, created_at, completed_at))), 1) as avg_hours'))
+            ->value('avg_hours') ?? 0;
+
+        // Convert to days if more than 24 hours
+        $avgResponseDays = $avgResponseTime >= 24 ? round($avgResponseTime / 24, 1) : null;
 
         // Get urgent repairs
         $urgentRepairs = RepairRequest::where('status', 'urgent')
@@ -34,17 +37,32 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
-        // Keep existing warranty check
+        // Get assets with expiring warranties
         $warrantyExpiringAssets = Asset::select('*')
             ->selectRaw('DATEDIFF(warranty_period, CURDATE()) as days_until_warranty_expires')
             ->whereNotNull('warranty_period')
-            ->where('warranty_period', '>', now())
-            ->where('warranty_period', '<=', now()->addMonths(3))
             ->where('status', '!=', 'DISPOSED')
+            ->where(function($query) {
+                $query->where('warranty_period', '<=', now()->addMonths(3))
+                      ->orWhere('warranty_period', '<', now());
+            })
             ->orderBy('warranty_period')
             ->limit(5)
             ->get();
 
+        // Get critical and warning assets using stored values
+        $criticalAndWarningAssets = Asset::where('status', '!=', 'DISPOSED')
+            ->whereIn('life_status', ['critical', 'warning'])
+            ->orderBy('remaining_life')
+            ->limit(5)
+            ->get()
+            ->each(function ($asset) {
+                $asset->days_left = $asset->end_of_life_date
+                    ? now()->diffInDays($asset->end_of_life_date, false)
+                    : 0;
+            });
+
+        // Keep the rest of the method unchanged
         // Get all months of the current year
         $months = collect(range(1, 12))->map(function ($month) {
             return [
@@ -122,56 +140,6 @@ class DashboardController extends Controller
             ->orderBy('hours', 'desc')
             ->get();
 
-        $assets = Asset::where('status', '!=', 'DISPOSED')->get();
-
-        $criticalAndWarningAssets = $assets->map(function ($asset) {
-            // Calculate useful life using straight-line depreciation
-            $purchasePrice = $asset->purchase_price;
-            $salvageValue = $purchasePrice * 0.1; // 10% salvage value
-
-            $purchaseDate = Carbon::parse($asset->purchase_date);
-            $warrantyDate = Carbon::parse($asset->warranty_period);
-            $warrantyYears = $purchaseDate->diffInYears($warrantyDate);
-
-            if ($warrantyYears <= 0) {
-                $warrantyYears = 1;
-            }
-
-            $annualDepreciation = ($purchasePrice - $salvageValue) / $warrantyYears;
-
-            if ($annualDepreciation <= 0) {
-                $usefulLife = $warrantyYears;
-            } else {
-                $usefulLife = round(($purchasePrice - $salvageValue) / $annualDepreciation, 2);
-            }
-
-            // Calculate end of life date and days remaining
-            $endOfLife = $purchaseDate->copy()->addYears($usefulLife);
-            $daysLeft = now()->diffInDays($endOfLife, false);
-
-            // Update status calculation to match AssetController logic
-            $percentage = ($daysLeft / ($usefulLife * 365)) * 100;
-            
-            if ($percentage <= 10) {
-                $asset->life_status = 'critical';
-            } elseif ($percentage <= 25) {
-                $asset->life_status = 'warning';
-            } else {
-                $asset->life_status = 'good';
-            }
-
-            $asset->end_of_life_date = $endOfLife;
-            $asset->days_left = $daysLeft;
-
-            return $asset;
-        })
-        ->filter(function ($asset) {
-            // Only show assets with warning (≤25%) or critical (≤10%) status
-            return $asset->life_status === 'critical' || $asset->life_status === 'warning';
-        })
-        ->sortBy('days_left')
-        ->take(5);
-
         return view('dashboard', compact(
             'totalAssetValue',
             'disposedAssets',
@@ -180,6 +148,7 @@ class DashboardController extends Controller
             'totalOpen',
             'completedThisMonth',
             'avgResponseTime',
+            'avgResponseDays',
             'urgentRepairs',
             'labUsageData',
             'deptUsageData',

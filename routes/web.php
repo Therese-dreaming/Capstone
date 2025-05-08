@@ -153,4 +153,6 @@ Route::middleware([\App\Http\Middleware\CoordinatorMiddleware::class])->group(fu
     Route::get('/lab-history', [LabScheduleController::class, 'history'])->name('lab.history');
     Route::post('/lab-schedule/delete', [LabScheduleController::class, 'destroy'])->name('lab.delete');
     Route::put('/lab-schedule/{id}', [LabScheduleController::class, 'update'])->name('lab.update');
+    Route::get('/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab.schedule.export');
+    Route::get('/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab.schedule.preview');
 });

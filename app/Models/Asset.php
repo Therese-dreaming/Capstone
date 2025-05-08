@@ -23,9 +23,20 @@ class Asset extends Model
         'photo',
         'serial_number',
         'qr_code',
-        'purchase_price', // Add this if not already present
+        'purchase_price',
         'disposal_date',
         'disposal_reason',
+        'calculated_lifespan',
+        'remaining_life',
+        'end_of_life_date',
+        'life_status'
+    ];
+
+    protected $casts = [
+        'end_of_life_date' => 'datetime',
+        'disposal_date' => 'datetime',
+        'calculated_lifespan' => 'decimal:2',
+        'remaining_life' => 'decimal:2'
     ];
 
     protected $dates = [
