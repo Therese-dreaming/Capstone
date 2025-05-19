@@ -108,38 +108,98 @@ class MaintenanceController extends Controller
 
     public function upcoming()
     {
-        $maintenances = Maintenance::where('status', 'scheduled')
-            ->orderBy('lab_number')
+        $query = Maintenance::where('status', 'scheduled');
+
+        // If user is secretary (group_id = 2), only show their assigned tasks
+        if (auth()->user()->group_id === 2) {
+            $query->where('technician_id', auth()->id());
+        }
+
+        $maintenances = $query->orderBy('lab_number')
             ->orderBy('scheduled_date')
             ->get();
+
         return view('maintenance-upcoming', compact('maintenances'));
-    }
-
-    public function history()
-    {
-        $maintenances = Maintenance::whereIn('status', ['completed', 'cancelled'])
-            ->orderBy('scheduled_date', 'desc')
-            ->orderBy('updated_at', 'desc')
-            ->get();
-
-        return view('maintenance-history', compact('maintenances'));
     }
 
     public function complete($id)
     {
         $maintenance = Maintenance::findOrFail($id);
-        $maintenance->update([
+
+        // Check if user is secretary and is assigned to this task
+        if (auth()->user()->group_id === 2 && $maintenance->technician_id !== auth()->id()) {
+            return redirect()->route('maintenance.upcoming')
+                ->with('error', 'You are not authorized to complete this maintenance task');
+        }
+    
+        // Debug incoming request data
+        \Log::info('Complete maintenance request data:', request()->all());
+    
+        $updateData = [
             'status' => 'completed',
             'action_by_id' => auth()->id(),
             'completed_at' => now()
-        ]);
-        return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance marked as completed');
+        ];
+    
+        // Handle asset issues if they exist in the request
+        if (request()->has('has_issues') && request()->has_issues == 1) {
+            $assetIssues = [];
+            $serialNumbers = [];
+            
+            // Handle main issue
+            if (request()->has('issue_description')) {
+                $mainSerialNumber = request()->input('serial_number');
+                $serialNumbers[] = $mainSerialNumber;
+                $assetIssues[] = [
+                    'issue_description' => request()->input('issue_description')
+                ];
+            }
+            
+            // Handle additional issues
+            $additionalSerialNumbers = request()->input('additional_serial_number', []);
+            $additionalIssueDescriptions = request()->input('additional_issue_description', []);
+            
+            foreach ($additionalSerialNumbers as $key => $serialNumber) {
+                if (isset($additionalIssueDescriptions[$key])) {
+                    $serialNumbers[] = $serialNumber;
+                    $assetIssues[] = [
+                        'issue_description' => $additionalIssueDescriptions[$key]
+                    ];
+                }
+            }
+            
+            $updateData['asset_issues'] = $assetIssues;
+            $updateData['serial_number'] = json_encode($serialNumbers); // Store all serial numbers as JSON
+            } else {
+            // If no issues, set empty arrays for asset_issues and serial_number
+            $updateData['asset_issues'] = [];
+            $updateData['serial_number'] = json_encode([]);
+        }
+    
+        try {
+            $maintenance->update($updateData);
+            \Log::info('Maintenance updated successfully:', ['maintenance_id' => $id]);
+    
+            return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance marked as completed');
+        } catch (\Exception $e) {
+            \Log::error('Error updating maintenance:', ['error' => $e->getMessage()]);
+            return redirect()->route('maintenance.upcoming')->with('error', 'Failed to update maintenance: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)
     {
         try {
             $maintenance = Maintenance::findOrFail($id);
+
+            // Check if user is secretary and is assigned to this task
+            if (auth()->user()->group_id === 2 && $maintenance->technician_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to delete this maintenance task'
+                ], 403);
+            }
+
             // Delete the record from the database
             $maintenance->delete();
 
@@ -153,6 +213,16 @@ class MaintenanceController extends Controller
                 'message' => 'Error deleting maintenance: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function history()
+    {
+        $maintenances = Maintenance::whereIn('status', ['completed', 'cancelled'])
+            ->orderBy('scheduled_date', 'desc')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return view('maintenance-history', compact('maintenances'));
     }
 
     public function edit($id)
@@ -319,7 +389,6 @@ class MaintenanceController extends Controller
         return redirect()->back()->with('success', 'Maintenance task deleted successfully');
     }
 
-    // Remove the duplicate methods at the bottom and keep these improved versions
     public function completeAllByDate($lab, $date)
     {
         try {
@@ -328,12 +397,48 @@ class MaintenanceController extends Controller
                 ->where('status', 'scheduled')
                 ->get();
 
+            // Handle asset issues if they exist in the request
+            if (request()->has('has_issues') && request()->has_issues == 1) {
+                $assetIssues = [];
+                $serialNumbers = [];
+                
+                // Handle main issue
+                if (request()->has('issue_description')) {
+                    $mainSerialNumber = request()->input('serial_number');
+                    $serialNumbers[] = $mainSerialNumber;
+                    $assetIssues[] = [
+                        'issue_description' => request()->input('issue_description')
+                    ];
+                }
+                
+                // Handle additional issues
+                $additionalSerialNumbers = request()->input('additional_serial_number', []);
+                $additionalIssueDescriptions = request()->input('additional_issue_description', []);
+                
+                foreach ($additionalSerialNumbers as $key => $serialNumber) {
+                    if (isset($additionalIssueDescriptions[$key])) {
+                        $serialNumbers[] = $serialNumber;
+                        $assetIssues[] = [
+                            'issue_description' => $additionalIssueDescriptions[$key]
+                        ];
+                    }
+                }
+            }
+
             foreach ($maintenances as $maintenance) {
-                $maintenance->update([
+                $updateData = [
                     'status' => 'completed',
                     'action_by_id' => auth()->id(),
                     'completed_at' => now()
-                ]);
+                ];
+
+                // Add asset issues data if it exists
+                if (isset($assetIssues)) {
+                    $updateData['asset_issues'] = $assetIssues;
+                    $updateData['serial_number'] = json_encode($serialNumbers); // Store all serial numbers as JSON
+                }
+
+                $maintenance->update($updateData);
             }
 
             return redirect()->route('maintenance.upcoming')

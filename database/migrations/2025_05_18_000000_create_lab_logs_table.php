@@ -8,19 +8,20 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('notifications', function (Blueprint $table) {
+        Schema::create('lab_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('type'); // maintenance, repair, asset
-            $table->string('message');
-            $table->boolean('is_read')->default(false);
-            $table->string('link')->nullable(); // URL to redirect when clicked
+            $table->string('laboratory');
+            $table->timestamp('time_in');
+            $table->timestamp('time_out')->nullable();
+            $table->enum('status', ['on-going', 'completed'])
+                  ->default('on-going');
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('notifications');
+        Schema::dropIfExists('lab_logs');
     }
 };

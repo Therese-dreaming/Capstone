@@ -48,8 +48,14 @@
         </div>
     </div>
     @else
-    <div class="bg-yellow-50 p-4 rounded-lg">
-        <p class="text-yellow-800">No urgent repairs at the moment.</p>
+    <div class="bg-white rounded-lg shadow p-8 text-center">
+        <div class="flex flex-col items-center justify-center space-y-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="text-xl font-semibold text-gray-900">All Clear!</h3>
+            <p class="text-gray-600">There are no urgent repairs that need attention at the moment.</p>
+        </div>
     </div>
     @endif
 </div>

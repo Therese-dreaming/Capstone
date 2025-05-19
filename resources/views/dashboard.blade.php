@@ -141,9 +141,9 @@
                         <p class="text-sm text-gray-600">Avg. Response Time</p>
                         <p class="text-2xl font-bold text-blue-600">
                             @if($avgResponseDays)
-                                {{ $avgResponseDays }} days
+                            {{ $avgResponseDays }} days
                             @else
-                                {{ $avgResponseTime }} hrs
+                            {{ $avgResponseTime }} hrs
                             @endif
                         </p>
                     </div>
@@ -170,103 +170,116 @@
             </div>
         </div>
 
-            <!-- Lab Utilization Analysis -->
-    <div class="bg-white p-6 rounded-lg shadow mt-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold">Lab Utilization Analysis</h2>
-        </div>
+        <!-- Lab Utilization Analysis -->
+        <div class="bg-white p-6 rounded-lg shadow mt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Lab Utilization Analysis</h2>
+            </div>
 
-        <!-- Lab Usage Statistics -->
-        <div class="grid grid-cols-3 gap-4 mb-6">
-            <div class="bg-blue-50 p-4 rounded-lg">
-                <p class="text-sm text-gray-600">Total Lab Hours</p>
-                <p class="text-2xl font-bold text-blue-600">{{ $totalLabHours }} hrs</p>
+            <!-- Lab Usage Statistics -->
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Total Lab Hours</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ $totalLabHours }} hrs</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Most Used Lab</p>
+                    <p class="text-2xl font-bold text-green-600">{{ $mostUsedLab }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $labUsageData->first()?->days_used ?? 0 }} days this month</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Average Daily Usage</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ $avgDailyUsage }} hrs</p>
+                </div>
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Peak Usage Time</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ $peakHour ? sprintf('%02d:00', $peakHour) : 'N/A' }}</p>
+                </div>
             </div>
-            <div class="bg-green-50 p-4 rounded-lg">
-                <p class="text-sm text-gray-600">Most Used Lab</p>
-                <p class="text-2xl font-bold text-green-600">{{ $mostUsedLab }}</p>
-            </div>
-            <div class="bg-purple-50 p-4 rounded-lg">
-                <p class="text-sm text-gray-600">Average Daily Usage</p>
-                <p class="text-2xl font-bold text-purple-600">{{ $avgDailyUsage }} hrs</p>
-            </div>
-        </div>
 
-        <!-- Lab Usage Chart -->
-        <div class="grid grid-cols-2 gap-4">
-            <div class="h-64">
-                <canvas id="labUsageChart"></canvas>
+            <!-- Lab Usage Chart -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="h-64">
+                    <canvas id="labUsageChart"></canvas>
+                </div>
+                <div class="h-64">
+                    <canvas id="departmentUsageChart"></canvas>
+                </div>
             </div>
-            <div class="h-64">
-                <canvas id="departmentUsageChart"></canvas>
-            </div>
-        </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Lab Usage Chart
-                new Chart(document.getElementById('labUsageChart').getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: @json($labUsageData->pluck('laboratory')),
-                        datasets: [{
-                            label: 'Hours Used',
-                            data: @json($labUsageData->pluck('hours')),
-                            backgroundColor: '#4F46E5',
-                            borderColor: '#4F46E5',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Hours'
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Lab Usage Chart
+                    new Chart(document.getElementById('labUsageChart').getContext('2d'), {
+                        type: 'bar'
+                        , data: {
+                            labels: @json($labUsageData -> pluck('laboratory'))
+                            , datasets: [{
+                                label: 'Hours Used'
+                                , data: @json($labUsageData -> pluck('hours'))
+                                , backgroundColor: '#4F46E5'
+                                , borderColor: '#4F46E5'
+                                , borderWidth: 1
+                            }]
+                        }
+                        , options: {
+                            responsive: true
+                            , maintainAspectRatio: false
+                            , scales: {
+                                y: {
+                                    beginAtZero: true
+                                    , title: {
+                                        display: true
+                                        , text: 'Hours'
+                                    }
                                 }
                             }
-                        },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Laboratory Usage Distribution'
+                            , plugins: {
+                                title: {
+                                    display: true
+                                    , text: 'Laboratory Usage Distribution'
+                                }
                             }
                         }
-                    }
+                    });
+
+                    // Department Usage Chart
+                    new Chart(document.getElementById('departmentUsageChart').getContext('2d'), {
+                        type: 'pie'
+                        , data: {
+                            labels: @json($deptUsageData -> pluck('department'))
+                            , datasets: [{
+                                data: @json($deptUsageData -> pluck('usage_percentage'))
+                                , backgroundColor: [
+                                    '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
+                                ]
+                            }]
+                        }
+                        , options: {
+                            responsive: true
+                            , maintainAspectRatio: false
+                            , plugins: {
+                                title: {
+                                    display: true
+                                    , text: 'Usage by Department (%)'
+                                }
+                                , legend: {
+                                    position: 'bottom'
+                                }
+                                , tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': ' + Math.round(context.raw) + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
                 });
 
-                // Department Usage Chart
-                new Chart(document.getElementById('departmentUsageChart').getContext('2d'), {
-                    type: 'pie',
-                    data: {
-                        labels: @json($deptUsageData->pluck('department')),
-                        datasets: [{
-                            data: @json($deptUsageData->pluck('hours')),
-                            backgroundColor: [
-                                '#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
-                            ]
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Usage by Department'
-                            },
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-            });
-        </script>
-    </div>
+            </script>
+        </div>
 
         <!-- Warranty Status Section -->
         <div class="bg-white p-6 rounded-lg shadow mt-6">
@@ -296,12 +309,7 @@
                             <!-- Update the status cell in the Warranty Status table -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->days_until_warranty_expires <= 0 ? 'bg-red-100 text-red-800' : ($asset->days_until_warranty_expires <= 30 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') }}">
-                                    @if($asset->days_until_warranty_expires <= 0)
-                                        Expired
-                                    @else
-                                        {{ $asset->days_until_warranty_expires }} days left
-                                    @endif
-                                </span>
+                                    @if($asset->days_until_warranty_expires <= 0) Expired @else {{ $asset->days_until_warranty_expires }} days left @endif </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $asset->status }}</td>
                         </tr>
@@ -353,5 +361,5 @@
                 </table>
             </div>
         </div>
-</div>
-@endsection
+    </div>
+    @endsection

@@ -14,7 +14,13 @@
 
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">Request Status</h2>
-            <div class="flex gap-4">
+            <div class="flex gap-4 items-center">
+                @if(auth()->user()->group_id == 2)
+                <div class="flex items-center gap-2">
+                    <label for="showAssigned" class="text-sm font-medium text-gray-700">Show My Requests Only</label>
+                    <input type="checkbox" id="showAssigned" class="form-checkbox h-4 w-4 text-red-600 rounded border-gray-300 focus:ring-red-500">
+                </div>
+                @endif
                 <div class="relative">
                     <input type="text" id="ticketSearch" placeholder="Search Ticket No." class="px-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
                 </div>
@@ -24,63 +30,57 @@
         <table class="min-w-full" id="requestsTable">
             <thead class="bg-[#960106]">
                 <tr>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Request Date</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Ticket No.</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Item</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Location</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Technician</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Issue</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Request Date</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Ticket No.</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Item</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Location</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Status</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Technician</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Issue</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200" id="tableBody">
                 @foreach($requests as $request)
                 <tr id="request-{{ $request->id }}" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ $request->ticket_number ?? 'N/A' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->equipment }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->location }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 font-medium truncate max-w-0">{{ $request->ticket_number ?? 'N/A' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->equipment }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->location }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">
                         @if($request->status === 'urgent')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Urgent
-                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Urgent</span>
                         @elseif($request->status === 'completed')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Completed
-                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
                         @elseif($request->status === 'cancelled')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Cancelled
-                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
                         @else
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Pending
-                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
                         @endif
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ $request->technician ? $request->technician->name : 'Not Assigned' }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->issue }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->issue }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">
                         <div class="flex space-x-2">
-                            <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                            </button>
-                            <button onclick="openCompleteModal('{{ $request->id }}')" class="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 tooltip" title="Complete">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </button>
-                            <button onclick="openCancelModal('{{ $request->id }}')" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Cancel">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
+                                <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button onclick="openCompleteModal('{{ $request->id }}')" class="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 tooltip" title="Complete">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                <button onclick="openCancelModal('{{ $request->id }}')" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Cancel">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            @else
+                                <span class="text-gray-500 italic">No actions available</span>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -814,3 +814,31 @@
 
     </script>
     @endsection
+
+<!-- Add this JavaScript code at the bottom of the file -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const showAssignedCheckbox = document.getElementById('showAssigned');
+        const tableBody = document.getElementById('tableBody');
+        const rows = tableBody.getElementsByTagName('tr');
+
+        if (showAssignedCheckbox) {
+            showAssignedCheckbox.addEventListener('change', function() {
+                const userId = '{{ auth()->id() }}';
+                
+                Array.from(rows).forEach(row => {
+                    const technicianCell = row.cells[5]; // Index of technician column
+                    const technicianName = '{{ auth()->user()->name }}';
+                    
+                    if (this.checked) {
+                        // Show only rows where technician matches the current user
+                        row.style.display = technicianCell.textContent.trim() === technicianName ? '' : 'none';
+                    } else {
+                        // Show all rows
+                        row.style.display = '';
+                    }
+                });
+            });
+        }
+    });
+</script>

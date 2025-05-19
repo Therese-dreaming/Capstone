@@ -39,7 +39,7 @@
                             <input type="checkbox" name="ongoing_activity" value="yes" class="sr-only peer" onchange="this.value = this.checked ? 'yes' : 'no'">
                             <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-600"></div>
                             <span class="ml-3 text-sm font-medium text-gray-700 peer-checked:text-red-600">
-                                <span class="ongoing-status">No</span>
+                                <span class="ongoing-status">Yes</span>
                             </span>
                         </label>
                     </div>
@@ -102,8 +102,8 @@
                     </select>
                 </div>
 
-                <!-- Technician Selection (Admin/Secretary only) -->
-                @if(auth()->user()->group_id <= 2)
+                <!-- Technician Selection (Admin only) -->
+                @if(auth()->user()->group_id == 1)
                 <div class="relative">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Assign Technician (Optional)</label>
                     <select name="technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
@@ -113,6 +113,8 @@
                         @endforeach
                     </select>
                 </div>
+                @elseif(auth()->user()->group_id == 2)
+                    <input type="hidden" name="technician_id" value="{{ auth()->id() }}">
                 @endif
 
                 <!-- Issue -->

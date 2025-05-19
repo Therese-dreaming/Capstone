@@ -12,7 +12,8 @@ class DatabaseSeeder extends Seeder
             GroupSeeder::class,
             CreateDefaultUserSeeder::class,
             CategorySeeder::class,  // Make sure CategorySeeder runs before AssetSeeder
-            AssetSeeder::class
+            AssetSeeder::class,
+            MaintenanceTaskSeeder::class,
         ]);
     }
 }

@@ -12,7 +12,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'username',
-        'rfid_number',  // Add this line
+        'rfid_number',
         'password',
         'department',
         'position',
@@ -32,5 +32,11 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    // Add this relationship
+    public function labLogs()
+    {
+        return $this->hasMany(LabLog::class);
     }
 }

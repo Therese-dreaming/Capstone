@@ -74,7 +74,6 @@
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Date</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Laboratory</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Task</th>
-                        <!-- Add this new column -->
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Excluded Assets</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Technician</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
@@ -99,15 +98,27 @@
                             @php
                             $tasks = is_array($maintenance->maintenance_task) ? $maintenance->maintenance_task : json_decode($maintenance->maintenance_task, true);
                             @endphp
-                            @if(is_array($tasks))
-                            <ul class="list-disc list-inside">
-                                @foreach($tasks as $task)
-                                <li>{{ $task }}</li>
-                                @endforeach
-                            </ul>
-                            @else
-                            {{ $maintenance->maintenance_task }}
-                            @endif
+                            <div class="flex items-start space-x-2">
+                                <div class="flex-grow">
+                                    @if(is_array($tasks))
+                                    <ul class="list-disc list-inside">
+                                        @foreach($tasks as $task)
+                                        <li>{{ $task }}</li>
+                                        @endforeach
+                                    </ul>
+                                    @else
+                                    {{ $maintenance->maintenance_task }}
+                                    @endif
+                                </div>
+                                @if($maintenance->asset_issues && is_array($maintenance->asset_issues) && !empty($maintenance->asset_issues))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    Issues
+                                </span>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             @php
@@ -148,11 +159,21 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <button onclick="confirmDelete({{ $maintenance->id }})" class="text-red-600 hover:text-red-800">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
+                            <div class="flex space-x-2">
+                                @if($maintenance->asset_issues && is_array($maintenance->asset_issues) && !empty($maintenance->asset_issues))
+                                <button onclick="viewAssetIssues({{ $maintenance->id }}, {{ json_encode($maintenance->asset_issues) }}, {{ json_encode($maintenance->serial_number) }})" class="text-blue-600 hover:text-blue-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                                @endif
+                                <button onclick="confirmDelete({{ $maintenance->id }})" class="text-red-600 hover:text-red-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -203,6 +224,30 @@
                     Download PDF
                 </button>
             </div>
+        </div>
+    </div>
+    <!-- Asset Issues Modal -->
+    <div id="assetIssuesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg max-w-2xl mx-auto w-full shadow-xl transform transition-all">
+        <div class="bg-[#960106] text-white p-6 rounded-t-lg">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/10 p-2 rounded-full">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">Asset Issues</h3>
+                </div>
+                <button onclick="closeAssetIssuesModal()" class="text-white/70 hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-full p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="p-6 space-y-6">
+            <div id="assetIssuesList" class="space-y-6"></div>
         </div>
     </div>
 </div>
@@ -517,6 +562,63 @@
             }, 5000);
         }
     });
+
+function closeAssetIssuesModal() {
+    const modal = document.getElementById('assetIssuesModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.getElementById('assetIssuesList').innerHTML = '';
+}
+
+function viewAssetIssues(maintenanceId, assetIssues, serialNumbers) {
+    const modal = document.getElementById('assetIssuesModal');
+    const assetIssuesList = document.getElementById('assetIssuesList');
+
+    // Parse the data if they're strings
+    const parsedSerialNumbers = typeof serialNumbers === 'string' ? JSON.parse(serialNumbers) : serialNumbers;
+    const parsedIssues = typeof assetIssues === 'string' ? JSON.parse(assetIssues) : assetIssues;
+
+    // Clear previous content
+    assetIssuesList.innerHTML = '';
+
+    // Create HTML for each asset and its corresponding issue
+    if (Array.isArray(parsedSerialNumbers) && Array.isArray(parsedIssues)) {
+        parsedSerialNumbers.forEach((serialNumber, index) => {
+            const issue = parsedIssues[index];
+            if (issue) {
+                assetIssuesList.innerHTML += `
+                    <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                <h4 class="font-medium text-gray-900">Asset ${index + 1}: ${serialNumber}</h4>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="bg-red-50 p-2 rounded-full mt-1">
+                                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-grow">
+                                    <p class="text-gray-700">${issue.issue_description}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        });
+    } else {
+        assetIssuesList.innerHTML = '<div class="text-gray-500 italic text-center">No issues reported</div>';
+    }
+
+    // Show the modal
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
 
 </script>
 @endsection

@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('asset_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('asset_id')->constrained('assets')->onDelete('cascade');
-            $table->string('change_type'); // STATUS, PRICE, LOCATION, MAINTENANCE, REPAIR
+            $table->foreignId('asset_id')->constrained()->onDelete('cascade');
+            $table->string('change_type');
             $table->string('old_value')->nullable();
             $table->string('new_value')->nullable();
             $table->text('remarks')->nullable();

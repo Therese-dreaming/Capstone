@@ -14,13 +14,16 @@ class Maintenance extends Model
         'status',
         'action_by_id',
         'completed_at',
-        'excluded_assets'
+        'excluded_assets',
+        'asset_issues',
+        'serial_number'  // Add this line if not present
     ];
 
     protected $casts = [
         'excluded_assets' => 'array',
         'scheduled_date' => 'datetime',
-        'maintenance_task' => 'array'
+        'maintenance_task' => 'array',
+        'asset_issues' => 'array'  // Add this line
     ];
 
     public function actionBy()

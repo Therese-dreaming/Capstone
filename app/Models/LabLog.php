@@ -7,17 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class LabLog extends Model
 {
     protected $fillable = [
+        'user_id',
         'laboratory',
-        'date',
         'time_in',
         'time_out',
-        'professor_name',
-        'subject_course',
-        'user_id'
+        'status'
     ];
 
     protected $casts = [
-        'date' => 'date',
         'time_in' => 'datetime',
         'time_out' => 'datetime'
     ];

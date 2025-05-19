@@ -411,16 +411,25 @@ class AssetController extends Controller
 
     public function fetch($serialNumber)
     {
-        $asset = Asset::where('serial_number', $serialNumber)->first();
-
+        $lab = request()->query('lab');
+        $asset = Asset::where('serial_number', $serialNumber)
+            ->when($lab, function($query) use ($lab) {
+                return $query->where('location', $lab);
+            })
+            ->first();
+    
         if (!$asset) {
-            return response()->json(['message' => 'Asset not found'], 404);
+            return response()->json([
+                'message' => $lab ? 'Asset not found in this lab' : 'Asset not found'
+            ], 404);
         }
-
+    
         return response()->json([
             'name' => $asset->name,
             'location' => $asset->location,
-            'category_id' => $asset->category_id
+            'category_id' => $asset->category_id,
+            'category' => $asset->category,
+            'end_of_life_date' => $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : null
         ]);
     }
 }

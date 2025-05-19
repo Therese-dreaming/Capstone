@@ -10,14 +10,18 @@ return new class extends Migration
     {
         Schema::create('repair_requests', function (Blueprint $table) {
             $table->id();
+            $table->string('ticket_number');
+            $table->string('serial_number')->nullable();
             $table->date('date_called');
             $table->time('time_called');
-            $table->string('department');
-            $table->string('office_room');
             $table->foreignId('category_id')->constrained();
-            $table->string('equipment');  // Add this line
+            $table->string('equipment');
             $table->text('issue');
             $table->string('status')->default('pending');
+            $table->text('remarks')->nullable();
+            $table->foreignId('technician_id')->nullable()->constrained('users');
+            $table->timestamp('completed_at')->nullable();
+            $table->string('location')->nullable();
             $table->timestamps();
         });
     }

@@ -135,7 +135,7 @@
                                                 {{ ucfirst($maintenance->status) }}
                                             </span>
                                             <div class="flex space-x-2">
-                                                <button onclick="markAsComplete('{{ $maintenance->id }}')" 
+                                                <button onclick="markAsComplete('{{ $maintenance->id }}', '{{ $labNumber }}')" 
                                                     class="text-sm px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -163,123 +163,51 @@
         @endforeach
     </div>
 
-    <!-- Completion Modal -->
-    <div id="completionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Complete Maintenance</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure this maintenance task has been completed?</p>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <form id="completeForm" method="POST">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                            Confirm
-                        </button>
-                        <button type="button" onclick="hideModal('completionModal')" class="ml-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                            Cancel
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Cancellation Modal -->
-    <div id="cancellationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Cancel Maintenance</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to cancel this maintenance task?</p>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <form id="cancelForm" method="POST">
-                        @csrf
-                        @method('DELETE')
+<!-- Move this modal inside the form where the cancel buttons are -->
+<div class="items-center px-4 py-3">
+    <form id="cancelForm" method="POST">
+        @csrf
+        @method('DELETE')
+        <!-- Add the modal inside the form -->
+        <div id="cancellationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Cancel Maintenance</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">Are you sure you want to cancel this maintenance task?</p>
+                    </div>
+                    <div class="items-center px-4 py-3">
                         <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                             Confirm
                         </button>
                         <button type="button" onclick="hideModal('cancellationModal')" class="ml-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
                             Cancel
                         </button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <script>
-        function markAsComplete(id) {
-            document.getElementById('completeForm').action = `/maintenance/${id}/complete`;
-            document.getElementById('completionModal').classList.remove('hidden');
-        }
-
-        function cancelMaintenance(id) {
-            document.getElementById('cancelForm').action = `/maintenance/${id}`;
-            document.getElementById('cancellationModal').classList.remove('hidden');
-        }
-
-        function hideModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-
-        function toggleLab(labId) {
-            const content = document.getElementById(labId);
-            const labNumber = labId.split('-')[1];
-            const chevron = document.getElementById(`chevron-${labNumber}`);
-
-            content.classList.toggle('hidden');
-            chevron.classList.toggle('rotate-180');
-        }
-
-        function completeAllTasks(labNumber, date) {
-            const form = document.getElementById('completeForm');
-            form.action = `/maintenance/${labNumber}/date/${date}/complete-all`;
-            document.getElementById('completionModal').classList.remove('hidden');
-        }
-
-        function cancelAllTasks(labNumber, date) {
-            const form = document.getElementById('cancelForm');
-            form.action = `/maintenance/${labNumber}/date/${date}/cancel-all`;
-            document.getElementById('cancellationModal').classList.remove('hidden');
-        }
-    </script>
+    </form>
 </div>
-@endsection
 
-<!-- Add this to your script section -->
+<!-- Include the completion modal partial -->
+@include('partials.maintenance-completion-modal')
+
 <script>
-    // Add this new function to your existing script
+
     function toggleDate(dateId) {
         const content = document.getElementById(dateId);
         const chevron = document.getElementById(`chevron-${dateId}`);
-        
+
         content.classList.toggle('hidden');
         chevron.classList.toggle('rotate-180');
-    }
-    
-    function markAsComplete(id) {
-        document.getElementById('completeForm').action = `/maintenance/${id}/complete`;
-        document.getElementById('completionModal').classList.remove('hidden');
-    }
-
-    function cancelMaintenance(id) {
-        document.getElementById('cancelForm').action = `/maintenance/${id}`;
-        document.getElementById('cancellationModal').classList.remove('hidden');
-    }
-
-    function hideModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
     }
 
     function toggleLab(labId) {
         const content = document.getElementById(labId);
         const labNumber = labId.split('-')[1];
         const chevron = document.getElementById(`chevron-${labNumber}`);
-    
+
         content.classList.toggle('hidden');
         chevron.classList.toggle('rotate-180');
     }
@@ -287,12 +215,24 @@
     function completeAllTasks(labNumber, date) {
         const form = document.getElementById('completeForm');
         form.action = `/maintenance/${labNumber}/date/${date}/complete-all`;
+        form.setAttribute('data-lab', labNumber); // Add this line to set the lab number
         document.getElementById('completionModal').classList.remove('hidden');
+    }
+
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function cancelMaintenance(id) {
+        const form = document.getElementById('cancelForm');
+        form.action = `/maintenance/${id}`;
+        document.getElementById('cancellationModal').classList.remove('hidden');
     }
 
     function cancelAllTasks(labNumber, date) {
         const form = document.getElementById('cancelForm');
         form.action = `/maintenance/${labNumber}/date/${date}/cancel-all`;
         document.getElementById('cancellationModal').classList.remove('hidden');
-    }
+    } 
 </script>
+@endsection

@@ -34,10 +34,15 @@ class RepairRequestController extends Controller
             'serial_number' => 'nullable|string',
             'issue' => 'required|string',
             'status' => 'required|in:pending,urgent',
-            'technician_id' => 'nullable|exists:users,id'  // Add this line
+            'technician_id' => 'nullable|exists:users,id'
         ];
 
         $request->validate($rules);
+
+        // If user is secretary, force technician_id to be their own ID
+        if (auth()->user()->group_id === 2) {
+            $request->merge(['technician_id' => auth()->id()]);
+        }
 
         // If serial_number is empty string or null, set it to null
         $serialNumber = $request->serial_number ? trim($request->serial_number) : null;

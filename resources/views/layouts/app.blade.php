@@ -38,6 +38,7 @@
             <h1 class="text-xl font-bold uppercase">Operations Management System</h1>
         </div>
 
+        @auth
         <!-- Right side - User Profile and Notifications -->
         <div class="flex items-center space-x-6">
             <!-- User Profile Dropdown -->
@@ -84,17 +85,20 @@
                 </div>
             </div>
         </div>
+        @endauth
     </header>
 
     <div class="flex pt-16">
         <!-- Sidebar -->
+        @auth
         <aside class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 pt-10">
             <div class="p-4 pl-8">
                 <!-- Added pl-8 for more right padding -->
                 <h2 class="text-sm text-[#D5999B] mb-8">MENU</h2>
                 <nav class="space-y-3">
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 4])) <a href="{{ route('my.tasks') }}" class="font-bold flex items-center px-6 py-2.5 text-white-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors duration-200">
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3])) 
+                    <a href="{{ route('my.tasks') }}" class="font-bold flex items-center px-6 py-2.5 text-white-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
@@ -103,7 +107,7 @@
                     @endif
 
                     <!-- Dashboard - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 4]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
                     <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 px-4 py-1.5 hover:bg-red-700 rounded-md text-[#D5999B] text-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -115,7 +119,7 @@
 
                     <!-- User Management - Hide from secretary -->
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 4]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
                     <div class="space-y-1.5">
                         <button onclick="toggleUserMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +144,7 @@
 
                     <!-- Categories - Hide from secretary -->
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 4]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
                     <a href="{{ route('categories.index') }}" class="flex items-center space-x-2 px-4 py-1.5 hover:bg-red-700 rounded-md text-[#D5999B] text-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -151,7 +155,7 @@
                     @endauth
 
                     @auth
-                    @if(auth()->check() && auth()->user()->group_id !== 4)
+                    @if(auth()->check() && auth()->user()->group_id !== 3)
                     <!-- Assets -->
                     <!-- Asset List -->
                     <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 hover:bg-red-700 rounded-md text-[#D5999B] text-sm">
@@ -165,7 +169,7 @@
                     @endauth
 
                     @auth
-                    @if(auth()->check() && auth()->user()->group_id !== 4)
+                    @if(auth()->check() && auth()->user()->group_id !== 3)
                     <!-- Lab Maintenance -->
                     <div class="space-y-1.5">
                         <button onclick="toggleMaintenanceMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
@@ -178,22 +182,30 @@
                             </svg>
                         </button>
                         <div id="maintenanceMenu" class="hidden ml-8 space-y-1.5">
+                        @auth
+                        @if(auth()->check() && auth()->user()->group_id !== 2)
                             <a href="{{ route('maintenance.schedule') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Schedule Maintenance
                             </a>
+                        @endif
+                        @endauth
                             <a href="{{ route('maintenance.upcoming') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Upcoming Maintenance
                             </a>
+                        @auth
+                        @if(auth()->check() && auth()->user()->group_id !== 2)
                             <a href="{{ route('maintenance.history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Maintenance History
                             </a>
                         </div>
+                        @endif
+                        @endauth
                     </div>
                     @endif
                     @endauth
 
                     @auth
-                    @if(auth()->check() && auth()->user()->group_id !== 4)
+                    @if(auth()->check() && auth()->user()->group_id !== 3)
                     <!-- Asset Repair -->
                     <div class="space-y-1.5">
                         <button onclick="toggleRepairMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
@@ -215,14 +227,20 @@
                             <a href="{{ route('repair.status') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Repair Status
                             </a>
+                        @auth
+                        @if(auth()->check() && auth()->user()->group_id !== 2)
                             <a href="{{ route('repair.completed') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Repair History
                             </a>
                         </div>
+                        @endif
+                        @endauth
                     </div>
                     @endif
                     @endauth
 
+                    @auth
+                    @if(auth()->check() && auth()->user()->group_id !== 2)
                     <!-- Lab Schedule -->
                     <div class="space-y-1.5">
                         <button onclick="toggleLabScheduleMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
@@ -235,25 +253,20 @@
                             </svg>
                         </button>
                         <div id="labScheduleMenu" class="hidden ml-8 space-y-1.5">
-                            @auth
-                            @if(auth()->check() && auth()->user()->group_id !== 2)
-                            <a href="{{ route('lab.schedule') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                Create Schedule
-                            </a>
                             <a href="{{ route('lab.logging') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Lab Logging
                             </a>
-                            @endif
-                            @endauth
-                            <a href="{{ route('lab.history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
+                            <a href="{{ route('lab-schedule.history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Lab History
                             </a>
+                            @endif
+                            @endauth
                         </div>
                     </div>
 
                     <!-- View Reports - Hide from secretary -->
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 4]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
                     <div class="space-y-1.5">
                         <button onclick="toggleReportMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,6 +296,7 @@
                     @endauth
             </div>
         </aside>
+        @endauth
 
         <!-- Main Content -->
         @yield('content')

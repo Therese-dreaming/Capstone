@@ -113,9 +113,13 @@ class DashboardController extends Controller
         // Lab Utilization Analysis
         $labUsageData = LabLog::select(
             'laboratory',
-            DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as hours')
+            DB::raw('ROUND(SUM(TIME_TO_SEC(TIMEDIFF(time_out, time_in))) / 3600, 1) as hours'),
+            DB::raw('COUNT(DISTINCT DATE(time_in)) as days_used')
         )
-            ->whereMonth('date', Carbon::now()->month)
+            ->where('time_in', '>=', Carbon::now()->startOfMonth())
+            ->where('time_in', '<=', Carbon::now()->endOfMonth())
+            ->where('status', 'completed')
+            ->whereNotNull('time_out')
             ->groupBy('laboratory')
             ->orderBy('hours', 'desc')
             ->get();
@@ -123,20 +127,43 @@ class DashboardController extends Controller
         // Calculate total lab hours
         $totalLabHours = $labUsageData->sum('hours');
 
-        // Get most used lab
-        $mostUsedLab = $labUsageData->first() ? "Lab " . $labUsageData->first()->laboratory : "N/A";
+        // Get most used lab with days count
+        $mostUsedLab = $labUsageData->first() 
+            ? sprintf("Lab %s (%d days this month)", 
+                $labUsageData->first()->laboratory,
+                $labUsageData->first()->days_used)
+            : "N/A";
 
-        // Calculate average daily usage
+        // Calculate average daily usage more accurately
         $daysInMonth = Carbon::now()->daysInMonth;
         $avgDailyUsage = $totalLabHours > 0 ? round($totalLabHours / $daysInMonth, 1) : 0;
 
-        // Department Usage Analysis
-        $deptUsageData = LabLog::select(
-            'subject_course as department',
-            DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as hours')
+        // Calculate peak usage hour more accurately
+        $peakUsageHours = LabLog::select(
+            DB::raw('HOUR(time_in) as hour'),
+            DB::raw('COUNT(*) as count')
         )
-            ->whereMonth('date', Carbon::now()->month)
-            ->groupBy('subject_course')
+            ->where('time_in', '>=', Carbon::now()->startOfMonth())
+            ->where('time_in', '<=', Carbon::now()->endOfMonth())
+            ->where('status', 'completed')
+            ->whereNotNull('time_out')
+            ->groupBy(DB::raw('HOUR(time_in)'))
+            ->orderBy('count', 'desc')
+            ->first();
+
+        $peakHour = $peakUsageHours ? $peakUsageHours->hour : null;
+
+        // Department Usage Analysis with percentage calculation
+        // Department Usage Analysis with user grouping instead of subject_course
+        $deptUsageData = LabLog::select(
+            'users.position as department', // Using user position as department
+            DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as hours'),
+            DB::raw('(SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) / ' . ($totalLabHours ?: 1) . ' * 100) as usage_percentage')
+        )
+            ->join('users', 'lab_logs.user_id', '=', 'users.id')
+            ->where('time_in', '>=', Carbon::now()->startOfMonth())
+            ->where('time_in', '<=', Carbon::now()->endOfMonth())
+            ->groupBy('users.position')
             ->orderBy('hours', 'desc')
             ->get();
 
@@ -155,7 +182,8 @@ class DashboardController extends Controller
             'totalLabHours',
             'mostUsedLab',
             'avgDailyUsage',
-            'criticalAndWarningAssets'
+            'criticalAndWarningAssets',
+            'peakHour' // Add this variable to the view
         ));
     }
 }

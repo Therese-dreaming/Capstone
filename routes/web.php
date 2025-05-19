@@ -20,15 +20,21 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-// Login routes
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->name('auth.login');
+// Login routes - add guest middleware to prevent redirect loops
+Route::middleware(['guest'])->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('auth.login');
+});
+
+// Keep logout route outside guest middleware as it requires authentication
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Public routes - accessible to all
 Route::get('/lab-logging', [LabScheduleController::class, 'logging'])->name('lab.logging');
-Route::post('/lab-logging/get-schedule', [LabScheduleController::class, 'getScheduleByRfid'])->name('lab.logging.schedule');
-Route::post('/lab-logging/submit', [LabScheduleController::class, 'submitLog'])->name('lab.logging.submit');
+Route::post('/lab-schedule/rfid-attendance', [LabScheduleController::class, 'handleRfidAttendance']);
+Route::get('/lab-schedule/logs', [LabScheduleController::class, 'getLabLogs']);
+Route::get('/lab-schedule/check-availability/{laboratory}', [LabScheduleController::class, 'checkAvailability']);
+Route::get('/lab-schedule/all-labs-status', [LabScheduleController::class, 'getAllLabsStatus']);
 
 // Basic authenticated routes (accessible by all authenticated users)
 Route::middleware(['auth'])->group(function () {
@@ -60,8 +66,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/procurement-history', [ReportController::class, 'procurementHistory'])->name('reports.procurement-history');
             Route::get('/disposal-history', [ReportController::class, 'disposalHistory'])->name('reports.disposal-history');
             Route::get('/asset-history/{asset}/maintenance', [ReportController::class, 'assetMaintenanceHistory'])->name('reports.asset-maintenance-history');
-            Route::get('/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])->name('reports.asset-repair-history');
-        });
+            Route::get('/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])->name('reports.asset-repair-history');        });
     });
 
     // Admin and Staff routes (group_id = 1 or 2)
@@ -133,26 +138,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/maintenance/get-lab-assets/{labNumber}', [MaintenanceController::class, 'getLabAssets'])->name('maintenance.getLabAssets');
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        
+        Route::get('/lab-schedule/history', [LabScheduleController::class, 'viewHistory'])->name('lab-schedule.history');
+        Route::post('/lab-schedule/destroy-multiple', [LabScheduleController::class, 'destroyMultiple'])->name('lab-schedule.destroyMultiple');
+        Route::get('/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab-schedule.previewPDF');
+        Route::get('/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab-schedule.exportPDF');
     });
-
-    // Coordinator routes (group_id = 4) - Remove duplicate routes
-    Route::middleware([\App\Http\Middleware\CoordinatorMiddleware::class])->group(function () {
-        Route::get('/lab-schedule', [LabScheduleController::class, 'index'])->name('lab.schedule');
-        Route::post('/lab-schedule', [LabScheduleController::class, 'store'])->name('lab-schedule.store');
-        Route::get('/lab-schedule/events', [LabScheduleController::class, 'getEvents']);
-        Route::get('/lab-history', [LabScheduleController::class, 'history'])->name('lab.history');
-        Route::post('/lab-schedule/delete', [LabScheduleController::class, 'destroy'])->name('lab.delete');
-    });
-});
-
-// Lab Schedule Routes - Only for Coordinators (group_id = 4)
-Route::middleware([\App\Http\Middleware\CoordinatorMiddleware::class])->group(function () {
-    Route::get('/lab-schedule', [LabScheduleController::class, 'index'])->name('lab.schedule');
-    Route::post('/lab-schedule', [LabScheduleController::class, 'store']);
-    Route::get('/lab-schedule/events', [LabScheduleController::class, 'getEvents']);
-    Route::get('/lab-history', [LabScheduleController::class, 'history'])->name('lab.history');
-    Route::post('/lab-schedule/delete', [LabScheduleController::class, 'destroy'])->name('lab.delete');
-    Route::put('/lab-schedule/{id}', [LabScheduleController::class, 'update'])->name('lab.update');
-    Route::get('/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab.schedule.export');
-    Route::get('/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab.schedule.preview');
 });

@@ -12,12 +12,6 @@ use Illuminate\Support\Facades\Redirect;
 
 class LoginController extends Controller
 {
-    public function __construct()
-    {
-        if (Auth::check()) {
-            $this->redirectBasedOnRole();
-        }
-    }
 
     public function showLoginForm()
     {
@@ -68,6 +62,8 @@ class LoginController extends Controller
             return redirect('/my-tasks')->with('auth_redirect', true);
         } elseif ($user->group_id === 4) { // Coordinator
             return redirect('/lab-schedule')->with('auth_redirect', true);
+        } elseif ($user->group_id === 3) { // Users
+            return redirect('/lab-logging')->with('auth_redirect', true);
         } else {
             return redirect('/')->with('error', 'Unauthorized access.');
         }
