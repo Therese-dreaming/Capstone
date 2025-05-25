@@ -576,6 +576,19 @@
         const searchInput = document.getElementById('searchInput');
         const modalSearchInput = document.getElementById('modalSearchInput');
 
+        // Check for search parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchParam = urlParams.get('search');
+        
+        if (searchParam) {
+            // Set search input values
+            if (searchInput) searchInput.value = searchParam;
+            if (modalSearchInput) modalSearchInput.value = searchParam;
+            
+            // Trigger the search
+            filterTables(searchParam);
+        }
+
         function filterTables(searchValue) {
             searchValue = searchValue.toLowerCase();
 

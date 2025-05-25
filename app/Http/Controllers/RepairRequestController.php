@@ -319,8 +319,13 @@ class RepairRequestController extends Controller
         }
 
         // Set completion/cancellation datetime if applicable
-        if (in_array($request->status, ['completed', 'cancelled', 'pulled_out']) && $request->date_finished && $request->time_finished) {
-            $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
+        if (in_array($request->status, ['completed', 'cancelled', 'pulled_out'])) {
+            // Use the provided date/time if available, otherwise use current date/time
+            if ($request->date_finished && $request->time_finished) {
+                $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
+            } else {
+                $updateData['completed_at'] = now(); // Use current date and time
+            }
         }
     
         // Perform the update

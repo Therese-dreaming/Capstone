@@ -51,6 +51,14 @@
                         <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
+                <div>
+                    <label for="issueFilter" class="block text-sm font-medium text-gray-700 mb-1">Asset Issues</label>
+                    <select id="issueFilter" onchange="filterHistory()" class="h-9 w-full px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                        <option value="">All Records</option>
+                        <option value="with_issues">With Issues</option>
+                        <option value="no_issues">No Issues</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -258,22 +266,23 @@
         const statusFilter = document.getElementById('statusFilter').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
+        const issueFilter = document.getElementById('issueFilter').value;
         const rows = document.querySelectorAll('#maintenanceTable tbody tr');
-
+    
         rows.forEach(row => {
             const labMatch = !labFilter || row.dataset.lab === labFilter;
             const statusMatch = !statusFilter || row.dataset.status === statusFilter;
-
+    
             // Date filtering
             let dateMatch = true;
             if (startDate || endDate) {
-                const dateCell = row.querySelector('td:nth-child(2)'); // Changed from first-child to nth-child(2)
+                const dateCell = row.querySelector('td:nth-child(2)');
                 if (dateCell) {
                     const dateText = dateCell.textContent.trim();
                     const cellDate = new Date(dateText);
                     const start = startDate ? new Date(startDate + 'T00:00:00') : null;
                     const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-
+    
                     if (start && end) {
                         dateMatch = cellDate >= start && cellDate <= end;
                     } else if (start) {
@@ -283,8 +292,19 @@
                     }
                 }
             }
-
-            row.style.display = labMatch && statusMatch && dateMatch ? '' : 'none';
+    
+            // Asset issues filtering
+            let issueMatch = true;
+            if (issueFilter) {
+                const hasIssues = row.querySelector('td:nth-child(4) .bg-red-100') !== null;
+                if (issueFilter === 'with_issues') {
+                    issueMatch = hasIssues;
+                } else if (issueFilter === 'no_issues') {
+                    issueMatch = !hasIssues;
+                }
+            }
+    
+            row.style.display = labMatch && statusMatch && dateMatch && issueMatch ? '' : 'none';
         });
     }
 

@@ -101,7 +101,9 @@
                                 <div class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($request->completed_at)->format('g:i A') }}</div>
                             </div>
                         </td> 
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->equipment }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->ticket_number }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->location }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>

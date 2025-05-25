@@ -32,10 +32,10 @@ class RepairRequest extends Model
         'updated_at' => 'datetime'
     ];
 
-    // Add this relationship
     public function asset()
     {
-        return $this->belongsTo(Asset::class, 'serial_number', 'serial_number');
+        return $this->belongsTo(Asset::class, 'serial_number', 'serial_number')
+            ->withDefault(['name' => 'Unknown Asset']);
     }
     
     public function category()

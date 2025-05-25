@@ -139,9 +139,16 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         
+        Route::get('/secretary-dashboard', [DashboardController::class, 'secretaryDashboard'])
+            ->middleware(['auth', \App\Http\Middleware\CheckRole::class.':2'])
+            ->name('secretary-dashboard');
+            
         Route::get('/lab-schedule/history', [LabScheduleController::class, 'viewHistory'])->name('lab-schedule.history');
         Route::post('/lab-schedule/destroy-multiple', [LabScheduleController::class, 'destroyMultiple'])->name('lab-schedule.destroyMultiple');
         Route::get('/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab-schedule.previewPDF');
         Route::get('/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab-schedule.exportPDF');
+        Route::get('/actions-history', [DashboardController::class, 'userActionsHistory'])->name('user.actions.history');
+        Route::get('/repairs-history', [App\Http\Controllers\DashboardController::class, 'allRepairsHistory'])->name('repairs.history');
+        Route::get('/maintenance-history', [App\Http\Controllers\DashboardController::class, 'allMaintenanceHistory'])->name('user.maintenance.history');
     });
 });

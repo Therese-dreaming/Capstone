@@ -120,11 +120,10 @@
                         <!-- Container for Additional Issues -->
                         <div id="additionalIssues" class="space-y-4"></div>
                     </div>
-            </div>
 
-                    <!-- Action Buttons - Outside issueDetails but inside form -->
-                    <div class="flex justify-end space-x-3 pt-4 border-t">
-                        <button type="button" onclick="hideModal('completionModal')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center space-x-1">
+                    <!-- Action Buttons -->
+                <div class="flex justify-end space-x-3 pt-4 border-t">
+                    <button type="button" onclick="hideModal('completionModal')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 flex items-center space-x-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -135,9 +134,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
                             <span>Complete Maintenance</span>
-                        </button>
-                    </div>
-                    </form>
+                    </button>
+                </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

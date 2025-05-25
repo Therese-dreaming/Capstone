@@ -2,8 +2,115 @@
 
 @section('content')
 
-<div class="flex-1 ml-72 p-8">
+<div class="flex-1 ml-72 p-8 pt-20">
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Asset Management Dashboard</h1>
+
+    <!-- Toggle Button for Personal Statistics -->
+    <button id="togglePersonalStats" class="mb-6 bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
+        <span class="show-text">Show My Statistics</span>
+        <span class="hide-text hidden">Hide My Statistics</span>
+    </button>
+
+    <!-- Personal Statistics Section (Hidden by Default) -->
+    <div id="personalStatsSection" class="hidden space-y-6">
+        <!-- Maintenance and Repair Statistics -->
+        <div class="grid grid-cols-2 gap-4 mt-6">
+            <div class="bg-blue-50 p-4 rounded-lg shadow">
+                <p class="text-sm text-gray-600">Completed Repairs</p>
+                <p class="text-2xl font-bold text-blue-600">{{ $personalStats['completed_repairs'] }}</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg shadow">
+                <p class="text-sm text-gray-600">Completed Maintenance</p>
+                <p class="text-2xl font-bold text-green-600">{{ $personalStats['completed_maintenance'] }}</p>
+            </div>
+        </div>
+
+        <!-- Completed Repairs Table -->
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Completed Repairs History</h2>
+                <a href="{{ route('repairs.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
+            </div>
+            <div class="overflow-x-auto">
+                @if($personalStats['completed_repairs_history']->count() > 0)
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($personalStats['completed_repairs_history']->take(5) as $repair)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->serial_number }}</a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $repair->issue }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @else
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No completed repairs</h3>
+                    <p class="mt-1 text-sm text-gray-500">There are no completed repairs to display at this time.</p>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Completed Maintenance Table -->
+        <div class="bg-white rounded-lg shadow p-6 mt-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Completed Maintenance History</h2>
+                <a href="{{ route('user.maintenance.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
+            </div>
+            <div class="overflow-x-auto">
+                @if($personalStats['completed_maintenance_history']->count() > 0)
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laboratory</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenance->lab_number }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @else
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No completed maintenance</h3>
+                    <p class="mt-1 text-sm text-gray-500">There are no completed maintenance tasks to display at this time.</p>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
 
     <!-- Asset Procurement & Disposal -->
     <div class="bg-white p-6 rounded-lg shadow">
@@ -288,6 +395,7 @@
             </div>
 
             <div class="overflow-x-auto">
+                @if($warrantyExpiringAssets->count() > 0)
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -302,7 +410,9 @@
                         @foreach($warrantyExpiringAssets as $asset)
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}
                             </td>
@@ -316,10 +426,18 @@
                         @endforeach
                     </tbody>
                 </table>
+                @else
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No warranty alerts</h3>
+                    <p class="mt-1 text-sm text-gray-500">There are no assets with expiring warranties at this time.</p>
+                </div>
+                @endif
             </div>
         </div>
 
-        <!-- Add this after the Warranty Status Section -->
         <!-- Asset Lifespan Status Section -->
         <div class="bg-white p-6 rounded-lg shadow mt-6">
             <div class="flex justify-between items-center mb-4">
@@ -327,6 +445,7 @@
             </div>
 
             <div class="overflow-x-auto">
+                @if($criticalAndWarningAssets->count() > 0)
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -341,7 +460,9 @@
                         @foreach($criticalAndWarningAssets as $asset)
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : 'N/A' }}
                             </td>
@@ -359,7 +480,30 @@
                         @endforeach
                     </tbody>
                 </table>
+                @else
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No lifespan alerts</h3>
+                    <p class="mt-1 text-sm text-gray-500">There are no assets with critical or warning lifespan status.</p>
+                </div>
+                @endif
             </div>
         </div>
     </div>
-    @endsection
+</div>
+
+<!-- Add this script at the end of your dashboard.blade.php file -->
+<script>
+    document.getElementById('togglePersonalStats').addEventListener('click', function() {
+        const section = document.getElementById('personalStatsSection');
+        const showText = this.querySelector('.show-text');
+        const hideText = this.querySelector('.hide-text');
+
+        section.classList.toggle('hidden');
+        showText.classList.toggle('hidden');
+        hideText.classList.toggle('hidden');
+    });
+
+</script>

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\RepairRequest;
 use App\Models\LabLog;
+use App\Models\AssetHistory;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Models\Maintenance;
 
 class DashboardController extends Controller
 {
@@ -154,18 +156,41 @@ class DashboardController extends Controller
         $peakHour = $peakUsageHours ? $peakUsageHours->hour : null;
 
         // Department Usage Analysis with percentage calculation
-        // Department Usage Analysis with user grouping instead of subject_course
+        // Department Usage Analysis with user grouping
         $deptUsageData = LabLog::select(
-            'users.position as department', // Using user position as department
+            'users.department as department', // Using actual department field
             DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as hours'),
             DB::raw('(SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) / ' . ($totalLabHours ?: 1) . ' * 100) as usage_percentage')
         )
             ->join('users', 'lab_logs.user_id', '=', 'users.id')
             ->where('time_in', '>=', Carbon::now()->startOfMonth())
             ->where('time_in', '<=', Carbon::now()->endOfMonth())
-            ->groupBy('users.position')
+            ->groupBy('users.department')
             ->orderBy('hours', 'desc')
             ->get();
+
+        // Add this before the return statement
+        $user = auth()->user();
+        $personalStats = [
+            'completed_repairs' => RepairRequest::where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->count(),
+            'completed_maintenance' => Maintenance::where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->count(),
+            'completed_repairs_history' => RepairRequest::with(['asset', 'category'])
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->orderBy('completed_at', 'desc')
+                ->get(),
+            'completed_maintenance_history' => Maintenance::with(['laboratory', 'maintenanceAssets'])
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->orderBy('completed_at', 'desc')
+                ->get()
+        ];
 
         return view('dashboard', compact(
             'totalAssetValue',
@@ -183,7 +208,177 @@ class DashboardController extends Controller
             'mostUsedLab',
             'avgDailyUsage',
             'criticalAndWarningAssets',
-            'peakHour' // Add this variable to the view
+            'peakHour',
+            'personalStats' // Add this to the compact list
         ));
+    }
+
+    public function secretaryDashboard()
+    {
+        $user = auth()->user();
+        
+        $personalStats = [
+            'completed_repairs' => RepairRequest::where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->count(),
+            'pending_repairs' => RepairRequest::where('technician_id', $user->id)
+                ->whereIn('status', ['pending', 'urgent', 'in_progress'])
+                ->get(),
+            'completed_maintenance' => DB::table('maintenances')
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->count(),
+            'upcoming_maintenance' => Maintenance::where('technician_id', $user->id)
+                ->where('status', '!=', 'completed')
+                ->where('scheduled_date', '>=', now())
+                ->orderBy('scheduled_date')
+                ->get(),
+            // In the secretaryDashboard method, update the recent_actions part:
+            'recent_actions' => collect()
+                ->concat(AssetHistory::with(['asset', 'user'])
+                    ->where('changed_by', $user->id)
+                    // Exclude all REPAIR records and STATUS records related to repairs
+                    ->where(function($query) {
+                        $query->where('change_type', '!=', 'REPAIR')
+                            ->where(function($q) {
+                                $q->where('change_type', '!=', 'STATUS')
+                                  ->orWhere(function($innerQ) {
+                                      $innerQ->where('change_type', 'STATUS')
+                                            ->where(function($deepQ) {
+                                                $deepQ->where('old_value', '!=', 'UNDER REPAIR')
+                                                      ->orWhere('new_value', '!=', 'IN USE');
+                                            });
+                                  });
+                            });
+                    })
+                    ->select('*', DB::raw("'asset_history' as action_source"))
+                    ->orderBy('created_at', 'desc')
+                    ->get())
+                ->concat(RepairRequest::with(['asset', 'category'])
+                    ->where('technician_id', $user->id)
+                    ->where('status', 'completed')
+                    ->whereNotNull('completed_at')
+                    ->select('*', DB::raw("'repair' as action_source"))
+                    ->orderBy('completed_at', 'desc')
+                    ->limit(5)
+                    ->get())
+                ->concat(Maintenance::with(['laboratory', 'maintenanceAssets'])
+                    ->where('technician_id', $user->id)
+                    ->where('status', 'completed')
+                    ->whereNotNull('completed_at')
+                    ->select('*', DB::raw("'maintenance' as action_source"))
+                    ->orderBy('completed_at', 'desc')
+                    ->limit(5)
+                    ->get())
+                ->sortByDesc(function($item) {
+                    return $item->action_source === 'asset_history' ? $item->created_at : $item->completed_at;
+                })
+                ->take(5),
+            'total_tasks' => RepairRequest::where('technician_id', $user->id)
+                ->whereIn('status', ['pending', 'urgent', 'in_progress', 'completed'])
+                ->count(),
+            'completion_rate' => function() use ($user) {
+                $total = RepairRequest::where('technician_id', $user->id)
+                    ->whereIn('status', ['pending', 'urgent', 'in_progress', 'completed'])
+                    ->count();
+                $completed = RepairRequest::where('technician_id', $user->id)
+                    ->where('status', 'completed')
+                    ->count();
+                return $total > 0 ? round(($completed / $total) * 100, 1) : 0;
+            },
+            'avg_completion_time' => RepairRequest::where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)), 1) as avg_hours'))
+                ->value('avg_hours') ?? 0,
+            'completed_repairs_history' => RepairRequest::with(['asset', 'category'])
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->orderBy('completed_at', 'desc')
+                ->get(),
+            'completed_maintenance_history' => Maintenance::with(['laboratory', 'maintenanceAssets'])
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->orderBy('completed_at', 'desc')
+                ->get()
+        ];
+    
+        // Calculate completion rate
+        $personalStats['completion_rate'] = $personalStats['completion_rate']();
+    
+        return view('secretary-dashboard', compact('personalStats'));
+    }
+
+    public function userActionsHistory()
+    {
+        $user = auth()->user();
+        
+        // Get repair requests completed by this user
+        $completedRepairRequests = RepairRequest::where('technician_id', $user->id)
+            ->where('status', 'completed')
+            ->pluck('id');
+        
+        $actions = collect()
+            ->concat(AssetHistory::with(['asset', 'user'])
+                ->where('changed_by', $user->id)
+                // Filter out STATUS records that are created when a repair is completed
+                ->where(function($query) {
+                    $query->where('change_type', '!=', 'STATUS')
+                        ->orWhere(function($q) {
+                            $q->where('change_type', 'STATUS')
+                            ->where(function($innerQuery) {
+                                $innerQuery->where('old_value', '!=', 'UNDER REPAIR')
+                                          ->orWhere('new_value', '!=', 'IN USE');
+                            });
+                        });
+                })
+                ->select('*', DB::raw("'asset_history' as action_source"))
+                ->orderBy('created_at', 'desc')
+                ->get())
+            ->concat(RepairRequest::with(['asset', 'category'])
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->select('*', DB::raw("'repair' as action_source"))
+                ->orderBy('completed_at', 'desc')
+                ->get())
+            ->concat(Maintenance::with(['laboratory', 'maintenanceAssets'])
+                ->where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('completed_at')
+                ->select('*', DB::raw("'maintenance' as action_source"))
+                ->orderBy('completed_at', 'desc')
+                ->get())
+            ->sortByDesc(function($item) {
+                return $item->action_source === 'asset_history' ? $item->created_at : $item->completed_at;
+            });
+    
+        return view('actions-history', compact('actions'));
+    }
+
+    public function allRepairsHistory()
+    {
+        $user = auth()->user();
+        $repairs = \App\Models\RepairRequest::with(['asset', 'category'])
+            ->where('technician_id', $user->id)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->orderBy('completed_at', 'desc')
+            ->get();
+        return view('repairs-history', compact('repairs'));
+    }
+
+    public function allMaintenanceHistory()
+    {
+        $user = auth()->user();
+        $maintenance = \App\Models\Maintenance::with(['laboratory', 'maintenanceAssets'])
+            ->where('technician_id', $user->id)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->orderBy('completed_at', 'desc')
+            ->get();
+        return view('user-maintenance-history', compact('maintenance'));
     }
 }

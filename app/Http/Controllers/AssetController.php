@@ -138,6 +138,16 @@ class AssetController extends Controller
             // Create the asset first
             $asset = Asset::create($validated);
 
+            // Create asset history record for the new asset
+            AssetHistory::create([
+                'asset_id' => $asset->id,
+                'change_type' => 'CREATED',
+                'old_value' => null,
+                'new_value' => 'Asset created',
+                'remarks' => 'New asset added to the system',
+                'changed_by' => auth()->id()
+            ]);
+
             // Create QR code directory if it doesn't exist
             Storage::disk('public')->makeDirectory('qrcodes');
 
@@ -300,7 +310,8 @@ class AssetController extends Controller
 
     public function update(Request $request, Asset $asset)
     {
-        $validated = $request->validate([
+        // Only validate fields that are actually present and different
+        $validationRules = [
             'name' => 'required',
             'serial_number' => 'required',
             'category_id' => 'required|exists:categories,id',
@@ -311,19 +322,35 @@ class AssetController extends Controller
             'vendor' => 'required',
             'purchase_date' => 'required|date',
             'warranty_period' => 'required|date',
-        ]);
+        ];
 
-        // Handle location field
-        if ($request->location_select === 'others') {
-            $validated['location'] = $request->location;
-        } else {
-            $validated['location'] = $request->location_select;
+        // Only validate fields that are present and different from current values
+        $fieldsToValidate = [];
+        $fieldsToUpdate = [];
+        foreach ($validationRules as $field => $rules) {
+            if ($request->has($field) && $request->get($field) != $asset->$field) {
+                $fieldsToValidate[$field] = $rules;
+                $fieldsToUpdate[] = $field;
+            }
         }
 
-        // Check for duplicate serial number, excluding the current asset
-        if (Asset::where('serial_number', $request->serial_number)
-            ->where('id', '!=', $asset->id)
-            ->exists()
+        $validated = $request->validate($fieldsToValidate);
+
+        // Handle location field if it's present and different
+        if ($request->has('location_select') && $request->location_select != $asset->location) {
+            if ($request->location_select === 'others') {
+                $validated['location'] = $request->location;
+            } else {
+                $validated['location'] = $request->location_select;
+            }
+            $fieldsToUpdate[] = 'location';
+        }
+
+        // Check for duplicate serial number only if it's being updated
+        if (isset($validated['serial_number']) && 
+            Asset::where('serial_number', $validated['serial_number'])
+                ->where('id', '!=', $asset->id)
+                ->exists()
         ) {
             return back()
                 ->withInput()
@@ -332,18 +359,20 @@ class AssetController extends Controller
 
         $oldValues = $asset->getAttributes();
 
-        // Update the asset with validated data
+        // Update only the validated fields
         $asset->update($validated);
 
-        // Record the changes in asset history
-        foreach ($validated as $field => $newValue) {
-            if (isset($oldValues[$field]) && $oldValues[$field] !== $newValue) {
+        // Record the changes in asset history only for fields that actually changed
+        foreach ($fieldsToUpdate as $field) {
+            if (isset($validated[$field]) && $oldValues[$field] !== $validated[$field]) {
                 AssetHistory::create([
                     'asset_id' => $asset->id,
                     'change_type' => strtoupper($field),
                     'old_value' => $oldValues[$field],
-                    'new_value' => $newValue,
-                    'remarks' => "Updated $field",
+                    'new_value' => $validated[$field],
+                    'remarks' => $field === 'status' ? 
+                        "Changed from \"{$oldValues[$field]}\" to \"{$validated[$field]}\"" : 
+                        "Updated $field",
                     'changed_by' => auth()->id()
                 ]);
             }
@@ -370,9 +399,9 @@ class AssetController extends Controller
             // Generate new QR code using Endroid - match the store method structure
             $qrCode = new QrCode(json_encode([
                 'id' => $asset->id,
-                'name' => $validated['name'],
-                'category_id' => $validated['category_id'],
-                'serial_number' => $validated['serial_number']
+                'name' => $asset->name, // Use the asset model instead of validated data
+                'category_id' => $asset->category_id, // Use the asset model instead of validated data
+                'serial_number' => $asset->serial_number // Use the asset model instead of validated data
             ]));
 
             $writer = new PngWriter();
@@ -388,22 +417,6 @@ class AssetController extends Controller
 
         // Update the asset first to ensure all new values are saved
         $asset->update($validated);
-
-        // Record changes in asset history
-        foreach ($validated as $field => $value) {
-            if ($oldValues[$field] != $value) {
-                // Change purchase_price to PRICE for consistency
-                $changeType = $field === 'purchase_price' ? 'PRICE' : strtoupper($field);
-
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => $changeType,
-                    'old_value' => $oldValues[$field],
-                    'new_value' => $value,
-                    'changed_by' => auth()->id()
-                ]);
-            }
-        }
 
         return redirect()->route('assets.index')
             ->with('success', 'Asset updated successfully');
@@ -431,5 +444,10 @@ class AssetController extends Controller
             'category' => $asset->category,
             'end_of_life_date' => $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : null
         ]);
+    }
+
+    public function show(\App\Models\Asset $asset)
+    {
+        return view('assets.show', compact('asset'));
     }
 }

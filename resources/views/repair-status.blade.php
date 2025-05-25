@@ -251,8 +251,11 @@
 
                 // Set current date and time
                 const now = new Date();
-                const dateStr = now.toISOString().split('T')[0];
-                const timeStr = now.toTimeString().slice(0, 5);
+const dateStr = now.getFullYear() + '-' + 
+               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(now.getDate()).padStart(2, '0');
+const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
+               String(now.getMinutes()).padStart(2, '0');
                 formData.set('date_finished', dateStr);
                 formData.set('time_finished', timeStr);
 
@@ -303,8 +306,11 @@
 
                 // Set current date and time
                 const now = new Date();
-                const dateStr = now.toISOString().split('T')[0];
-                const timeStr = now.toTimeString().slice(0, 5);
+const dateStr = now.getFullYear() + '-' + 
+               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(now.getDate()).padStart(2, '0');
+const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
+               String(now.getMinutes()).padStart(2, '0');
                 formData.set('date_finished', dateStr);
                 formData.set('time_finished', timeStr);
 
@@ -355,8 +361,11 @@
 
                 // Set current date and time
                 const now = new Date();
-                const dateStr = now.toISOString().split('T')[0];
-                const timeStr = now.toTimeString().slice(0, 5);
+const dateStr = now.getFullYear() + '-' + 
+               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(now.getDate()).padStart(2, '0');
+const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
+               String(now.getMinutes()).padStart(2, '0');
 
                 document.getElementById('completeDateFinished').value = dateStr;
                 document.getElementById('completeTimeFinished').value = timeStr;
@@ -460,8 +469,11 @@
 
                 // Set current date and time
                 const now = new Date();
-                const dateStr = now.toISOString().split('T')[0];
-                const timeStr = now.toTimeString().slice(0, 5);
+const dateStr = now.getFullYear() + '-' + 
+               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(now.getDate()).padStart(2, '0');
+const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
+               String(now.getMinutes()).padStart(2, '0');
 
                 document.getElementById('cancelDateFinished').value = dateStr;
                 document.getElementById('cancelTimeFinished').value = timeStr;
