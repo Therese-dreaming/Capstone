@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-4 md:p-8">
     @if(session('success'))
     <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
         {{ session('success') }}
@@ -18,12 +18,12 @@
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
         <h2 class="text-2xl font-bold mb-6">SCHEDULE LAB MAINTENANCE</h2>
         <div class="border-b-2 border-red-800 mb-6"></div>
         <form id="maintenanceForm" action="{{ route('maintenance.store') }}" method="POST" class="space-y-6">
             @csrf
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Left Column -->
                 <div class="space-y-6">
                     <div>
@@ -119,7 +119,7 @@
 
     <!-- Confirmation Modal -->
     <div id="confirmationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-3 md:p-5 border w-full max-w-[95%] md:max-w-[500px] shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Confirm Maintenance Schedule</h3>
                 <div class="mt-2 px-7 py-3">

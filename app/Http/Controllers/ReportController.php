@@ -145,7 +145,7 @@ class ReportController extends Controller
         }
     
         if ($request->filled('end_date')) {
-            $query->where('disposal_date', '<=', $request->end_date);
+            $query->where('disposal_date', '<=', $request->end_date . ' 23:59:59');
         }
     
         $disposedAssets = $query->get();

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-4 md:p-8">
     @if(session('success'))
     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
         <strong class="font-bold">Success!</strong>
@@ -12,86 +12,135 @@
     <!-- Requests Table -->
     <div class="bg-white rounded-lg shadow-lg p-6">
 
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold">Request Status</h2>
-            <div class="flex gap-4 items-center">
-                @if(auth()->user()->group_id == 2)
-                <div class="flex items-center gap-2">
-                    <label for="showAssigned" class="text-sm font-medium text-gray-700">Show My Requests Only</label>
-                    <input type="checkbox" id="showAssigned" class="form-checkbox h-4 w-4 text-red-600 rounded border-gray-300 focus:ring-red-500">
-                </div>
-                @endif
-                <div class="relative">
-                    <input type="text" id="ticketSearch" placeholder="Search Ticket No." class="px-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+        <div class="mb-6">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-2">
+                <h2 class="text-2xl font-bold">Request Status</h2>
+                <div class="flex gap-4 items-center">
+                    @if(auth()->user()->group_id == 2)
+                    <div class="flex items-center gap-2">
+                        <label for="showAssigned" class="text-sm font-medium text-gray-700">Show My Requests Only</label>
+                        <input type="checkbox" id="showAssigned" class="form-checkbox h-4 w-4 text-red-600 rounded border-gray-300 focus:ring-red-500">
+                    </div>
+                    @endif
+                    <div class="relative">
+                        <input type="text" id="ticketSearch" placeholder="Search Ticket No." class="px-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <table class="min-w-full" id="requestsTable">
-            <thead class="bg-[#960106]">
-                <tr>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Request Date</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Ticket No.</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Item</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Location</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Status</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Technician</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Issue</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200" id="tableBody">
+            <!-- Cards for mobile -->
+            <div class="grid grid-cols-1 gap-4 md:hidden" id="requestsCards">
                 @foreach($requests as $request)
-                <tr id="request-{{ $request->id }}" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900 font-medium truncate max-w-0">{{ $request->ticket_number ?? 'N/A' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->equipment }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->location }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">
-                        @if($request->status === 'urgent')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Urgent</span>
-                        @elseif($request->status === 'completed')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
-                        @elseif($request->status === 'cancelled')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
+                <div class="bg-white rounded-lg shadow p-4 flex flex-col gap-2 border border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-red-800">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            @if($request->status === 'urgent') bg-red-100 text-red-800
+                            @elseif($request->status === 'completed') bg-green-100 text-green-800
+                            @elseif($request->status === 'cancelled') bg-red-100 text-red-800
+                            @else bg-gray-100 text-gray-800 @endif">
+                            {{ ucfirst($request->status) }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-700"><span class="font-semibold">Ticket No.:</span> {{ $request->ticket_number ?? 'N/A' }}</div>
+                    <div class="text-sm"><span class="font-semibold">Item:</span> {{ $request->equipment }}</div>
+                    <div class="text-sm"><span class="font-semibold">Location:</span> {{ $request->location }}</div>
+                    <div class="text-sm"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
+                    <div class="text-sm"><span class="font-semibold">Issue:</span> {{ $request->issue }}</div>
+                    <div class="flex gap-2 mt-2">
+                        @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
+                        <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
+                        <button onclick="openCompleteModal('{{ $request->id }}')" class="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 tooltip" title="Complete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                        <button onclick="openCancelModal('{{ $request->id }}')" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Cancel">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                         @else
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
+                        <span class="text-gray-500 italic">No actions available</span>
                         @endif
-                    </td>
-                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->issue }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">
-                        <div class="flex space-x-2">
-                            @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
-                                <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </button>
-                                <button onclick="openCompleteModal('{{ $request->id }}')" class="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 tooltip" title="Complete">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </button>
-                                <button onclick="openCancelModal('{{ $request->id }}')" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Cancel">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            @else
-                                <span class="text-gray-500 italic">No actions available</span>
-                            @endif
-                        </div>
-                    </td>
-                </tr>
+                    </div>
+                </div>
                 @endforeach
-            </tbody>
-        </table>
+            </div>
+
+            <!-- Table for desktop -->
+            <div class="overflow-x-auto hidden md:block">
+                <table class="min-w-full" id="requestsTable">
+                    <thead class="bg-[#960106]">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Request Date</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Ticket No.</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Item</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Location</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Status</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Technician</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Issue</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200" id="tableBody">
+                        @foreach($requests as $request)
+                        <tr id="request-{{ $request->id }}" class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium max-w-0">{{ $request->ticket_number ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->equipment }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->location }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                @if($request->status === 'urgent')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Urgent</span>
+                                @elseif($request->status === 'completed')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+                                @elseif($request->status === 'cancelled')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
+                                @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->issue }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <div class="flex space-x-2">
+                                    @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
+                                    <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button onclick="openCompleteModal('{{ $request->id }}')" class="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 tooltip" title="Complete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </button>
+                                    <button onclick="openCancelModal('{{ $request->id }}')" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Cancel">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                    @else
+                                    <span class="text-gray-500 italic">No actions available</span>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <!-- Update Modal -->
         <!-- Update Modal -->
         <div id="updateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-            <div class="bg-white rounded-lg shadow-xl w-[32rem] relative">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-[95%] md:max-w-[500px] p-3 md:p-5 relative">
                 <!-- Header -->
                 <div class="bg-gray-50 p-6 rounded-t-lg border-b">
                     <h2 class="text-xl font-bold text-gray-800">Update Request</h2>
@@ -239,62 +288,66 @@
             }
 
             function closePullOutModal() {
-                // Close both modals first
+                // Close the pull out modal
                 document.getElementById('pullOutModal').classList.remove('flex');
                 document.getElementById('pullOutModal').classList.add('hidden');
+                
+                // Close the cancel modal as well
                 closeCancelModal();
 
                 // Get the form data
                 const form = document.getElementById('cancelForm');
                 const formData = new FormData(form);
+
+                // Set status to 'cancelled'
                 formData.set('status', 'cancelled');
 
                 // Set current date and time
                 const now = new Date();
-const dateStr = now.getFullYear() + '-' + 
-               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(now.getDate()).padStart(2, '0');
-const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
-               String(now.getMinutes()).padStart(2, '0');
+                const dateStr = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0');
+                const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0');
                 formData.set('date_finished', dateStr);
                 formData.set('time_finished', timeStr);
 
                 // Submit the form with cancelled status
                 fetch(form.action, {
-                        method: 'POST'
-                        , body: formData
-                        , headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         }
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Close the cancel modal
-                            closeCancelModal();
-                            // Remove the request row from the table
-                            const requestId = form.action.split('/').pop();
-                            const row = document.getElementById(`request-${requestId}`);
-                            if (row) row.remove();
                             // Show success message
                             const successMessage = document.createElement('div');
                             successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
                             successMessage.innerHTML = `
-                <strong class="font-bold">Success!</strong>
-                <span class="block sm:inline">Request has been successfully cancelled.</span>
-            `;
+                    <strong class="font-bold">Success!</strong>
+                    <span class="block sm:inline">Asset status has been set to IN USE.</span>
+                `;
                             document.querySelector('.flex-1').insertBefore(successMessage, document.querySelector('.flex-1').firstChild);
                             // Auto-hide the message after 5 seconds
                             setTimeout(() => {
                                 successMessage.remove();
                             }, 5000);
+                            
+                            // Refresh the page to show updated status
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
                         } else {
-                            throw new Error(data.message || 'Failed to cancel request');
+                            throw new Error(data.message || 'Failed to update asset status');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert(error.message || 'An error occurred while cancelling the request');
+                        alert(error.message || 'An error occurred while updating the asset status');
                     });
             }
 
@@ -306,11 +359,11 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
 
                 // Set current date and time
                 const now = new Date();
-const dateStr = now.getFullYear() + '-' + 
-               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(now.getDate()).padStart(2, '0');
-const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
-               String(now.getMinutes()).padStart(2, '0');
+                const dateStr = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0');
+                const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0');
                 formData.set('date_finished', dateStr);
                 formData.set('time_finished', timeStr);
 
@@ -326,12 +379,10 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
                     .then(data => {
                         if (data.success) {
                             // Close both modals
-                            closePullOutModal();
+                            document.getElementById('pullOutModal').classList.remove('flex');
+                            document.getElementById('pullOutModal').classList.add('hidden');
                             closeCancelModal();
-                            // Remove the request row from the table
-                            const requestId = form.action.split('/').pop();
-                            const row = document.getElementById(`request-${requestId}`);
-                            if (row) row.remove();
+                            
                             // Show success message
                             const successMessage = document.createElement('div');
                             successMessage.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
@@ -344,6 +395,11 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
                             setTimeout(() => {
                                 successMessage.remove();
                             }, 5000);
+                            
+                            // Refresh the page to show updated status
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
                         } else {
                             throw new Error(data.message || 'Failed to pull out asset');
                         }
@@ -361,11 +417,11 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
 
                 // Set current date and time
                 const now = new Date();
-const dateStr = now.getFullYear() + '-' + 
-               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(now.getDate()).padStart(2, '0');
-const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
-               String(now.getMinutes()).padStart(2, '0');
+                const dateStr = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0');
+                const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0');
 
                 document.getElementById('completeDateFinished').value = dateStr;
                 document.getElementById('completeTimeFinished').value = timeStr;
@@ -469,11 +525,11 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
 
                 // Set current date and time
                 const now = new Date();
-const dateStr = now.getFullYear() + '-' + 
-               String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(now.getDate()).padStart(2, '0');
-const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
-               String(now.getMinutes()).padStart(2, '0');
+                const dateStr = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0');
+                const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0');
 
                 document.getElementById('cancelDateFinished').value = dateStr;
                 document.getElementById('cancelTimeFinished').value = timeStr;
@@ -569,6 +625,7 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase().trim();
 
+                // --- Desktop Table Filtering ---
                 if (searchTerm === '') {
                     tableData = [...originalData];
                 } else {
@@ -576,15 +633,38 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
                         const ticketNo = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
                         const item = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
                         const location = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-
                         return ticketNo.includes(searchTerm) ||
                             item.includes(searchTerm) ||
                             location.includes(searchTerm);
                     });
                 }
-
                 currentPage = 1; // Reset to first page
                 updateTable();
+
+                // --- Mobile Card Filtering ---
+                const cards = document.querySelectorAll('#requestsCards > div.bg-white');
+                cards.forEach(card => {
+                    let ticketNo = '', item = '', location = '';
+                    card.querySelectorAll('.text-sm').forEach(div => {
+                        const text = div.textContent.toLowerCase();
+                        if (text.includes('ticket no.')) {
+                            ticketNo = text.replace('ticket no.:', '').trim();
+                        } else if (text.includes('item:')) {
+                            item = text.replace('item:', '').trim();
+                        } else if (text.includes('location:')) {
+                            location = text.replace('location:', '').trim();
+                        }
+                    });
+                    if (
+                        ticketNo.includes(searchTerm) ||
+                        item.includes(searchTerm) ||
+                        location.includes(searchTerm)
+                    ) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
             });
         });
 
@@ -706,9 +786,16 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
                         , 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 })
-                .then(response => {
+                .then(async response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        let errorMsg = 'Network response was not ok';
+                        try {
+                            const data = await response.json();
+                            errorMsg = data.message || JSON.stringify(data);
+                        } catch (err) {
+                            errorMsg = await response.text();
+                        }
+                        throw new Error(errorMsg);
                     }
                     return response.json();
                 })
@@ -725,8 +812,8 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while completing the request');
+                    console.error('Error completing request:', error);
+                    alert(error.message || 'An error occurred while completing the request');
                 });
         });
 
@@ -814,9 +901,14 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
                 <span class="block sm:inline">${message}</span>
             `;
 
-            // Insert alert at the top of the content
-            const content = document.querySelector('.flex-1.p-8.ml-72');
-            content.insertBefore(alertDiv, content.firstChild);
+            // Insert alert at the top of the main content
+            let content = document.querySelector('.flex-1');
+            if (!content) content = document.body;
+            if (content.firstChild) {
+                content.insertBefore(alertDiv, content.firstChild);
+            } else {
+                content.appendChild(alertDiv);
+            }
 
             // Automatically remove the message after 3 seconds
             setTimeout(() => {
@@ -827,30 +919,31 @@ const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
     </script>
     @endsection
 
-<!-- Add this JavaScript code at the bottom of the file -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const showAssignedCheckbox = document.getElementById('showAssigned');
-        const tableBody = document.getElementById('tableBody');
-        const rows = tableBody.getElementsByTagName('tr');
+    <!-- Add this JavaScript code at the bottom of the file -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const showAssignedCheckbox = document.getElementById('showAssigned');
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.getElementsByTagName('tr');
 
-        if (showAssignedCheckbox) {
-            showAssignedCheckbox.addEventListener('change', function() {
-                const userId = '{{ auth()->id() }}';
-                
-                Array.from(rows).forEach(row => {
-                    const technicianCell = row.cells[5]; // Index of technician column
-                    const technicianName = '{{ auth()->user()->name }}';
-                    
-                    if (this.checked) {
-                        // Show only rows where technician matches the current user
-                        row.style.display = technicianCell.textContent.trim() === technicianName ? '' : 'none';
-                    } else {
-                        // Show all rows
-                        row.style.display = '';
-                    }
+            if (showAssignedCheckbox) {
+                showAssignedCheckbox.addEventListener('change', function() {
+                    const userId = '{{ auth()->id() }}';
+
+                    Array.from(rows).forEach(row => {
+                        const technicianCell = row.cells[5]; // Index of technician column
+                        const technicianName = '{{ auth()->user()->name }}';
+
+                        if (this.checked) {
+                            // Show only rows where technician matches the current user
+                            row.style.display = technicianCell.textContent.trim() === technicianName ? '' : 'none';
+                        } else {
+                            // Show all rows
+                            row.style.display = '';
+                        }
+                    });
                 });
-            });
-        }
-    });
-</script>
+            }
+        });
+
+    </script>

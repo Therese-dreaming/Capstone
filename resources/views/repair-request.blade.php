@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-4 md:p-8">
     <h2 class="text-2xl font-semibold mb-6">REPAIR REQUEST</h2>
 
     @if(session('success'))
@@ -24,15 +24,14 @@
         <div class="message-content"></div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
         <form action="{{ route('repair.store') }}" method="POST" class="space-y-6" id="repairForm">
             @csrf
             <input type="hidden" name="_method" value="POST">
 
-            <div class="grid grid-cols-2 gap-6">
-
-                <!-- After Office/Room input and before Equipment -->
-                <div class="col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Class/Event Ongoing -->
+                <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div class="flex items-center justify-between">
                         <label class="text-lg font-medium text-gray-700">Class/Event Ongoing?</label>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -46,12 +45,12 @@
                     <p class="mt-2 text-sm text-gray-500">Toggle this if there is an ongoing class or event that requires immediate attention.</p>
                 </div>
 
-                <!-- Replace the serial number input section -->
-                <div class="relative">
+                <!-- Serial Number -->
+                <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Asset Serial Number (Optional)</label>
                     <div class="flex gap-2">
                         <input type="text" name="serial_number" id="serial_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter asset serial number if available">
-                        <button type="button" onclick="fetchAssetDetails()" class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
+                        <button type="button" onclick="fetchAssetDetails()" class="w-auto md:w-auto px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
                             Search
                         </button>
                     </div>
@@ -59,40 +58,41 @@
                 </div>
 
                 <!-- Date Called -->
-                <div>
+                <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Date Called</label>
                     <div class="flex gap-2">
                         <input type="date" id="date_called" name="date_called" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ date('Y-m-d') }}" required>
-                        <button type="button" onclick="setCurrentDate()" class="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                        <button type="button" onclick="setCurrentDate()" class="w-auto md:w-auto px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
                             Set Current
                         </button>
                     </div>
                 </div>
 
                 <!-- Time Called -->
-                <div>
+                <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Time Called</label>
                     <div class="flex gap-2">
                         <input type="time" id="time_called" name="time_called" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ date('H:i') }}" required>
-                        <button type="button" onclick="setCurrentTime()" class="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                        <button type="button" onclick="setCurrentTime()" class="w-auto md:w-auto px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
                             Set Current
                         </button>
                     </div>
                 </div>
 
-                <div class="col-span-2">
+                <!-- Location (full width) -->
+                <div class="flex flex-col md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
                     <input type="text" name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter the location (e.g., Room 101, Library, Admin Office)" required>
                 </div>
 
                 <!-- Equipment -->
-                <div class="relative">
+                <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Equipment</label>
                     <input type="text" id="equipment" name="equipment" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter equipment name" required>
                 </div>
 
                 <!-- Category -->
-                <div class="relative">
+                <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
                     <select id="category_select" name="category_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 dropdown-menu" required>
                         <option value="">Select Category</option>
@@ -102,9 +102,9 @@
                     </select>
                 </div>
 
-                <!-- Technician Selection (Admin only) -->
+                <!-- Technician (Admin only) -->
                 @if(auth()->user()->group_id == 1)
-                <div class="relative">
+                <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Assign Technician (Optional)</label>
                     <select name="technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
                         <option value="">Select Technician</option>
@@ -117,8 +117,8 @@
                     <input type="hidden" name="technician_id" value="{{ auth()->id() }}">
                 @endif
 
-                <!-- Issue -->
-                <div>
+                <!-- Issue (full width) -->
+                <div class="flex flex-col md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Issue</label>
                     <textarea name="issue" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Describe the issue..." required></textarea>
                 </div>
@@ -134,8 +134,8 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-4 md:p-8 rounded-lg shadow-xl max-w-xs sm:max-w-md w-full mx-4">
             <h3 class="text-xl font-semibold mb-4" id="modalTitle">Confirm Submission</h3>
             <p class="text-gray-600 mb-6" id="modalMessage"></p>
             <div class="flex justify-end space-x-4">

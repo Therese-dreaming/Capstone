@@ -26,33 +26,56 @@
             display: block !important;
         }
 
+        /* Mobile sidebar */
+        @media (max-width: 768px) {
+            .sidebar-open {
+                transform: translateX(0) !important;
+            }
+            
+            .sidebar-overlay {
+                display: block !important;
+                opacity: 0.5 !important;
+            }
+            
+            .content-shifted {
+                margin-left: 0 !important;
+            }
+        }
+
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100">
     <!-- Header -->
-    <header class="bg-red-800 text-white py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-lg">
-        <!-- Left side - Logo and Title -->
+    <header class="bg-red-800 text-white py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-lg">        <!-- Left side - Logo and Title -->
         <div class="flex items-center space-x-4">
+            @auth
+            <button id="sidebarToggle" class="md:hidden text-white focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            @endauth
             <img src="{{ asset('images/logo-small.png') }}" alt="Logo" class="h-10 w-10">
-            <h1 class="text-xl font-bold uppercase">Operations Management System</h1>
+            <h1 class="text-xl font-bold uppercase hidden sm:block">Operations Management System</h1>
+            <h1 class="text-xl font-bold uppercase sm:hidden">OMS</h1>
         </div>
 
         @auth
         <!-- Right side - User Profile and Notifications -->
-        <div class="flex items-center space-x-6">
+        <div class="flex items-center space-x-3 sm:space-x-6">
             <!-- User Profile Dropdown -->
             <div class="relative">
-                <button id="profileDropdown" class="flex items-center space-x-3 hover:text-gray-200">
+                <button id="profileDropdown" class="flex items-center space-x-1 sm:space-x-3 hover:text-gray-200">
                     <img src="{{ Auth::user()->profile_picture ?? asset('images/default-profile.png') }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
-                    <span>{{ Auth::user()->name ?? 'User Name' }}</span>
+                    <span class="hidden sm:inline">{{ Auth::user()->name ?? 'User Name' }}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
 
                 <!-- Dropdown Menu -->
-                <div id="profileMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 text-gray-700 hidden">
+                <div id="profileMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 text-gray-700 hidden z-50">
                     <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-100">Edit Profile</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -73,38 +96,43 @@
                     </span>
                 </button>
 
-                <!-- Notification Dropdown -->
-                <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg overflow-hidden z-50">
-                    <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                        <h3 class="font-semibold text-gray-700">Notifications</h3>
-                        <button id="markAllRead" class="text-sm text-red-600 hover:text-red-800">Mark all as read</button>
-                    </div>
-                    <div id="notificationList" class="max-h-96 overflow-y-auto">
-                        <!-- Notifications will be loaded here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endauth
-    </header>
+<!-- Notification Dropdown -->
+<div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-lg shadow-lg overflow-hidden z-50">
+    <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-700">Notifications</h3>
+        <button id="markAllRead" class="text-sm text-red-600 hover:text-red-800">Mark all as read</button>
+    </div>
+    <div id="notificationList" class="max-h-96 overflow-y-auto">
+        <!-- Notifications will be loaded here -->
+    </div>
+</div>
+</div>
+</div>
+@endauth
+</header>
+
+    <!-- Sidebar overlay for mobile -->
+    @auth
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black opacity-0 pointer-events-none z-40 transition-opacity duration-300 ease-in-out md:hidden"></div>
+    @endauth
 
     <div class="flex pt-16">
-        <!-- Sidebar -->
-        @auth
-        <aside class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 pt-10">
-            <div class="p-4 pl-8">
-                <!-- Added pl-8 for more right padding -->
-                <h2 class="text-sm text-[#D5999B] mb-8">MENU</h2>
-                <nav class="space-y-3">
-                    @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3])) 
-                    <a href="{{ route('my.tasks') }}" class="font-bold flex items-center px-6 py-2.5 text-white-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors duration-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        My Tasks
-                    </a>
-                    @endif
+<!-- Sidebar -->
+@auth
+<aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 pt-10 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+    <div class="p-4 pl-8">
+<!-- Added pl-8 for more right padding -->
+<h2 class="text-sm text-[#D5999B] mb-8">MENU</h2>
+<nav class="space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
+    @auth
+    @if(auth()->check() && !in_array(auth()->user()->group_id, [3])) 
+    <a href="{{ route('my.tasks') }}" class="font-bold flex items-center px-6 py-2.5 text-white-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        My Tasks
+    </a>
+    @endif
 
                     <!-- Dashboard - Hide from secretary -->
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
@@ -304,17 +332,69 @@
                     </div>
                     @endif
                     @endauth
+                </nav>
             </div>
         </aside>
         @endauth
 
         <!-- Main Content -->
-        @yield('content')
+        <main id="mainContent" class="w-full md:ml-72 transition-all duration-300 ease-in-out">
+            @yield('content')
+        </main>
     </div>
 
     @yield('scripts')
 
     <script>
+        // Add mobile sidebar toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (sidebarToggle && sidebar && sidebarOverlay) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('-translate-x-full');
+                    sidebarOverlay.classList.toggle('opacity-0');
+                    sidebarOverlay.classList.toggle('pointer-events-none');
+                    mainContent.classList.toggle('content-shifted');
+                });
+                
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('opacity-0');
+                    sidebarOverlay.classList.add('pointer-events-none');
+                    mainContent.classList.remove('content-shifted');
+                });
+                
+                // Close sidebar when clicking on a menu item (mobile only)
+                const menuItems = sidebar.querySelectorAll('a[href]');
+                menuItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        if (window.innerWidth < 768) {
+                            sidebar.classList.add('-translate-x-full');
+                            sidebarOverlay.classList.add('opacity-0');
+                            sidebarOverlay.classList.add('pointer-events-none');
+                            mainContent.classList.remove('content-shifted');
+                        }
+                    });
+                });
+                
+                // Handle window resize
+                window.addEventListener('resize', function() {
+                    if (window.innerWidth >= 768) {
+                        sidebar.classList.remove('-translate-x-full');
+                        sidebarOverlay.classList.add('opacity-0');
+                        sidebarOverlay.classList.add('pointer-events-none');
+                        mainContent.classList.remove('content-shifted');
+                    } else {
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                });
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             // Update selector to include all navigation items
             const navItems = document.querySelectorAll('a[href], button[onclick]');

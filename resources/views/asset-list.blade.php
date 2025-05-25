@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 ml-80">
-    <div class="p-6">
+<div class="flex-1">
+    <div class="p-4 md:p-6">
         <!-- Add success message section here -->
         @if(session('success'))
         <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
@@ -16,23 +16,23 @@
         </div>
         @endif
         <!-- Main Container -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
             <!-- Header Section -->
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl font-bold">ALL ASSETS</h1>
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-3">
+                <h1 class="text-xl md:text-2xl font-bold">ALL ASSETS</h1>
                 <!-- Add search input -->
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <input type="text" id="searchInput" placeholder="Search by Serial Number" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-4 w-full md:w-auto">
+                    <div class="relative w-full sm:w-auto">
+                        <input type="text" id="searchInput" placeholder="Search by Serial Number" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
                     </div>
-                    <div class="flex space-x-3">
-                        <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                             Add New Asset
                         </a>
-                        <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                        <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                             Procurement History
                         </a>
-                        <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                        <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                             Disposal History
                         </a>
                         <button onclick="openFullList()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
@@ -45,10 +45,101 @@
             </div>
 
             <!-- Divider Line -->
-            <div class="border-b-2 border-red-800 mb-6"></div>
+            <div class="border-b-2 border-red-800 mb-4 md:mb-6"></div>
 
-            <!-- Asset List Preview -->
-            <div class="relative overflow-x-auto">
+            <!-- Mobile View Cards -->
+            <div class="md:hidden space-y-4 mb-4">
+                @foreach($assets as $asset)
+                <div class="border rounded-lg p-4 bg-white shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-bold text-gray-900">{{ $asset->name ?? '' }}</h3>
+                            <p class="text-sm text-gray-600">{{ $asset->serial_number ?? 'N/A' }}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                                @switch($asset->status)
+                                    @case('UNDER REPAIR')
+                                        bg-yellow-100 text-yellow-800
+                                        @break
+                                    @case('IN USE')
+                                        bg-green-100 text-green-800
+                                        @break
+                                    @case('DISPOSED')
+                                        bg-red-100 text-red-800
+                                        @break
+                                    @case('UPGRADE')
+                                        bg-blue-100 text-blue-800
+                                        @break
+                                    @case('PENDING DEPLOYMENT')
+                                        bg-purple-100 text-purple-800
+                                        @break
+                                    @case('PULLED OUT')
+                                        bg-orange-100 text-orange-800
+                                        @break
+                                    @default
+                                        bg-gray-100 text-gray-800
+                                @endswitch">
+                            {{ $asset->status ?? 'N/A' }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex gap-3 mb-3">
+                        @if($asset->photo)
+                        <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
+                        @else
+                        <div class="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
+                            <span class="text-gray-500">No Photo</span>
+                        </div>
+                        @endif
+                        
+                        @if($asset->qr_code)
+                        <img src="{{ asset('storage/' . $asset->qr_code) }}" alt="QR Code" class="w-20 h-20 cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->qr_code) }}')">
+                        @endif
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                        <div>
+                            <p class="text-gray-500">Category:</p>
+                            <p class="font-medium">{{ $asset->category->name ?? '' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Price:</p>
+                            <p class="font-medium">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Location:</p>
+                            <p class="font-medium">{{ $asset->location ?? '' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-2">
+                        <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </a>
+                        <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </a>
+                        <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                        <button onclick="confirmDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            <!-- Desktop Asset List Preview -->
+            <div class="hidden md:block relative overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -77,6 +168,7 @@
                                 </div>
                                 @endif
                             </td>
+                            <!-- Rest of the desktop table remains the same -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($asset->qr_code)
                                 <img src="{{ asset('storage/' . $asset->qr_code) }}" alt="QR Code" class="w-20 h-20 cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->qr_code) }}')">

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-4 md:p-8">
     @if(session('success'))
     <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
         {{ session('success') }}
@@ -14,8 +14,8 @@
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow-lg p-6">
-        <div class="flex justify-between items-center mb-6">
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 md:gap-0">
             <h1 class="text-2xl font-bold">Lab Attendance History</h1>
             <div class="space-x-3">
                 <button onclick="exportToPDF()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
@@ -24,28 +24,35 @@
             </div>
         </div>
 
-        <div class="mb-4 flex flex-wrap items-center w-full gap-4">
+        <div class="mb-4 flex flex-col md:flex-row flex-wrap items-center w-full gap-4">
             <!-- Left: Filter Controls -->
-            <div class="flex flex-col gap-2">
-                <select id="dateFilterType" onchange="filterHistory()" class="h-9 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                    <option value="time_in">Filter by Time In</option>
-                    <option value="time_out">Filter by Time Out</option>
-                </select>
-                <div class="flex items-center gap-2">
-                    <input type="date" id="startDate" class="h-9 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                    <span class="text-sm text-gray-500">to</span>
-                    <input type="date" id="endDate" class="h-9 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <div class="flex flex-col gap-2 w-full">
+                    <label class="text-xs font-semibold text-gray-600">Time In Date Range</label>
+                    <div class="flex flex-col sm:flex-row items-stretch gap-2 w-full">
+                        <input type="date" id="timeInStartDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                        <span class="text-sm text-gray-500 flex items-center justify-center">to</span>
+                        <input type="date" id="timeInEndDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 w-full mt-2">
+                    <label class="text-xs font-semibold text-gray-600">Time Out Date Range</label>
+                    <div class="flex flex-col sm:flex-row items-stretch gap-2 w-full">
+                        <input type="date" id="timeOutStartDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                        <span class="text-sm text-gray-500 flex items-center justify-center">to</span>
+                        <input type="date" id="timeOutEndDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                    </div>
                 </div>
             </div>
 
             <!-- Middle: More Filters -->
-            <div class="flex items-center gap-4">
-                <select id="statusFilter" onchange="filterHistory()" class="h-9 w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto md:ml-4 md:mt-0 mt-2">
+                <select id="statusFilter" onchange="filterHistory()" class="h-9 w-full md:w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
                     <option value="">All Status</option>
                     <option value="on-going">On-going</option>
                     <option value="completed">Completed</option>
                 </select>
-                <select id="laboratoryFilter" onchange="filterHistory()" class="h-9 w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                <select id="laboratoryFilter" onchange="filterHistory()" class="h-9 w-full md:w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
                     <option value="">All Laboratories</option>
                     @foreach($laboratories as $lab)
                     <option value="{{ $lab }}">{{ $lab }}</option>
@@ -53,72 +60,108 @@
                 </select>
             </div>
 
-            <!-- Right: Delete Actions -->
-            <div class="flex items-center space-x-4 ml-auto">
+            <!-- Right: Delete Actions (Desktop) -->
+            <div class="hidden md:flex items-center space-x-4 md:ml-auto">
                 <div class="text-sm text-gray-600" id="selectedCount">0 items selected</div>
                 <button onclick="deleteSelected()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50" disabled id="deleteSelectedBtn">
                     Delete Selected
                 </button>
             </div>
+            <!-- Delete Actions (Mobile) -->
+            <div class="flex flex-col sm:flex-row items-center gap-2 md:hidden">
+                <div class="text-sm text-gray-600" id="selectedCountMobile">0 items selected</div>
+                <button onclick="deleteSelectedMobile()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50" disabled id="deleteSelectedBtnMobile">
+                    Delete Selected
+                </button>
+            </div>
         </div>
 
-            <div class="overflow-x-auto">
-                <table id="labLogsTable" class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-[#960106]">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                            </th>
-                            <th class="px-6 py-3 text-left text-sm font-medium text-white">Faculty</th>
-                            <th class="px-6 py-3 text-left text-sm font-medium text-white">Laboratory</th>
-                            <th class="px-6 py-3 text-left text-sm font-medium text-white">Time In</th>
-                            <th class="px-6 py-3 text-left text-sm font-medium text-white">Time Out</th>
-                            <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
-                            <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($logs as $log)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <input type="checkbox" name="selected[]" value="{{ $log->id }}" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ $log->user->name }}</div>
-                                    <div class="text-sm text-gray-500">{{ $log->user->position }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->laboratory }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $log->time_in->format('M d, Y h:i A') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    @if($log->time_out)
-                                        {{ $log->time_out->format('M d, Y h:i A') }}
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ strtolower($log->status) === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                        {{ $log->status }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <button onclick="confirmDelete({{ $log->id }})" class="text-red-600 hover:text-red-800">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="px-6 py-4 text-center text-gray-500">No attendance records found</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        <!-- Cards for mobile -->
+        <div class="grid grid-cols-1 gap-4 md:hidden">
+            @forelse($logs as $log)
+            <div class="bg-white rounded-lg shadow p-4 flex flex-col gap-2 border border-gray-200 relative transition ring-0" data-id="{{ $log->id }}" onclick="toggleCardSelection(this)">
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold text-red-800">{{ $log->time_in->format('M d, Y h:i A') }}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {{ strtolower($log->status) === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                        {{ $log->status }}
+                    </span>
+                </div>
+                <div class="text-sm text-gray-700"><span class="font-semibold">Faculty:</span> {{ $log->user->name }}</div>
+                <div class="text-sm"><span class="font-semibold">Position:</span> {{ $log->user->position }}</div>
+                <div class="text-sm"><span class="font-semibold">Laboratory:</span> {{ $log->laboratory }}</div>
+                <div class="text-sm"><span class="font-semibold">Time In:</span> {{ $log->time_in->format('M d, Y h:i A') }}</div>
+                <div class="text-sm"><span class="font-semibold">Time Out:</span> {{ $log->time_out ? $log->time_out->format('M d, Y h:i A') : '-' }}</div>
+                <div class="flex gap-2 mt-2">
+                    <button onclick="event.stopPropagation(); confirmDelete({{ $log->id }})" class="text-red-600 hover:text-red-800">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
             </div>
+            @empty
+            <div class="text-center text-gray-500 col-span-full">No attendance records found</div>
+            @endforelse
+        </div>
+
+        <!-- Table for desktop -->
+        <div class="overflow-x-auto hidden md:block">
+            <table id="labLogsTable" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-[#960106]">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                        </th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Faculty</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Laboratory</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Time In</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Time Out</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($logs as $log)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <input type="checkbox" name="selected[]" value="{{ $log->id }}" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ $log->user->name }}</div>
+                                <div class="text-sm text-gray-500">{{ $log->user->position }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->laboratory }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $log->time_in->format('M d, Y h:i A') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                @if($log->time_out)
+                                    {{ $log->time_out->format('M d, Y h:i A') }}
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ strtolower($log->status) === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ $log->status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <button onclick="confirmDelete({{ $log->id }})" class="text-red-600 hover:text-red-800">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">No attendance records found</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -168,9 +211,10 @@
     function filterHistory() {
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        const dateFilterType = document.getElementById('dateFilterType').value;
+        const timeInStartDate = document.getElementById('timeInStartDate').value;
+        const timeInEndDate = document.getElementById('timeInEndDate').value;
+        const timeOutStartDate = document.getElementById('timeOutStartDate').value;
+        const timeOutEndDate = document.getElementById('timeOutEndDate').value;
         const rows = document.querySelectorAll('#labLogsTable tbody tr');
 
         rows.forEach(row => {
@@ -183,35 +227,110 @@
             const statusMatch = !statusFilter || statusText.includes(statusFilter);
             const laboratoryMatch = !laboratoryFilter || laboratoryCell.textContent.trim() === laboratoryFilter;
 
-            let dateMatch = true;
-            if (startDate || endDate) {
-                const dateCell = dateFilterType === 'time_in' ? timeInCell : timeOutCell;
-                const dateText = dateCell.textContent.trim();
+            let timeInMatch = true;
+            if (timeInStartDate || timeInEndDate) {
+                const dateText = timeInCell.textContent.trim();
                 if (dateText !== '-') {
                     const cellDate = new Date(dateText);
-                    const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                    const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-
+                    const start = timeInStartDate ? new Date(timeInStartDate + 'T00:00:00') : null;
+                    const end = timeInEndDate ? new Date(timeInEndDate + 'T23:59:59') : null;
                     if (start && end) {
-                        dateMatch = cellDate >= start && cellDate <= end;
+                        timeInMatch = cellDate >= start && cellDate <= end;
                     } else if (start) {
-                        dateMatch = cellDate >= start;
+                        timeInMatch = cellDate >= start;
                     } else if (end) {
-                        dateMatch = cellDate <= end;
+                        timeInMatch = cellDate <= end;
                     }
                 } else {
-                    dateMatch = false;
+                    timeInMatch = false;
                 }
             }
 
-            row.style.display = statusMatch && laboratoryMatch && dateMatch ? '' : 'none';
+            let timeOutMatch = true;
+            if (timeOutStartDate || timeOutEndDate) {
+                const dateText = timeOutCell.textContent.trim();
+                if (dateText !== '-') {
+                    const cellDate = new Date(dateText);
+                    const start = timeOutStartDate ? new Date(timeOutStartDate + 'T00:00:00') : null;
+                    const end = timeOutEndDate ? new Date(timeOutEndDate + 'T23:59:59') : null;
+                    if (start && end) {
+                        timeOutMatch = cellDate >= start && cellDate <= end;
+                    } else if (start) {
+                        timeOutMatch = cellDate >= start;
+                    } else if (end) {
+                        timeOutMatch = cellDate <= end;
+                    }
+                } else {
+                    timeOutMatch = false;
+                }
+            }
+
+            row.style.display = statusMatch && laboratoryMatch && timeInMatch && timeOutMatch ? '' : 'none';
+        });
+
+        const cards = document.querySelectorAll('div.grid > [data-id]');
+        cards.forEach(card => {
+            if (window.getComputedStyle(card.parentElement).display === 'none') return;
+            let status = '', laboratory = '', timeIn = '', timeOut = '';
+            card.querySelectorAll('.text-sm').forEach(div => {
+                const text = div.textContent.toLowerCase();
+                if (text.includes('laboratory:')) {
+                    laboratory = div.textContent.replace('Laboratory:', '').trim();
+                } else if (text.includes('time in:')) {
+                    timeIn = div.textContent.replace('Time In:', '').trim();
+                } else if (text.includes('time out:')) {
+                    timeOut = div.textContent.replace('Time Out:', '').trim();
+                }
+            });
+            const statusBadge = card.querySelector('span.inline-flex');
+            if (statusBadge) status = statusBadge.textContent.trim().toLowerCase();
+
+            const statusMatch = !statusFilter || status.includes(statusFilter);
+            const laboratoryMatch = !laboratoryFilter || laboratory === laboratoryFilter;
+
+            let timeInMatch = true;
+            if (timeInStartDate || timeInEndDate) {
+                if (timeIn !== '-') {
+                    const cellDate = new Date(timeIn);
+                    const start = timeInStartDate ? new Date(timeInStartDate + 'T00:00:00') : null;
+                    const end = timeInEndDate ? new Date(timeInEndDate + 'T23:59:59') : null;
+                    if (start && end) {
+                        timeInMatch = cellDate >= start && cellDate <= end;
+                    } else if (start) {
+                        timeInMatch = cellDate >= start;
+                    } else if (end) {
+                        timeInMatch = cellDate <= end;
+                    }
+                } else {
+                    timeInMatch = false;
+                }
+            }
+            let timeOutMatch = true;
+            if (timeOutStartDate || timeOutEndDate) {
+                if (timeOut !== '-') {
+                    const cellDate = new Date(timeOut);
+                    const start = timeOutStartDate ? new Date(timeOutStartDate + 'T00:00:00') : null;
+                    const end = timeOutEndDate ? new Date(timeOutEndDate + 'T23:59:59') : null;
+                    if (start && end) {
+                        timeOutMatch = cellDate >= start && cellDate <= end;
+                    } else if (start) {
+                        timeOutMatch = cellDate >= start;
+                    } else if (end) {
+                        timeOutMatch = cellDate <= end;
+                    }
+                } else {
+                    timeOutMatch = false;
+                }
+            }
+            card.style.display = statusMatch && laboratoryMatch && timeInMatch && timeOutMatch ? '' : 'none';
         });
     }
 
-    // Add event listeners for filters
-    document.getElementById('dateFilterType').addEventListener('change', filterHistory);
-    document.getElementById('startDate').addEventListener('change', filterHistory);
-    document.getElementById('endDate').addEventListener('change', filterHistory);
+    // Add event listeners for new date filters
+    document.getElementById('timeInStartDate').addEventListener('change', filterHistory);
+    document.getElementById('timeInEndDate').addEventListener('change', filterHistory);
+    document.getElementById('timeOutStartDate').addEventListener('change', filterHistory);
+    document.getElementById('timeOutEndDate').addEventListener('change', filterHistory);
     document.getElementById('statusFilter').addEventListener('change', filterHistory);
     document.getElementById('laboratoryFilter').addEventListener('change', filterHistory);
 
@@ -306,15 +425,19 @@
         // Get current filters
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        const timeInStartDate = document.getElementById('timeInStartDate').value;
+        const timeInEndDate = document.getElementById('timeInEndDate').value;
+        const timeOutStartDate = document.getElementById('timeOutStartDate').value;
+        const timeOutEndDate = document.getElementById('timeOutEndDate').value;
 
         // Build query parameters
         const params = new URLSearchParams();
         if (statusFilter) params.append('status', statusFilter);
         if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
+        if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
+        if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
+        if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
+        if (timeOutEndDate) params.append('time_out_end_date', timeOutEndDate);
 
         // Show loading state
         previewContent.innerHTML = '<div class="text-center py-4">Loading preview...</div>';
@@ -345,15 +468,19 @@
     function downloadPDF() {
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        const timeInStartDate = document.getElementById('timeInStartDate').value;
+        const timeInEndDate = document.getElementById('timeInEndDate').value;
+        const timeOutStartDate = document.getElementById('timeOutStartDate').value;
+        const timeOutEndDate = document.getElementById('timeOutEndDate').value;
 
         // Build query parameters
         const params = new URLSearchParams();
         if (statusFilter) params.append('status', statusFilter);
         if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
+        if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
+        if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
+        if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
+        if (timeOutEndDate) params.append('time_out_end_date', timeOutEndDate);
 
         // Redirect to download URL
         window.location.href = `{{ route('lab-schedule.exportPDF') }}?${params.toString()}`;
@@ -365,13 +492,5 @@
         modal.classList.add('hidden');
         modal.querySelector('.preview-content').innerHTML = '';
     }
-
-    // Add event listeners for filters
-    document.getElementById('dateFilterType').addEventListener('change', filterHistory);
-    document.getElementById('startDate').addEventListener('change', filterHistory);
-    document.getElementById('endDate').addEventListener('change', filterHistory);
-    document.getElementById('statusFilter').addEventListener('change', filterHistory);
-    document.getElementById('laboratoryFilter').addEventListener('change', filterHistory);
-
 </script>
 @endsection

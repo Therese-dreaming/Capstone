@@ -1,19 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 @auth ml-72 @else mx-auto max-w-6xl @endauth">
+<div class="flex-1 p-4 md:p-8 mx-auto max-w-6xl">
     <div class="@auth max-w-4xl @else max-w-full @endauth mx-auto">
-        <div class="flex items-center mb-8 justify-center">
-            <svg class="w-8 h-8 mr-3 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <div class="flex flex-col sm:flex-row items-center mb-8 justify-center gap-2 sm:gap-4">
+            <svg class="w-8 h-8 mr-0 sm:mr-3 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2-2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <h1 class="text-3xl font-bold">Lab Logging</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold">Lab Logging</h1>
         </div>
 
         <!-- RFID Attendance Section -->
-        <div class="mb-8 p-8 bg-white rounded-lg shadow-lg transform transition-all duration-300 hover:shadow-xl">
-            <div class="flex items-center mb-4">
-                <svg class="w-5 h-5 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="mb-8 p-4 sm:p-8 bg-white rounded-lg shadow-lg transform transition-all duration-300 hover:shadow-xl">
+            <div class="flex flex-col sm:flex-row items-center mb-4 gap-2 sm:gap-4">
+                <svg class="w-5 h-5 mr-0 sm:mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
                 <h2 class="text-lg font-semibold">RFID Attendance</h2>
@@ -21,7 +21,7 @@
 
             <!-- Laboratory Selection -->
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-4 flex items-center justify-between">
+                <label class="block text-sm font-medium text-gray-700 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div class="flex items-center">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -31,7 +31,7 @@
                     <span id="selectedLabText" class="text-sm font-medium text-red-600">Selected: None</span>
                 </label>
 
-                <div class="grid grid-cols-3 gap-4" id="labCards">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="labCards">
                     @foreach($laboratories as $lab)
                     <div class="lab-card cursor-pointer transform transition-all duration-300 hover:scale-105" data-value="{{ $lab }}" onclick="selectLab(this)">
                         <div class="relative bg-white rounded-lg border-2 border-transparent hover:border-red-500 shadow-md p-4 group transition-all duration-300">
@@ -46,7 +46,7 @@
                             </div>
 
                             <!-- Lab Number -->
-                            <div class="text-2xl font-bold text-gray-800 mb-2 relative">{{ $lab }}</div>
+                            <div class="text-xl sm:text-2xl font-bold text-gray-800 mb-2 relative">{{ $lab }}</div>
 
                             <!-- Status Indicator -->
                             <div class="flex items-center gap-2 text-sm text-gray-500 relative">
@@ -62,16 +62,16 @@
             </div>
 
             <!-- Attendance Information Display -->
-            <div id="attendanceInfo" class="hidden mt-6 border border-gray-200 rounded-xl p-6 transform transition-all duration-300 opacity-0 bg-white shadow-lg hover:shadow-xl">
-                <div class="mb-6 pb-4 border-b border-gray-200 flex items-center">
-                    <svg class="w-6 h-6 mr-3 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div id="attendanceInfo" class="hidden mt-6 border border-gray-200 rounded-xl p-4 sm:p-6 transform transition-all duration-300 opacity-0 bg-white shadow-lg hover:shadow-xl">
+                <div class="mb-6 pb-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                    <svg class="w-6 h-6 mr-0 sm:mr-3 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    <h3 class="text-xl font-bold text-gray-800">Attendance Details</h3>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-800">Attendance Details</h3>
                 </div>
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Faculty Information -->
-                    <div class="p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
+                    <div class="p-4 sm:p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
                         <div class="flex items-center mb-3">
                             <div class="p-2 bg-red-50 rounded-lg mr-3">
                                 <svg class="w-5 h-5 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,11 +80,11 @@
                             </div>
                             <p class="text-sm font-semibold text-gray-700">Faculty Name</p>
                         </div>
-                        <p id="facultyName" class="text-lg font-bold mt-1 text-gray-900 pl-12">-</p>
+                        <p id="facultyName" class="text-base sm:text-lg font-bold mt-1 text-gray-900 pl-0 sm:pl-12">-</p>
                     </div>
 
                     <!-- Date -->
-                    <div class="p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
+                    <div class="p-4 sm:p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
                         <div class="flex items-center mb-3">
                             <div class="p-2 bg-red-50 rounded-lg mr-3">
                                 <svg class="w-5 h-5 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,11 +93,11 @@
                             </div>
                             <p class="text-sm font-semibold text-gray-700">Date</p>
                         </div>
-                        <p id="currentDate" class="text-lg font-bold mt-1 text-gray-900 pl-12">-</p>
+                        <p id="currentDate" class="text-base sm:text-lg font-bold mt-1 text-gray-900 pl-0 sm:pl-12">-</p>
                     </div>
 
                     <!-- Time In -->
-                    <div class="p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
+                    <div class="p-4 sm:p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
                         <div class="flex items-center mb-3">
                             <div class="p-2 bg-green-50 rounded-lg mr-3">
                                 <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,11 +106,11 @@
                             </div>
                             <p class="text-sm font-semibold text-gray-700">Time In</p>
                         </div>
-                        <p id="timeIn" class="text-lg font-bold mt-1 text-green-600 pl-12">-</p>
+                        <p id="timeIn" class="text-base sm:text-lg font-bold mt-1 text-green-600 pl-0 sm:pl-12">-</p>
                     </div>
 
                     <!-- Time Out -->
-                    <div class="p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
+                    <div class="p-4 sm:p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
                         <div class="flex items-center mb-3">
                             <div class="p-2 bg-red-50 rounded-lg mr-3">
                                 <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,11 +119,11 @@
                             </div>
                             <p class="text-sm font-semibold text-gray-700">Time Out</p>
                         </div>
-                        <p id="timeOut" class="text-lg font-bold mt-1 text-red-600 pl-12">-</p>
+                        <p id="timeOut" class="text-base sm:text-lg font-bold mt-1 text-red-600 pl-0 sm:pl-12">-</p>
                     </div>
 
                     <!-- Status Section with Color Legend -->
-                    <div class="col-span-2 p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
+                    <div class="col-span-1 md:col-span-2 p-4 sm:p-5 bg-white rounded-xl transition-all duration-300 hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow">
                         <div class="flex items-center mb-3">
                             <div class="p-2 bg-blue-50 rounded-lg mr-3">
                                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,10 +132,10 @@
                             </div>
                             <p class="text-sm font-semibold text-gray-700">Status</p>
                         </div>
-                        <p id="logStatus" class="text-lg font-bold mt-1 pl-12">-</p>
+                        <p id="logStatus" class="text-base sm:text-lg font-bold mt-1 pl-0 sm:pl-12">-</p>
 
                         <!-- Status Legend -->
-                        <div class="mt-4 flex gap-6 text-sm pl-12">
+                        <div class="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm pl-0 sm:pl-12">
                             <div class="flex items-center px-3 py-2 bg-red-50 rounded-lg">
                                 <span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
                                 <span class="text-gray-700 font-medium">On-going</span>
@@ -154,9 +154,9 @@
         </div>
 
         <!-- Instructions Card -->
-        <div class="bg-white rounded-lg shadow-lg p-8 transform transition-all duration-300 hover:shadow-xl">
-            <div class="flex items-center mb-3">
-                <svg class="w-5 h-5 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-lg shadow-lg p-4 sm:p-8 transform transition-all duration-300 hover:shadow-xl mt-6">
+            <div class="flex flex-col sm:flex-row items-center mb-3 gap-2 sm:gap-4">
+                <svg class="w-5 h-5 mr-0 sm:mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h3 class="text-lg font-semibold">Instructions</h3>

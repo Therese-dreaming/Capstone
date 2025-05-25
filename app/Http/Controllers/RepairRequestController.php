@@ -84,16 +84,21 @@ class RepairRequestController extends Controller
             ->first();
 
         if ($existingRequest) {
-            // Check if the existing request is for a pulled out asset
-            if ($existingRequest->status === 'pulled_out') {
+            // If the existing request is for a pulled out asset, check the asset's actual status
+            if ($existingRequest->status === 'pulled_out' && $existingRequest->serial_number) {
+                $asset = Asset::where('serial_number', $existingRequest->serial_number)->first();
+                if ($asset && strtoupper($asset->status) === 'PULLED OUT') {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'This asset is currently pulled out. Ticket number: ' . $existingRequest->ticket_number);
+                }
+                // If asset is not PULLED OUT, allow new request (do not return here)
+            } else {
+                // For other statuses, still block
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'This asset is currently pulled out. Ticket number: ' . $existingRequest->ticket_number);
+                    ->with('error', 'There is already an active repair request for this equipment in this location. Ticket number: ' . $existingRequest->ticket_number);
             }
-            
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'There is already an active repair request for this equipment in this location. Ticket number: ' . $existingRequest->ticket_number);
         }
 
         // Generate ticket number (format: REQ-YYYYMMDD-XXXX)

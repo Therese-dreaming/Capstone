@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-4 md:p-8">
     @if(session('success'))
     <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
         {{ session('success') }}
@@ -14,18 +14,18 @@
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow-lg p-6">
-        <div class="flex justify-between items-center mb-6">
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 md:gap-0">
             <h1 class="text-2xl font-bold">Maintenance History</h1>
-            <div class="space-x-3">
-                <button onclick="exportToPDF()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+            <div class="space-x-3 flex flex-row md:flex-row">
+                <button onclick="exportToPDF()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-full md:w-auto">
                     Export to PDF
                 </button>
             </div>
         </div>
 
         <div class="mb-6">
-            <div class="grid grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 <div>
                     <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
                     <input type="date" id="startDate" class="h-9 w-full px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
@@ -63,7 +63,7 @@
         </div>
 
         <!-- Delete Actions -->
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2 md:gap-0">
             <div class="flex space-x-4">
                 <button onclick="deleteSelected()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50" disabled id="deleteSelectedBtn">
                     Delete Selected
@@ -72,8 +72,81 @@
             <div class="text-sm text-gray-600" id="selectedCount">0 items selected</div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table id="maintenanceTable" class="min-w-full divide-y divide-gray-200">
+        <!-- Maintenance Records as Cards (Mobile Only) -->
+        <div class="grid grid-cols-1 gap-6 md:hidden" id="maintenanceCards">
+            @forelse($maintenances as $maintenance)
+            <div class="bg-white rounded-lg shadow p-4 flex flex-col gap-2 border border-gray-200">
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold text-red-800">{{ \Carbon\Carbon::parse($maintenance->scheduled_date)->format('M d, Y') }}</span>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                        {{ $maintenance->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                        {{ ucfirst($maintenance->status) }}
+                    </span>
+                </div>
+                <div class="text-sm text-gray-700">Laboratory <span class="font-semibold">{{ $maintenance->lab_number }}</span></div>
+                <div>
+                    <div class="font-semibold text-xs text-gray-500">Tasks:</div>
+                    @php
+                        $tasks = is_array($maintenance->maintenance_task) ? $maintenance->maintenance_task : json_decode($maintenance->maintenance_task, true);
+                    @endphp
+                    @if(is_array($tasks))
+                        <ul class="list-disc list-inside text-sm">
+                            @foreach($tasks as $task)
+                                <li>{{ $task }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <span class="text-sm">{{ $maintenance->maintenance_task }}</span>
+                    @endif
+                </div>
+                <div>
+                    <div class="font-semibold text-xs text-gray-500">Excluded Assets:</div>
+                    @php
+                        $excludedAssets = is_array($maintenance->excluded_assets) ? $maintenance->excluded_assets : json_decode($maintenance->excluded_assets, true);
+                    @endphp
+                    @if(is_array($excludedAssets) && count($excludedAssets) > 0)
+                        <ul class="list-disc list-inside text-sm">
+                            @foreach($excludedAssets as $asset)
+                                <li>{{ $asset }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <span class="text-gray-500 text-sm">None</span>
+                    @endif
+                </div>
+                <div class="text-sm"><span class="font-semibold">Technician:</span> {{ $maintenance->technician->name }}</div>
+                <div class="text-sm"><span class="font-semibold">Action By:</span> {{ $maintenance->actionBy ? $maintenance->actionBy->name : 'System' }}</div>
+                <div class="text-sm">
+                    <span class="font-semibold">Completion Time:</span>
+                    @if($maintenance->status === 'completed' && $maintenance->completed_at)
+                        {{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M d, Y g:i A') }}
+                    @else
+                        -
+                    @endif
+                </div>
+                @if($maintenance->asset_issues && is_array($maintenance->asset_issues) && !empty($maintenance->asset_issues))
+                    <div>
+                        <button onclick="viewAssetIssues({{ $maintenance->id }}, {{ json_encode($maintenance->asset_issues) }}, {{ json_encode($maintenance->serial_number) }})" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-xs">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            View Asset Issues
+                        </button>
+                    </div>
+                @endif
+                <div class="flex gap-2 mt-2">
+                    <button onclick="confirmDelete({{ $maintenance->id }})" class="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+                </div>
+            </div>
+            @empty
+            <div class="col-span-full text-center text-gray-500">No maintenance history found</div>
+            @endforelse
+        </div>
+
+        <!-- Maintenance Records as Table (Desktop Only) -->
+        <div class="overflow-x-auto hidden md:block">
+            <table id="maintenanceTable" class="min-w-full divide-y divide-gray-200 text-xs md:text-sm">
                 <thead class="bg-[#960106]">
                     <tr>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">
@@ -195,15 +268,15 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-white rounded-lg p-8 max-w-md mx-auto">
+    <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-4 md:p-8 max-w-xs sm:max-w-md mx-auto w-full">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Confirm Deletion</h3>
             <p class="text-sm text-gray-500 mb-6">Are you sure you want to delete the selected maintenance(s)? This action cannot be undone.</p>
-            <div class="flex justify-end space-x-4">
-                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+            <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-4">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 w-full md:w-auto">
                     Cancel
                 </button>
-                <button onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                <button onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-full md:w-auto">
                     Delete
                 </button>
             </div>
@@ -212,8 +285,8 @@
 
     <!-- PDF Preview Modal -->
     <div id="pdfPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-3/4 shadow-lg rounded-md bg-white">
-            <div class="flex justify-between items-center mb-4">
+        <div class="relative top-20 mx-auto p-3 md:p-5 border w-full max-w-[98vw] md:max-w-[75vw] shadow-lg rounded-md bg-white">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-2 md:gap-0">
                 <h3 class="text-lg font-medium">Maintenance History Preview</h3>
                 <button onclick="closePdfPreview()" class="text-gray-500 hover:text-gray-700">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,11 +297,11 @@
             <div class="preview-content" style="max-height: 70vh; overflow-y: auto;">
                 <!-- Preview content will be loaded here -->
             </div>
-            <div class="mt-4 flex justify-end space-x-3">
-                <button onclick="closePdfPreview()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+            <div class="mt-4 flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
+                <button onclick="closePdfPreview()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 w-full md:w-auto">
                     Cancel
                 </button>
-                <button onclick="downloadPDF()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                <button onclick="downloadPDF()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-full md:w-auto">
                     Download PDF
                 </button>
             </div>
@@ -237,8 +310,8 @@
     <!-- Asset Issues Modal -->
     <div id="assetIssuesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg max-w-2xl mx-auto w-full shadow-xl transform transition-all">
-        <div class="bg-[#960106] text-white p-6 rounded-t-lg">
-            <div class="flex justify-between items-center">
+        <div class="bg-[#960106] text-white p-4 md:p-6 rounded-t-lg">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
                 <div class="flex items-center space-x-3">
                     <div class="bg-white/10 p-2 rounded-full">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +327,7 @@
                 </button>
             </div>
         </div>
-        <div class="p-6 space-y-6">
+        <div class="p-4 md:p-6 space-y-6">
             <div id="assetIssuesList" class="space-y-6"></div>
         </div>
     </div>
@@ -267,22 +340,25 @@
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const issueFilter = document.getElementById('issueFilter').value;
-        const rows = document.querySelectorAll('#maintenanceTable tbody tr');
-    
-        rows.forEach(row => {
-            const labMatch = !labFilter || row.dataset.lab === labFilter;
-            const statusMatch = !statusFilter || row.dataset.status === statusFilter;
-    
-            // Date filtering
+
+        // --- Card view (mobile) ---
+        const cards = document.querySelectorAll('#maintenanceCards > div.bg-white');
+        cards.forEach(card => {
+            // Get values from card
+            const dateText = card.querySelector('span.font-semibold.text-red-800')?.textContent.trim();
+            const labText = card.querySelector('.text-sm.text-gray-700 .font-semibold')?.textContent.trim();
+            const statusText = card.querySelector('span.px-2')?.textContent.trim().toLowerCase();
+            const hasIssues = !!card.querySelector('button.inline-flex, button.text-blue-600');
+
+            // Filtering logic
+            let labMatch = !labFilter || (labText && labText === labFilter);
+            let statusMatch = !statusFilter || (statusText && statusText === statusFilter);
             let dateMatch = true;
             if (startDate || endDate) {
-                const dateCell = row.querySelector('td:nth-child(2)');
-                if (dateCell) {
-                    const dateText = dateCell.textContent.trim();
-                    const cellDate = new Date(dateText);
-                    const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                    const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-    
+                const cellDate = dateText ? new Date(dateText) : null;
+                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+                if (cellDate) {
                     if (start && end) {
                         dateMatch = cellDate >= start && cellDate <= end;
                     } else if (start) {
@@ -292,7 +368,43 @@
                     }
                 }
             }
-    
+            let issueMatch = true;
+            if (issueFilter) {
+                if (issueFilter === 'with_issues') {
+                    issueMatch = hasIssues;
+                } else if (issueFilter === 'no_issues') {
+                    issueMatch = !hasIssues;
+                }
+            }
+            card.style.display = (labMatch && statusMatch && dateMatch && issueMatch) ? '' : 'none';
+        });
+
+        // --- Table view (desktop) ---
+        const rows = document.querySelectorAll('#maintenanceTable tbody tr');
+        rows.forEach(row => {
+            const labMatch = !labFilter || row.dataset.lab === labFilter;
+            const statusMatch = !statusFilter || row.dataset.status === statusFilter;
+
+            // Date filtering
+            let dateMatch = true;
+            if (startDate || endDate) {
+                const dateCell = row.querySelector('td:nth-child(2)');
+                if (dateCell) {
+                    const dateText = dateCell.textContent.trim();
+                    const cellDate = new Date(dateText);
+                    const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+                    const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+
+                    if (start && end) {
+                        dateMatch = cellDate >= start && cellDate <= end;
+                    } else if (start) {
+                        dateMatch = cellDate >= start;
+                    } else if (end) {
+                        dateMatch = cellDate <= end;
+                    }
+                }
+            }
+
             // Asset issues filtering
             let issueMatch = true;
             if (issueFilter) {
@@ -303,8 +415,8 @@
                     issueMatch = !hasIssues;
                 }
             }
-    
-            row.style.display = labMatch && statusMatch && dateMatch && issueMatch ? '' : 'none';
+
+            row.style.display = (labMatch && statusMatch && dateMatch && issueMatch) ? '' : 'none';
         });
     }
 
@@ -378,49 +490,6 @@
         // Append query parameters to the export URL
         window.location.href = "{{ route('maintenance.exportPDF') }}?" + params.toString();
         closePdfPreview();
-    }
-
-    function exportToPDF() {
-        const modal = document.getElementById('pdfPreviewModal');
-        const previewContent = modal.querySelector('.preview-content');
-
-        // Get current filters
-        const labFilter = document.getElementById('labFilter').value;
-        const statusFilter = document.getElementById('statusFilter').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-
-        // Build query parameters
-        const params = new URLSearchParams();
-        if (labFilter) params.append('lab', labFilter);
-        if (statusFilter) params.append('status', statusFilter);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
-
-        // Show loading state
-        previewContent.innerHTML = '<div class="text-center py-4">Loading preview...</div>';
-        modal.classList.remove('hidden');
-
-        // Fetch preview content with filters
-        fetch('{{ route("maintenance.previewPDF") }}?' + params.toString())
-            .then(response => response.text())
-            .then(html => {
-                const iframe = document.createElement('iframe');
-                iframe.style.width = '100%';
-                iframe.style.height = '70vh';
-                iframe.style.border = 'none';
-
-                previewContent.innerHTML = '';
-                previewContent.appendChild(iframe);
-
-                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDocument.open();
-                iframeDocument.write(html);
-                iframeDocument.close();
-            })
-            .catch(error => {
-                previewContent.innerHTML = '<div class="text-center py-4 text-red-600">Error loading preview</div>';
-            });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
