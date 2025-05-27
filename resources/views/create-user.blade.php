@@ -79,8 +79,16 @@
 
                 <div class="col-span-2 sm:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                    <input type="text" name="department" value="{{ old('department') }}" required
+                    <select name="department" required 
                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
+                        <option value="">Select Department</option>
+                        <option value="Early Childhood Education (ECE)" {{ old('department') == 'Early Childhood Education (ECE)' ? 'selected' : '' }}>Early Childhood Education (ECE)</option>
+                        <option value="Grade School" {{ old('department') == 'Grade School' ? 'selected' : '' }}>Grade School</option>
+                        <option value="Junior High School" {{ old('department') == 'Junior High School' ? 'selected' : '' }}>Junior High School</option>
+                        <option value="Senior High School" {{ old('department') == 'Senior High School' ? 'selected' : '' }}>Senior High School</option>
+                        <option value="College" {{ old('department') == 'College' ? 'selected' : '' }}>College</option>
+                        <option value="School of Graduate Studies" {{ old('department') == 'School of Graduate Studies' ? 'selected' : '' }}>School of Graduate Studies</option>
+                    </select>
                 </div>
 
                 <div class="col-span-2 sm:col-span-1">
@@ -151,7 +159,8 @@
 
         const name = document.getElementsByName('name')[0].value;
         const username = document.getElementsByName('username')[0].value;
-        const department = document.getElementsByName('department')[0].value;
+        const departmentSelect = document.getElementsByName('department')[0];
+        const department = departmentSelect.options[departmentSelect.selectedIndex].text;
         const position = document.getElementsByName('position')[0].value;
         const roleSelect = document.getElementsByName('group_id')[0];
         const role = roleSelect.options[roleSelect.selectedIndex].text;

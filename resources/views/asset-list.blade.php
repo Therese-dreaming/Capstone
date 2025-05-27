@@ -29,12 +29,14 @@
                         <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                             Add New Asset
                         </a>
+                        @if(auth()->user()->group_id != 2)
                         <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                             Procurement History
                         </a>
                         <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                             Disposal History
                         </a>
+                        @endif
                         <button onclick="openFullList()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />

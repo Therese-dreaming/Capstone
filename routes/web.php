@@ -143,7 +143,8 @@ Route::middleware(['auth'])->group(function () {
             ->middleware(['auth', \App\Http\Middleware\CheckRole::class.':2'])
             ->name('secretary-dashboard');
             
-        Route::get('/lab-schedule/history', [LabScheduleController::class, 'viewHistory'])->name('lab-schedule.history');
+        // Lab Schedule Routes
+        Route::get('/lab-schedule/history', [LabScheduleController::class, 'history'])->name('lab-schedule.history');
         Route::post('/lab-schedule/destroy-multiple', [LabScheduleController::class, 'destroyMultiple'])->name('lab-schedule.destroyMultiple');
         Route::get('/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab-schedule.previewPDF');
         Route::get('/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab-schedule.exportPDF');

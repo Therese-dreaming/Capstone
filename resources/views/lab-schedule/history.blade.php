@@ -338,7 +338,9 @@
     const selectAll = document.getElementById('selectAll');
     const checkboxes = document.querySelectorAll('input[name="selected[]"]');
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const deleteSelectedBtnMobile = document.getElementById('deleteSelectedBtnMobile');
     let itemsToDelete = [];
+    let selectedCards = [];
 
     selectAll.addEventListener('change', function() {
         checkboxes.forEach(checkbox => {
@@ -354,7 +356,37 @@
     function updateSelectedCount() {
         const selectedItems = document.querySelectorAll('input[name="selected[]"]:checked').length;
         document.getElementById('selectedCount').textContent = `${selectedItems} items selected`;
+        document.getElementById('selectedCountMobile').textContent = `${selectedItems} items selected`;
         deleteSelectedBtn.disabled = selectedItems === 0;
+        deleteSelectedBtnMobile.disabled = selectedItems === 0;
+    }
+
+    function toggleCardSelection(card) {
+        const id = card.getAttribute('data-id');
+        
+        if (card.classList.contains('ring-2')) {
+            card.classList.remove('ring-2', 'ring-red-500');
+            const index = selectedCards.indexOf(id);
+            if (index > -1) {
+                selectedCards.splice(index, 1);
+            }
+        } else {
+            card.classList.add('ring-2', 'ring-red-500');
+            selectedCards.push(id);
+        }
+        
+        document.getElementById('selectedCountMobile').textContent = `${selectedCards.length} items selected`;
+        deleteSelectedBtnMobile.disabled = selectedCards.length === 0;
+    }
+
+    function deleteSelectedMobile() {
+        if (selectedCards.length === 0) {
+            alert('Please select items to delete');
+            return;
+        }
+        itemsToDelete = selectedCards;
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.getElementById('deleteModal').classList.add('flex');
     }
 
     function confirmDelete(id) {
@@ -380,12 +412,12 @@
 
     function executeDelete() {
         fetch('{{ route("lab-schedule.destroyMultiple") }}', {
-                method: 'POST'
-                , headers: {
-                    'Content-Type': 'application/json'
-                    , 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-                , body: JSON.stringify({
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
                     ids: itemsToDelete
                 })
             })
@@ -393,17 +425,43 @@
             .then(data => {
                 closeDeleteModal();
                 if (data.success) {
+                    // Remove deleted items from the page
                     itemsToDelete.forEach(id => {
-                        const row = document.querySelector(`tr input[value="${id}"]`).closest('tr');
-                        row.remove();
+                        // Remove from table
+                        const row = document.querySelector(`tr input[value="${id}"]`)?.closest('tr');
+                        if (row) row.remove();
+                        
+                        // Remove from mobile cards
+                        const card = document.querySelector(`div[data-id="${id}"]`);
+                        if (card) card.remove();
                     });
+                    
+                    // Reset selections
+                    selectedCards = [];
                     updateSelectedCount();
-                    // Show success message
+                    
+                    // Show success message - Fixed insertion point
                     const successDiv = document.createElement('div');
                     successDiv.className = 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700';
                     successDiv.textContent = data.message || 'Records deleted successfully';
-                    document.querySelector('.flex-1').insertBefore(successDiv, document.querySelector('.bg-white'));
-                    setTimeout(() => successDiv.remove(), 3000);
+                    
+                    // Get the container and insert at the beginning
+                    const container = document.querySelector('.flex-1');
+                    const firstChild = container.firstChild;
+                    container.insertBefore(successDiv, firstChild);
+                    
+                    // Auto-remove after 3 seconds
+                    setTimeout(() => {
+                        if (successDiv.parentNode) {
+                            successDiv.remove();
+                        }
+                    }, 3000);
+                    
+                    // Reload the page if all items were deleted
+                    if (document.querySelectorAll('#labLogsTable tbody tr').length === 0 && 
+                        document.querySelectorAll('div.grid > [data-id]').length === 0) {
+                        location.reload();
+                    }
                 } else {
                     throw new Error(data.message || 'Failed to delete records');
                 }
@@ -413,8 +471,18 @@
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
                 errorDiv.textContent = error.message;
-                document.querySelector('.flex-1').insertBefore(errorDiv, document.querySelector('.bg-white'));
-                setTimeout(() => errorDiv.remove(), 3000);
+                
+                // Get the container and insert at the beginning
+                const container = document.querySelector('.flex-1');
+                const firstChild = container.firstChild;
+                container.insertBefore(errorDiv, firstChild);
+                
+                // Auto-remove after 3 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.remove();
+                    }
+                }, 3000);
             });
     }
 

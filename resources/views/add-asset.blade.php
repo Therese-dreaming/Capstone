@@ -82,7 +82,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                                 <select name="status" required class="w-full p-2 border @error('status') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                                     <option value="">Select Status</option>
-                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PULLED OUT'] as $status)
+                                    @foreach(['IN USE', 'PULLED OUT'] as $status)
                                     <option value="{{ $status }}" {{ old('status') == $status ? 'selected' : '' }}>
                                         {{ $status }}
                                     </option>

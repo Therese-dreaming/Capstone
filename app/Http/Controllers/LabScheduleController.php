@@ -13,11 +13,6 @@ class LabScheduleController extends Controller
     public function handleRfidAttendance(Request $request)
     {
         try {
-            // Log the incoming request data
-            \Log::info('RFID Attendance Request:', [
-                'rfid_number' => $request->rfid_number,
-                'laboratory' => $request->laboratory
-            ]);
 
             // Validate request
             $request->validate([
@@ -33,13 +28,6 @@ class LabScheduleController extends Controller
                 })
                 ->first();
 
-            // Log user lookup result
-            \Log::info('User lookup result:', [
-                'found' => $user ? true : false,
-                'user_id' => $user ? $user->id : null,
-                'position' => $user ? $user->position : null
-            ]);
-
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -47,20 +35,20 @@ class LabScheduleController extends Controller
                 ], 401);
             }
 
-            // Get the latest completed session for this user in this laboratory
-            $latestCompletedLog = LabLog::where('user_id', $user->id)
-                ->where('laboratory', $request->laboratory)
-                ->where('status', 'completed')
-                ->latest('time_in')  // Changed from tap_time to time_in
+            // Check if user has any ongoing session in any laboratory
+            $anyOngoingLog = LabLog::where('user_id', $user->id)
+                ->where('status', 'on-going')
+                ->latest('time_in')
                 ->first();
 
-            // Get the latest ongoing session if exists
+            // Get the latest ongoing session in the current laboratory if exists
             $ongoingLog = LabLog::where('user_id', $user->id)
                 ->where('laboratory', $request->laboratory)
                 ->where('status', 'on-going')
                 ->latest('time_in')
                 ->first();
 
+            // If there's an ongoing session in the current laboratory
             if ($ongoingLog) {
                 // This is a time-out action
                 $ongoingLog->update([
@@ -78,6 +66,14 @@ class LabScheduleController extends Controller
                     'message' => 'Time Out recorded successfully'
                 ]);
             }
+            
+            // If there's an ongoing session in another laboratory
+            if ($anyOngoingLog && $anyOngoingLog->laboratory != $request->laboratory) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "You have an ongoing session in Laboratory {$anyOngoingLog->laboratory}. Please complete that session first."
+                ], 400);
+            }
 
             // This is a time-in action
             $labLog = new LabLog([
@@ -88,7 +84,6 @@ class LabScheduleController extends Controller
             ]);
 
             if (!$labLog->save()) {
-                \Log::error('Failed to save lab log');
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to save attendance record'
@@ -104,10 +99,6 @@ class LabScheduleController extends Controller
                 'message' => 'Time In recorded successfully'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in handleRfidAttendance:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -237,7 +228,8 @@ class LabScheduleController extends Controller
         ]);
     }
 
-    public function viewHistory(Request $request)
+    // Add this method to match the route used in history.blade.php
+    public function history(Request $request)
     {
         $laboratories = ['401', '402', '403', '404', '405', '406'];
 
@@ -259,5 +251,32 @@ class LabScheduleController extends Controller
             'logs' => $logs,
             'laboratories' => $laboratories
         ]);
+    }
+
+    // Add this method to handle multiple deletions
+    public function destroyMultiple(Request $request)
+    {
+        try {
+            $ids = $request->input('ids', []);
+            
+            if (empty($ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No records selected for deletion'
+                ]);
+            }
+            
+            LabLog::whereIn('id', $ids)->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => count($ids) . ' record(s) deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting records: ' . $e->getMessage()
+            ]);
+        }
     }
 }

@@ -56,9 +56,11 @@
                 </svg>
             </button>
             @endauth
-            <img src="{{ asset('images/logo-small.png') }}" alt="Logo" class="h-10 w-10">
-            <h1 class="text-xl font-bold uppercase hidden sm:block">Operations Management System</h1>
-            <h1 class="text-xl font-bold uppercase sm:hidden">OMS</h1>
+            <a href="{{ auth()->check() ? route('my.tasks') : route('login') }}" class="flex items-center space-x-4">
+                <img src="{{ asset('images/logo-small.png') }}" alt="Logo" class="h-10 w-10">
+                <h1 class="text-xl font-bold uppercase hidden sm:block">Operations Management System</h1>
+                <h1 class="text-xl font-bold uppercase sm:hidden">OMS</h1>
+            </a>
         </div>
 
         @auth
@@ -117,9 +119,9 @@
     @endauth
 
     <div class="flex pt-16">
-<!-- Sidebar -->
-@auth
-<aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 pt-10 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+        <!-- Sidebar -->
+        @auth
+        <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 pt-10 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
     <div class="p-4 pl-8">
 <!-- Added pl-8 for more right padding -->
 <h2 class="text-sm text-[#D5999B] mb-8">MENU</h2>
@@ -294,9 +296,11 @@
                             <a href="{{ route('lab.logging') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Lab Logging
                             </a>
+                            @if(auth()->check() && auth()->user()->group_id !== 3)
                             <a href="{{ route('lab-schedule.history') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
                                 Lab History
                             </a>
+                            @endif
                             @endif
                             @endauth
                         </div>
@@ -338,7 +342,7 @@
         @endauth
 
         <!-- Main Content -->
-        <main id="mainContent" class="w-full md:ml-72 transition-all duration-300 ease-in-out">
+        <main class="@auth md:ml-72 @else w-full flex justify-center @endauth flex-1 transition-all duration-300 ease-in-out">
             @yield('content')
         </main>
     </div>

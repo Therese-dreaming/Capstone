@@ -67,9 +67,16 @@
 
                     <div>
                         <label for="department" class="block text-base font-medium text-gray-700 mb-2">Department</label>
-                        <input type="text" id="department" name="department" value="{{ old('department', auth()->user()->department) }}"
-                            class="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 @error('department') border-red-500 @enderror"
-                            placeholder="Enter department">
+                        <select id="department" name="department" 
+                            class="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 @error('department') border-red-500 @enderror">
+                            <option value="">Select Department</option>
+                            <option value="Early Childhood Education (ECE)" {{ old('department', auth()->user()->department) == 'Early Childhood Education (ECE)' ? 'selected' : '' }}>Early Childhood Education (ECE)</option>
+                            <option value="Grade School" {{ old('department', auth()->user()->department) == 'Grade School' ? 'selected' : '' }}>Grade School</option>
+                            <option value="Junior High School" {{ old('department', auth()->user()->department) == 'Junior High School' ? 'selected' : '' }}>Junior High School</option>
+                            <option value="Senior High School" {{ old('department', auth()->user()->department) == 'Senior High School' ? 'selected' : '' }}>Senior High School</option>
+                            <option value="College" {{ old('department', auth()->user()->department) == 'College' ? 'selected' : '' }}>College</option>
+                            <option value="School of Graduate Studies" {{ old('department', auth()->user()->department) == 'School of Graduate Studies' ? 'selected' : '' }}>School of Graduate Studies</option>
+                        </select>
                     </div>
 
                     <div>
