@@ -310,8 +310,8 @@
     <!-- Asset Issues Modal -->
     <div id="assetIssuesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg max-w-2xl mx-auto w-full shadow-xl transform transition-all">
-        <div class="bg-[#960106] text-white p-4 md:p-6 rounded-t-lg">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
+        <div class="bg-[#960106] text-white p-4 md:p-6 rounded-t-lg relative">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0">
                 <div class="flex items-center space-x-3">
                     <div class="bg-white/10 p-2 rounded-full">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@
                     </div>
                     <h3 class="text-xl font-semibold">Asset Issues</h3>
                 </div>
-                <button onclick="closeAssetIssuesModal()" class="text-white/70 hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-full p-1">
+                <button onclick="closeAssetIssuesModal()" class="absolute top-2 right-2 text-white/70 hover:text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-full p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>

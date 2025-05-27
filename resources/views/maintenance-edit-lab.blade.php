@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 px-4 py-6 md:p-8">
     <h2 class="text-2xl font-semibold mb-6">
         Edit Maintenance Schedule - Lab {{ $labNumber }}
         <span class="text-gray-600 text-lg ml-2">
@@ -13,7 +13,7 @@
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-lg font-medium">Current Tasks</h3>
             <button type="button" onclick="showAddTaskModal()" 
-                class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
                 Add New Task
             </button>
         </div>
@@ -26,7 +26,7 @@
                 <div class="border rounded-lg p-4 bg-gray-50">
                     <input type="hidden" name="maintenances[{{ $index }}][id]" value="{{ $maintenance->id }}">
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Maintenance Task</label>
                             <select name="maintenances[{{ $index }}][maintenance_task]" 

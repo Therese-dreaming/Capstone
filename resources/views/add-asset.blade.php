@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 ml-80">
+<div class="flex-1">
     <div class="p-6">
         <!-- Update the error display section at the top -->
         @if ($errors->any())
@@ -45,7 +45,7 @@
                     <span class="text-sm text-yellow-700">Maximum file size allowed is 2MB</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <!-- Left Column -->
                     <div class="space-y-6">
                         <div class="pb-3 mb-6 border-b border-gray-200">
@@ -178,8 +178,29 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Asset Photo</label>
-                                    <input type="file" name="photo" accept="image/*" max="2048" onchange="validateFileSize(this)" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
-                                    <p class="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG, GIF (max. 2MB)</p>
+                                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-gray-400" id="dropzone">
+                                        <div class="space-y-1 text-center">
+                                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            <div class="flex text-sm text-gray-600">
+                                                <label for="photo" class="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
+                                                    <span>Upload a file</span>
+                                                    <input id="photo" name="photo" type="file" class="sr-only" accept="image/*" max="2048" onchange="validateFileSize(this)">
+                                                </label>
+                                                <p class="pl-1">or drag and drop</p>
+                                            </div>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                        </div>
+                                    </div>
+                                    <!-- Image Preview -->
+                                    <div class="mt-4 hidden" id="imagePreviewContainer">
+                                        <img id="imagePreview" src="#" alt="Image Preview" class="max-w-full h-40 object-cover rounded-md shadow">
+                                        <button type="button" id="removeImageButton" class="mt-2 text-red-600 hover:text-red-800 text-sm">Remove Image</button>
+                                    </div>
+                                    @error('photo')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
                                     <p class="text-xs text-red-500 mt-1 hidden" id="fileError"></p>
                                 </div>
                             </div>
@@ -357,5 +378,101 @@
         }
     });
 
+    // Image preview and file handling
+    document.addEventListener('DOMContentLoaded', function() {
+        const photoInput = document.getElementById('photo');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const removeImageButton = document.getElementById('removeImageButton');
+        const dropzone = document.getElementById('dropzone');
+
+        // Handle file selection via input change
+        photoInput.addEventListener('change', function() {
+            previewImage(this.files[0]);
+        });
+
+        // Handle file drop
+        dropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('border-blue-400'); // Optional: add a visual indicator
+        });
+
+        dropzone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('border-blue-400'); // Optional: remove the visual indicator
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('border-blue-400'); // Optional: remove the visual indicator
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                // Assign the dropped file to the input element
+                photoInput.files = files;
+                previewImage(files[0]);
+            }
+        });
+
+        // Handle click on dropzone to open file input
+        dropzone.addEventListener('click', function() {
+            photoInput.click();
+        });
+
+        // Preview image function
+        function previewImage(file) {
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                    // Also re-run file size validation
+                    validateFileSize(photoInput);
+                }
+
+                reader.readAsDataURL(file);
+            } else {
+                // If no file, hide preview and reset input
+                imagePreview.src = '#';
+                imagePreviewContainer.classList.add('hidden');
+                photoInput.value = '';
+                // Clear any existing file size error
+                const fileError = document.getElementById('fileError');
+                fileError.classList.add('hidden');
+                const submitButton = document.getElementById('submitButton');
+                submitButton.disabled = false;
+            }
+        }
+
+        // Remove image button functionality
+        removeImageButton.addEventListener('click', function() {
+            previewImage(null);
+        });
+
+        // Re-run initial validation on page load in case of old input with errors
+        validateFileSize(photoInput);
+    });
+
+    // Existing location select script (ensure it's outside or correctly integrated)
+    document.getElementById('locationSelect').addEventListener('change', function() {
+        const otherLocation = document.getElementById('otherLocation');
+        const locationValue = this.value;
+
+        if (locationValue === 'others') {
+            otherLocation.classList.remove('hidden');
+            otherLocation.required = true;
+            otherLocation.value = ''; // Clear the other location input
+            document.querySelector('input[name="location"]').value = ''; // Clear the main location value
+        } else {
+            otherLocation.classList.add('hidden');
+            otherLocation.required = false;
+            otherLocation.value = '';
+            document.querySelector('input[name="location"]').value = locationValue;
+        }
+    });
 </script>
 @endsection

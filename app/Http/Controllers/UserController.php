@@ -36,7 +36,6 @@ class UserController extends Controller
                 'position' => 'required|string|max:255',
                 'password' => 'required|confirmed|min:6',
                 'group_id' => 'required|exists:groups,id',
-                'status' => 'required|in:Active,Inactive'
             ]);
 
             // Validate RFID number for faculty/teacher positions
@@ -82,7 +81,6 @@ class UserController extends Controller
                 'department' => 'required|string|max:255',
                 'position' => 'required|string|max:255',
                 'group_id' => 'required|exists:groups,id',
-                'status' => 'required|in:Active,Inactive'
             ]);
 
             // Validate RFID number for faculty/teacher positions

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-8">
     <div class="max-w-5xl mx-auto bg-white rounded-lg shadow-md p-12">
         <h2 class="text-3xl font-semibold mb-8">Edit Profile Information</h2>
 
@@ -21,9 +21,9 @@
             </div>
         @endif
         
-        <div class="flex gap-12">
-            <!-- Left Column - Profile Picture -->
-            <div class="w-1/3">
+        <div class="flex flex-col md:flex-row gap-8 md:gap-12">
+            <!-- Left Column - Profile Picture --> 
+            <div class="w-full md:w-1/3 mb-6 md:mb-0">
                 <div class="text-center">
                     <div class="relative w-64 h-64 mx-auto mb-6">
                         <img src="{{ auth()->user()->profile_picture ?? asset('images/default-profile.png') }}" 
@@ -46,7 +46,7 @@
             </div>
 
             <!-- Right Column - Form -->
-            <div class="w-2/3">
+            <div class="w-full md:w-2/3">
                 <form id="profile-form" action="{{ route('profile.update') }}" method="POST" class="space-y-8" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')

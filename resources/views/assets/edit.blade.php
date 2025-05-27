@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 ml-80">
+<div class="flex-1">
     <div class="p-6">
         <!-- Main Container -->
         <div class="bg-white rounded-lg shadow-lg p-8 max-w-5xl mx-auto">
@@ -96,7 +96,7 @@
                                     Status
                                 </label>
                                 <select name="status" id="status" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
-                                    @foreach(['IN USE', 'UNDER REPAIR', 'UPGRADE', 'PULLED OUT'] as $status)
+                                    @foreach(['IN USE', 'PULLED OUT'] as $status)
                                     <option value="{{ $status }}" {{ $asset->status == $status ? 'selected' : '' }}>
                                         {{ $status }}
                                     </option>
@@ -193,7 +193,7 @@
                     <a href="{{ route('assets.index') }}" class="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                         Cancel
                     </a>
-                    <button type="submit" class="px-6 py-2.5 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    <button type="submit" class="px-6 py-2.5 bg-red-800 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                         Update Asset
                     </button>
                 </div>

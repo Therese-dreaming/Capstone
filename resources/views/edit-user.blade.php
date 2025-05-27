@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-8">
     <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-800">Edit User</h2>
@@ -95,14 +95,6 @@
                                 {{ $group->name }}
                             </option>
                         @endforeach
-                    </select>
-                </div>
-
-                <div class="col-span-2 sm:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select name="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
-                        <option value="Active" {{ old('status', $user->status) === 'Active' ? 'selected' : '' }}>Active</option>
-                        <option value="Inactive" {{ old('status', $user->status) === 'Inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>
             </div>

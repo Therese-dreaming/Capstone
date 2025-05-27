@@ -29,7 +29,7 @@
     </div>
 </div>
 
-<div class="flex-1 p-8 ml-72">
+<div class="flex-1 p-8">
     <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-800">Add New User</h2>
@@ -129,15 +129,6 @@
                         @endforeach
                     </select>
                 </div>
-
-                <div class="col-span-2 sm:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select name="status" required 
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-2.5 px-4 text-base">
-                        <option value="Active" {{ old('status') === 'Active' ? 'selected' : '' }}>Active</option>
-                        <option value="Inactive" {{ old('status') === 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
             </div>
 
             <div class="flex justify-end mt-6 space-x-3">
@@ -164,7 +155,6 @@
         const position = document.getElementsByName('position')[0].value;
         const roleSelect = document.getElementsByName('group_id')[0];
         const role = roleSelect.options[roleSelect.selectedIndex].text;
-        const status = document.getElementsByName('status')[0].value;
 
         const details = `
             <ul class="list-disc list-inside">
@@ -173,7 +163,6 @@
                 <li>Department: ${department}</li>
                 <li>Position: ${position}</li>
                 <li>Role: ${role}</li>
-                <li>Status: ${status}</li>
             </ul>
         `;
 

@@ -97,7 +97,7 @@
                 </button>
 
 <!-- Notification Dropdown -->
-<div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-lg shadow-lg overflow-hidden z-50">
+<div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-128 max-w-[90vw] bg-white rounded-lg shadow-lg overflow-hidden z-50">
     <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
         <h3 class="font-semibold text-gray-700">Notifications</h3>
         <button id="markAllRead" class="text-sm text-red-600 hover:text-red-800">Mark all as read</button>
@@ -403,13 +403,13 @@
             function setActiveState(element) {
                 // Remove active state from all items
                 navItems.forEach(item => {
-                    if (!item.closest('#profileMenu')) { // Exclude profile menu items
+                    if (!item.closest('#profileMenu') && !item.closest('.filter-buttons')) { // Exclude profile menu items and filter buttons
                         item.classList.remove('nav-active');
                         item.classList.remove('bg-red-700');
                     }
                 });
 
-                if (element && !element.closest('#profileMenu')) {
+                if (element && !element.closest('#profileMenu') && !element.closest('.filter-buttons')) {
                     // Add active state to clicked element
                     element.classList.add('nav-active');
                     element.classList.add('bg-red-700');
@@ -626,7 +626,7 @@
                                                     </svg>
                                                 `}
                                             </div>
-                                            <div class="flex-1 min-w-0">
+                                            <div class="flex-1 min-w-0 flex-grow">
                                                 <a href="${notification.link || '#'}" 
                                                    class="block group" 
                                                    onclick="event.preventDefault(); window.location.href = '${notification.link || '#'}'">
@@ -644,7 +644,7 @@
                                         </div>
                                         ${!notification.is_read ? `
                                             <button onclick="markAsRead(${notification.id})" 
-                                                    class="flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                                                    class="flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex-shrink-0">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>

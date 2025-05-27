@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 ml-72 p-8">
+<div class="flex-1 p-8">
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Secretary Dashboard</h1>
 
     <!-- Personal Statistics -->
@@ -19,10 +19,41 @@
     <!-- Completed Repairs Table -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold">Completed Repairs History</h2>
-            <a href="{{ route('repairs.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
+            <h2 class="text-lg font-semibold sm:mr-0 mr-4">Completed Repairs History</h2>
+            <a href="{{ route('repairs.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <span class="sm:block hidden">View All</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
         </div>
-        <div class="overflow-x-auto">
+
+        {{-- Mobile Card View --}}
+        <div class="sm:hidden">
+            @foreach($personalStats['completed_repairs_history']->take(5) as $repair)
+            <div class="bg-white rounded-lg shadow p-4 mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-gray-600">Asset</p>
+                    <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->name }}</a>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-gray-600">Issue</p>
+                    <p class="text-sm text-gray-900">{{ $repair->issue }}</p>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-gray-600">Completion Date</p>
+                    <p class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-sm font-medium text-gray-600">Status</p>
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        {{-- Desktop Table View --}}
+        <div class="overflow-x-auto hidden sm:block">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -36,7 +67,7 @@
                     @foreach($personalStats['completed_repairs_history']->take(5) as $repair)
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->name }}</a>
+                            <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->serial_number }}</a>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $repair->issue }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</td>
@@ -53,10 +84,41 @@
     <!-- Completed Maintenance Table -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-semibold">Completed Maintenance History</h2>
-            <a href="{{ route('user.maintenance.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
+            <h2 class="text-lg font-semibold sm:mr-0 mr-4">Completed Maintenance History</h2>
+            <a href="{{ route('user.maintenance.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <span class="sm:block hidden">View All</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
         </div>
-        <div class="overflow-x-auto">
+
+        {{-- Mobile Card View --}}
+        <div class="sm:hidden">
+            @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
+            <div class="bg-white rounded-lg shadow p-4 mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-gray-600">Laboratory</p>
+                    <p class="text-sm text-gray-900">{{ $maintenance->lab_number }}</p>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-gray-600">Task</p>
+                    <p class="text-sm text-gray-900">{{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</p>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-gray-600">Completion Date</p>
+                    <p class="text-sm text-gray-900">{{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-sm font-medium text-gray-600">Status</p>
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        {{-- Desktop Table View --}}
+        <div class="overflow-x-auto hidden sm:block">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -86,7 +148,12 @@
     <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold">Recent Actions</h2>
-            <a href="{{ route('user.actions.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
+            <a href="{{ route('user.actions.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <span class="sm:block hidden">View All</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
         </div>
         @if(count($personalStats['recent_actions']) > 0)
             <div class="space-y-2">
