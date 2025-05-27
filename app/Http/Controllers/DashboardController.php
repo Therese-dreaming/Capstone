@@ -9,6 +9,7 @@ use App\Models\AssetHistory;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\Maintenance;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -358,27 +359,46 @@ class DashboardController extends Controller
         return view('actions-history', compact('actions'));
     }
 
-    public function allRepairsHistory()
+    public function allRepairsHistory(Request $request)
     {
         $user = auth()->user();
-        $repairs = \App\Models\RepairRequest::with(['asset', 'category'])
+        $query = \App\Models\RepairRequest::with(['asset', 'category'])
             ->where('technician_id', $user->id)
             ->where('status', 'completed')
-            ->whereNotNull('completed_at')
-            ->orderBy('completed_at', 'desc')
-            ->get();
+            ->whereNotNull('completed_at');
+            
+        // Apply date range filters if provided
+        if ($request->has('start_date')) {
+            $query->whereDate('completed_at', '>=', $request->start_date);
+        }
+        
+        if ($request->has('end_date')) {
+            $query->whereDate('completed_at', '<=', $request->end_date);
+        }
+        
+        $repairs = $query->orderBy('completed_at', 'desc')->get();
         return view('repairs-history', compact('repairs'));
     }
 
-    public function allMaintenanceHistory()
+    public function allMaintenanceHistory(Request $request)
     {
         $user = auth()->user();
-        $maintenance = \App\Models\Maintenance::with(['laboratory', 'maintenanceAssets'])
+        $query = \App\Models\Maintenance::with(['laboratory', 'maintenanceAssets'])
             ->where('technician_id', $user->id)
             ->where('status', 'completed')
-            ->whereNotNull('completed_at')
-            ->orderBy('completed_at', 'desc')
-            ->get();
+            ->whereNotNull('completed_at');
+            
+        // Apply date filters if provided
+        if ($request->has('start_date') && $request->start_date) {
+            $query->whereDate('completed_at', '>=', $request->start_date);
+        }
+        
+        if ($request->has('end_date') && $request->end_date) {
+            $query->whereDate('completed_at', '<=', $request->end_date);
+        }
+        
+        $maintenance = $query->orderBy('completed_at', 'desc')->get();
+        
         return view('user-maintenance-history', compact('maintenance'));
     }
 }

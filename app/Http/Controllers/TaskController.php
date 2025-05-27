@@ -26,7 +26,7 @@ class TaskController extends Controller
 
         // Get repair requests assigned to the user
         $repairRequests = RepairRequest::where('technician_id', $user->id)
-            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
             ->orderBy('created_at', 'desc')
             ->get();
 

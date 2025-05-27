@@ -699,6 +699,13 @@
                 const serialNumber = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
                 row.style.display = serialNumber.includes(searchValue) ? '' : 'none';
             });
+            
+            // Search in mobile cards
+            const mobileCards = document.querySelectorAll('.md\\:hidden > div');
+            mobileCards.forEach(card => {
+                const serialNumber = card.querySelector('p.text-sm.text-gray-600').textContent.toLowerCase();
+                card.style.display = serialNumber.includes(searchValue) ? '' : 'none';
+            });
         }
 
         // Main search input event listener
