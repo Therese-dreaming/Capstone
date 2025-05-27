@@ -183,6 +183,23 @@ class RepairRequestController extends Controller
         ));
     }
 
+    /**
+     * Fetch data for a single repair request.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRepairRequestData($id)
+    {
+        $repairRequest = RepairRequest::with('technician')->find($id);
+
+        if (!$repairRequest) {
+            return response()->json(['message' => 'Repair request not found'], 404);
+        }
+
+        return response()->json($repairRequest);
+    }
+
     public function update(Request $request, $id)
     {
         // Find the repair request

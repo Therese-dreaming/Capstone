@@ -39,8 +39,21 @@
                                     <div class="flex flex-wrap items-center gap-2 mb-3">
                                         <h3 class="font-medium text-gray-900">{{ $task->maintenance_task }}</h3>
                                         <span class="px-3 py-1 rounded-full text-xs font-medium
-                                            {{ $task->scheduled_date == today() ? 'bg-red-100 text-red-800 ring-1 ring-red-400' : 'bg-blue-100 text-blue-800' }}">
-                                            {{ $task->scheduled_date == today() ? 'Today' : 'Upcoming' }}
+                                            @if($task->scheduled_date < today())
+                                                bg-red-100 text-red-800 ring-1 ring-red-400
+                                            @elseif($task->scheduled_date == today())
+                                                bg-yellow-100 text-yellow-800 ring-1 ring-yellow-400
+                                            @else
+                                                bg-blue-100 text-blue-800
+                                            @endif
+                                        ">
+                                            @if($task->scheduled_date < today())
+                                                Overdue
+                                            @elseif($task->scheduled_date == today())
+                                                Today
+                                            @else
+                                                Upcoming
+                                            @endif
                                         </span>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-3 md:gap-5 text-xs md:text-sm text-gray-600">

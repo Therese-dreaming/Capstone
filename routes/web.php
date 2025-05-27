@@ -151,5 +151,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/actions-history', [DashboardController::class, 'userActionsHistory'])->name('user.actions.history');
         Route::get('/repairs-history', [App\Http\Controllers\DashboardController::class, 'allRepairsHistory'])->name('repairs.history');
         Route::get('/maintenance-history', [App\Http\Controllers\DashboardController::class, 'allMaintenanceHistory'])->name('user.maintenance.history');
+
+        // Repair Request Routes
+        Route::resource('repair-requests', App\Http\Controllers\RepairRequestController::class);
+        Route::get('/repair-requests/delete/{id}', [App\Http\Controllers\RepairRequestController::class, 'destroy'])->name('repair-requests.delete');
+
+        // Add route to fetch single repair request data
+        Route::get('/repair-requests/{id}/data', [App\Http\Controllers\RepairRequestController::class, 'getRepairRequestData']);
     });
 });

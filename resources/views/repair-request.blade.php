@@ -315,6 +315,35 @@
             }
         }
 
+        // Function to get URL parameters
+        function getUrlParameter(name) {
+            name = name.replace(/[[]/g, '\\[').replace(/[\\]]/g, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? null : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // On page load, check for URL parameters and pre-fill form
+        document.addEventListener('DOMContentLoaded', function() {
+            const serialNumber = getUrlParameter('serial_number');
+            const issue = getUrlParameter('issue');
+            const location = getUrlParameter('location');
+
+            if (serialNumber) {
+                document.getElementById('serial_number').value = serialNumber;
+                // Optionally fetch asset details automatically if serial number is provided
+                fetchAssetDetails();
+            }
+
+            if (issue) {
+                document.querySelector('textarea[name="issue"]').value = issue;
+            }
+
+            if (location) {
+                document.getElementById('location').value = location;
+            }
+        });
+
     </script>
 </div>
 @endsection

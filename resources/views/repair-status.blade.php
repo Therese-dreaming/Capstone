@@ -2,13 +2,6 @@
 
 @section('content')
 <div class="flex-1 p-4 md:p-8">
-    @if(session('success'))
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-        <strong class="font-bold">Success!</strong>
-        <span class="block sm:inline">{{ session('success') }}</span>
-    </div>
-    @endif
-
     <!-- Requests Table -->
     <div class="bg-white rounded-lg shadow-lg p-6">
 
@@ -27,6 +20,9 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Container for dynamically inserted messages --}}
+            <div id="message-container"></div>
 
             <!-- Cards for mobile -->
             <div class="grid grid-cols-1 gap-4 md:hidden" id="requestsCards">
@@ -47,6 +43,13 @@
                     <div class="text-sm"><span class="font-semibold">Location:</span> {{ $request->location }}</div>
                     <div class="text-sm"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
                     <div class="text-sm"><span class="font-semibold">Issue:</span> {{ $request->issue }}</div>
+                    <div class="text-sm"><span class="font-semibold">Asset:</span>
+                        @if($request->asset)
+                            <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                        @else
+                            Non-existent / Not Linked
+                        @endif
+                    </div>
                     <div class="flex gap-2 mt-2">
                         @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
                         <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
@@ -79,6 +82,7 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Request Date</th>
                             <th class="px-6 py-3 text-left text-sm font-medium text-white w-[12%]">Ticket No.</th>
+                            <th class="px-6 py-3 text-left text-sm font-medium text-white w-[10%]">Asset / Serial No.</th>
                             <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Item</th>
                             <th class="px-6 py-3 text-left text-sm font-medium text-white w-[15%]">Location</th>
                             <th class="px-6 py-3 text-left text-sm font-medium text-white w-[8%]">Status</th>
@@ -92,6 +96,13 @@
                         <tr id="request-{{ $request->id }}" class="hover:bg-gray-50 transition-colors">
                             <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</td>
                             <td class="px-6 py-4 text-sm text-gray-900 font-medium max-w-0">{{ $request->ticket_number ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">
+                                @if($request->asset)
+                                    <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                                @else
+                                    Non-existent / Not Linked
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->equipment }}</td>
                             <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->location }}</td>
                             <td class="px-6 py-4 text-sm text-gray-900">
@@ -100,14 +111,13 @@
                                 @elseif($request->status === 'completed')
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
                                 @elseif($request->status === 'cancelled')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-854medium bg-red-100 text-red-800">Cancelled</span>
                                 @else
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Pending</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->issue }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
+                            <td class="px-6 py-4 text-sm text-gray-900 truncate max-w-0">{{ $request->issue }}</td>                            <td class="px-6 py-4 text-sm text-gray-900">
                                 <div class="flex space-x-2">
                                     @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
                                     <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
@@ -138,7 +148,6 @@
         </div>
 
         <!-- Update Modal -->
-        <!-- Update Modal -->
         <div id="updateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
             <div class="bg-white rounded-lg shadow-xl w-full max-w-[95%] md:max-w-[500px] p-3 md:p-5 relative">
                 <!-- Header -->
@@ -152,7 +161,16 @@
                     @csrf
                     @method('PUT')
 
-                    <!-- Technician Selection -->
+                    <!-- Display Location (Read-only) -->
+                     <div class="space-y-2">
+                        <label class="block text-gray-700 text-sm font-semibold" for="location_display">
+                            Location
+                        </label>
+                        <p id="location_display" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 select-text"></p>
+                    </div>
+
+                    <!-- Technician Selection (Conditional) -->
+                    @if(auth()->user()->group_id == 1)
                     <div class="space-y-2">
                         <label class="block text-gray-700 text-sm font-semibold" for="technician_id">
                             Technician Assignment
@@ -164,6 +182,16 @@
                             @endforeach
                         </select>
                     </div>
+                    @else
+                    {{-- Display Technician for non-Admins --}}
+                    <div class="space-y-2">
+                        <label class="block text-gray-700 text-sm font-semibold">
+                            Assigned Technician
+                        </label>
+                         <p id="technician_display" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 select-text"></p>
+                        <input type="hidden" name="technician_id" id="technician_id_hidden">
+                    </div>
+                    @endif
 
                     <!-- Status Selection -->
                     <div class="space-y-2">
@@ -175,15 +203,16 @@
                             <option value="urgent" class="text-red-800">Urgent</option>
                             <option value="pulled_out" class="text-yellow-800">Pulled Out</option>
                             <option value="disposed" class="text-red-800">Disposed</option>
+                            {{-- Removed 'in progress' as per user's implied status options from edit.blade.php --}}
                         </select>
                     </div>
 
-                    <!-- Remarks Textarea -->
+                    <!-- Issue Textarea (Replacing Remarks) -->
                     <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold" for="remarks">
-                            Remarks
+                        <label class="block text-gray-700 text-sm font-semibold" for="issue">
+                            Issue
                         </label>
-                        <textarea id="remarks" name="remarks" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-150 ease-in-out resize-none" placeholder="Enter the reason for status change..."></textarea>
+                        <textarea id="issue" name="issue" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-150 ease-in-out resize-none" placeholder="Enter the issue description..."></textarea>
                     </div>
 
                     <!-- Action Buttons -->
@@ -442,64 +471,55 @@
                 const form = document.getElementById('updateForm');
                 form.action = `/repair-requests/${requestId}`;
 
-                // Find the request in the table
-                const row = document.querySelector(`tr[id="request-${requestId}"]`);
-                if (!row) return;
-
-                // Get current status from the status cell's text content
-                const statusCell = row.querySelector('td:nth-child(5) span'); // Changed from 6 to 5
-                let currentStatus = statusCell.textContent.trim().toLowerCase();
-
-                // Convert display text to status value
-                switch (currentStatus) {
-                    case 'in progress':
-                        currentStatus = 'in_progress';
-                        break;
-                    case 'pulled out':
-                        currentStatus = 'pulled_out';
-                        break;
-                    case 'pending':
-                        currentStatus = 'pending';
-                        break;
-                    case 'urgent':
-                        currentStatus = 'urgent';
-                        break;
-                    case 'disposed':
-                        currentStatus = 'disposed';
-                        break;
-                }
-
-                // Set current status
-                const statusSelect = document.getElementById('status');
-                if (statusSelect.querySelector(`option[value="${currentStatus}"]`)) {
-                    statusSelect.value = currentStatus;
-                }
-
-                // Set current technician if one is assigned
-                const technicianName = row.querySelector('td:nth-child(6)').textContent.trim(); // Changed from 7 to 6
-                const technicianSelect = document.getElementById('technician_id');
-
-                if (technicianName !== 'Not Assigned') {
-                    Array.from(technicianSelect.options).forEach(option => {
-                        if (option.text === technicianName) {
-                            option.selected = true;
+                // Fetch request data via AJAX
+                fetch(`/repair-requests/${requestId}/data`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch request data');
                         }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Populate modal fields with fetched data
+                        document.getElementById('location_display').textContent = data.location;
+
+                        const technicianSelect = document.getElementById('technician_id');
+                         const technicianDisplay = document.getElementById('technician_display');
+                        const technicianIdHidden = document.getElementById('technician_id_hidden');
+
+                         if (technicianSelect) { // If technician select is visible (for Admins/Technicians)
+                             technicianSelect.value = data.technician_id || '';
+                         } else if (technicianDisplay) { // If technician display is visible (for Secretaries)
+                             technicianDisplay.textContent = data.technician ? data.technician.name : 'Not Assigned';
+                             technicianIdHidden.value = data.technician_id || ''; // Keep hidden input for submission
+                         }
+
+                        const statusSelect = document.getElementById('status');
+                         // Select the correct status option, defaulting to 'pending' if status is not in the list
+                         if (statusSelect.querySelector(`option[value="${data.status}"]`)) {
+                             statusSelect.value = data.status;
+                         } else {
+                            statusSelect.value = 'pending'; // Default to pending if current status isn't an option
+                         }
+
+                        document.getElementById('issue').value = data.issue;
+
+                        // Show the modal after data is populated
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                    })
+                    .catch(error => {
+                        console.error('Error fetching request data:', error);
+                        alert('Could not load request data. Please try again.');
                     });
-                } else {
-                    technicianSelect.value = ''; // Reset to "Select Technician"
-                }
-
-                // Clear remarks field
-                document.getElementById('remarks').value = '';
-
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
             }
 
             function closeUpdateModal() {
                 const modal = document.getElementById('updateModal');
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
+                // Clear fields on close (optional, but good practice)
+                 document.getElementById('updateForm').reset();
             }
 
             function openDeleteModal(requestId) {
@@ -824,6 +844,11 @@
             const requestId = this.action.split('/').pop();
             const formData = new FormData(this);
 
+             // If the technician select was hidden, ensure the hidden input's value is used
+             @if(auth()->user()->group_id > 1)
+                  formData.set('technician_id', document.getElementById('technician_id_hidden').value);
+              @endif
+
             fetch(this.action, {
                     method: 'POST'
                     , body: formData
@@ -833,7 +858,13 @@
                     }
                     , credentials: 'same-origin'
                 })
-                .then(response => response.json())
+                .then(async response => {
+                     if (!response.ok) {
+                         const error = await response.json();
+                         throw new Error(error.message || 'Failed to update request');
+                     }
+                     return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         showSuccessMessage(data.message);
@@ -841,32 +872,42 @@
                         // Close modal
                         closeUpdateModal();
 
-                        // Find and update the row in tableData array
-                        const rowIndex = tableData.findIndex(row => row.id === `request-${requestId}`);
-                        if (rowIndex !== -1) {
-                            const row = tableData[rowIndex];
+                        // Find the index of the request in the tableData array
+                        const requestIndex = tableData.findIndex(item => item.id == requestId);
 
-                            // Update status cell (5th column)
-                            const statusCell = row.querySelector('td:nth-child(5)');
-                            const newStatus = document.getElementById('status').value;
-                            statusCell.innerHTML = getStatusBadgeHTML(newStatus);
+                        if (requestIndex !== -1) {
+                            // Update the data in the tableData array
+                            tableData[requestIndex].status = document.getElementById('status').value;
+                            tableData[requestIndex].issue = document.getElementById('issue').value;
 
-                            // Update technician cell (6th column)
-                            const technicianCell = row.querySelector('td:nth-child(6)');
-                            const technicianSelect = document.getElementById('technician_id');
-                            const selectedTechnician = technicianSelect.options[technicianSelect.selectedIndex];
-                            technicianCell.textContent = selectedTechnician.text || 'Not Assigned';
+                             // Update technician data if applicable
+                             const technicianSelect = document.getElementById('technician_id');
+                             if (technicianSelect) { // If technician select is visible (Admin)
+                                 const selectedTechnicianId = technicianSelect.value;
+                                  tableData[requestIndex].technician_id = selectedTechnicianId;
 
-                            // Update the tableData array
-                            tableData[rowIndex] = row;
+                                  // Find the technician name from the options
+                                 const selectedOption = technicianSelect.options[technicianSelect.selectedIndex];
+                                  tableData[requestIndex].technician = selectedTechnicianId ? { name: selectedOption.text } : null; // Update technician object/name
+                             } else { // If technician display is visible (Non-Admin)
+                                  // Technician assignment cannot be changed by non-admins via this modal,
+                                 // so we don't need to update technician_id in tableData here.
+                                 // The technician name displayed in the table should already be correct.
+                             }
+
+                            // Re-render the table to show the updated data
+                            updateTable();
                         }
 
-                        // Update the table display
-                        updateTable();
+                        // Reload the page after successful update
+                        window.location.reload();
+                    } else {
+                        throw new Error(data.message || 'Failed to update request');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    alert(error.message || 'An error occurred while updating the request');
                 });
         });
 
@@ -895,19 +936,17 @@
 
             // Create and show new success message
             const alertDiv = document.createElement('div');
-            alertDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6';
+            // Add z-50 class for high z-index
+            alertDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6 z-50';
             alertDiv.innerHTML = `
                 <strong class="font-bold">Success!</strong>
                 <span class="block sm:inline">${message}</span>
             `;
 
             // Insert alert at the top of the main content
-            let content = document.querySelector('.flex-1');
-            if (!content) content = document.body;
-            if (content.firstChild) {
-                content.insertBefore(alertDiv, content.firstChild);
-            } else {
-                content.appendChild(alertDiv);
+            const messageContainer = document.getElementById('message-container');
+            if (messageContainer) {
+                messageContainer.appendChild(alertDiv);
             }
 
             // Automatically remove the message after 3 seconds

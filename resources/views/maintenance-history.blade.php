@@ -126,7 +126,7 @@
                 </div>
                 @if($maintenance->asset_issues && is_array($maintenance->asset_issues) && !empty($maintenance->asset_issues))
                     <div>
-                        <button onclick="viewAssetIssues({{ $maintenance->id }}, {{ json_encode($maintenance->asset_issues) }}, {{ json_encode($maintenance->serial_number) }})" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-xs">
+                        <button onclick="viewAssetIssues({{ $maintenance->id }}, {{ json_encode($maintenance->asset_issues) }}, {{ json_encode($maintenance->serial_number) }}, '{{ $maintenance->lab_number }}')" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-xs">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -242,7 +242,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex space-x-2">
                                 @if($maintenance->asset_issues && is_array($maintenance->asset_issues) && !empty($maintenance->asset_issues))
-                                <button onclick="viewAssetIssues({{ $maintenance->id }}, {{ json_encode($maintenance->asset_issues) }}, {{ json_encode($maintenance->serial_number) }})" class="text-blue-600 hover:text-blue-800">
+                                <button onclick="viewAssetIssues({{ $maintenance->id }}, {{ json_encode($maintenance->asset_issues) }}, {{ json_encode($maintenance->serial_number) }}, '{{ $maintenance->lab_number }}')" class="text-blue-600 hover:text-blue-800">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -659,7 +659,7 @@ function closeAssetIssuesModal() {
     document.getElementById('assetIssuesList').innerHTML = '';
 }
 
-function viewAssetIssues(maintenanceId, assetIssues, serialNumbers) {
+function viewAssetIssues(maintenanceId, assetIssues, serialNumbers, labNumber) {
     const modal = document.getElementById('assetIssuesModal');
     const assetIssuesList = document.getElementById('assetIssuesList');
 
@@ -696,6 +696,11 @@ function viewAssetIssues(maintenanceId, assetIssues, serialNumbers) {
                                     <p class="text-gray-700">${issue.issue_description}</p>
                                 </div>
                             </div>
+                            <div class="mt-4 text-right">
+                                <button onclick="createRepairRequest('${serialNumber}', '${encodeURIComponent(issue.issue_description)}', '${labNumber}')" class="text-xs px-3 py-1 bg-red-800 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                    Create Repair Request
+                                </button>
+                            </div>
                         </div>
                     </div>`;
             }
@@ -707,6 +712,13 @@ function viewAssetIssues(maintenanceId, assetIssues, serialNumbers) {
     // Show the modal
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+}
+
+// Function to navigate to repair request page with pre-filled data
+function createRepairRequest(serialNumber, issueDescription, labNumber) {
+    const baseUrl = '{{ route('repair.request') }}';
+    const url = `${baseUrl}?serial_number=${serialNumber}&issue=${issueDescription}&location=Laboratory ${labNumber}`;
+    window.location.href = url;
 }
 
 </script>
