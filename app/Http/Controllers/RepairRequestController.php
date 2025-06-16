@@ -11,11 +11,19 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;  // Change this line
+use Illuminate\Support\Facades\Storage;
+use App\Models\NonRegisteredAsset;
+use Illuminate\Support\Facades\Auth;
 
 class RepairRequestController extends Controller
 {
     public function create()
     {
+        // Check if user is a secretary (group_id 2)
+        if (auth()->check() && auth()->user()->group_id === 2) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $categories = Category::all();
         $technicians = User::whereIn('group_id', [1, 2])
             ->where('status', 'active')
@@ -34,7 +42,8 @@ class RepairRequestController extends Controller
             'serial_number' => 'nullable|string',
             'issue' => 'required|string',
             'status' => 'required|in:pending,urgent',
-            'technician_id' => 'nullable|exists:users,id'
+            'technician_id' => 'nullable|exists:users,id',
+            'photo' => 'nullable|string|max:5242880' // 5MB base64 string
         ];
 
         $request->validate($rules);
@@ -46,6 +55,12 @@ class RepairRequestController extends Controller
 
         // If serial_number is empty string or null, set it to null
         $serialNumber = $request->serial_number ? trim($request->serial_number) : null;
+
+        // Handle photo upload if present
+        $photoPath = null;
+        if ($request->has('photo') && $request->photo) {
+            $photoPath = $this->savePhoto($request->photo);
+        }
 
         // If serial number is provided, verify it exists in assets
         if ($serialNumber) {
@@ -127,8 +142,10 @@ class RepairRequestController extends Controller
             'equipment' => $request->equipment,
             'serial_number' => $serialNumber,
             'issue' => $request->issue,
+            'photo' => $photoPath,
             'status' => $request->status,
-            'technician_id' => $request->technician_id,  // Add this line
+            'technician_id' => $request->technician_id,
+            'created_by' => auth()->id(),
             'created_at' => $created_at,
             'updated_at' => $created_at
         ]);
@@ -158,7 +175,55 @@ class RepairRequestController extends Controller
             }
         }
 
+        // Notify admins if request is created by a regular user
+        if (auth()->user()->group_id === 3) {
+            $admins = User::where('group_id', 1)->get();
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'repair_request',
+                    'message' => "New repair request from user: {$ticketNumber} - {$request->equipment}",
+                    'is_read' => false,
+                    'link' => url(route('repair.status', [], false))
+                ]);
+            }
+        }
+
         return redirect()->back()->with('success', 'Repair request submitted successfully. Your ticket number is: ' . $ticketNumber);
+    }
+
+    /**
+     * Save the base64 encoded photo to storage
+     *
+     * @param string $base64Image
+     * @return string|null
+     */
+    private function savePhoto($base64Image)
+    {
+        try {
+            // Remove the data URL prefix if present
+            if (strpos($base64Image, 'data:image') === 0) {
+                list(, $base64Image) = explode(',', $base64Image);
+            }
+
+            // Decode the base64 image
+            $imageData = base64_decode($base64Image);
+            if (!$imageData) {
+                return null;
+            }
+
+            // Generate a unique filename
+            $filename = 'repair_' . time() . '_' . uniqid() . '.jpg';
+            
+            // Save the image to storage
+            $path = 'repair_photos/' . $filename;
+            Storage::disk('public')->put($path, $imageData);
+
+            return $path;
+        } catch (\Exception $e) {
+            \Log::error('Error saving repair photo: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function status(Request $request)
@@ -171,10 +236,29 @@ class RepairRequestController extends Controller
             ->latest()
             ->get();
 
-        // Update this line to exclude pulled_out requests as well
-        $requests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
-            ->latest()
-            ->get();
+        // Build the query with search functionality
+        $query = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out']);
+
+        // Add search condition if search term is provided
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('ticket_number', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('equipment', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('location', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        $requests = $query->latest()->paginate(9)->withQueryString();
+
+        // If it's an AJAX request, return JSON response
+        if ($request->ajax()) {
+            $view = view('repair-status', compact('requests'))->render();
+            return response()->json([
+                'html' => $view,
+                'success' => true
+            ]);
+        }
 
         return view('repair-status', compact(
             'urgentRepairs',
@@ -191,188 +275,291 @@ class RepairRequestController extends Controller
      */
     public function getRepairRequestData($id)
     {
-        $repairRequest = RepairRequest::with('technician')->find($id);
-
-        if (!$repairRequest) {
-            return response()->json(['message' => 'Repair request not found'], 404);
+        \Log::info('Fetching repair request data for ID: ' . $id);
+        
+        try {
+            $repairRequest = RepairRequest::with('technician')->find($id);
+            
+            if (!$repairRequest) {
+                \Log::warning('Repair request not found for ID: ' . $id);
+                return response()->json(['message' => 'Repair request not found'], 404);
+            }
+            
+            \Log::info('Repair request data:', ['data' => $repairRequest->toArray()]);
+            return response()->json($repairRequest);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching repair request data: ' . $e->getMessage());
+            return response()->json(['message' => 'Error fetching repair request data: ' . $e->getMessage()], 500);
         }
-
-        return response()->json($repairRequest);
     }
 
     public function update(Request $request, $id)
     {
-        // Find the repair request
-        $repairRequest = RepairRequest::findOrFail($id);
-    
-        // Validate request
-        $request->validate([
-            'status' => 'required|in:pending,urgent,in_progress,completed,cancelled,pulled_out,disposed',
-            'remarks' => 'required_if:status,completed,cancelled,pulled_out|string|nullable',
-            'technician_id' => 'nullable|exists:users,id',
-            'date_finished' => 'required_if:status,completed,cancelled,pulled_out|date|nullable',
-            'time_finished' => 'required_if:status,completed,cancelled,pulled_out|nullable',
+        \Log::info('Starting repair request update', [
+            'request_id' => $id,
+            'request_data' => $request->all()
         ]);
-    
-        // Update repair request with all fields
-        $updateData = [
-            'status' => $request->status,
-            'remarks' => $request->remarks,
-            'technician_id' => $request->technician_id,
-            'updated_at' => now()
-        ];
-    
-        // Handle asset status updates for pulled out requests
-        if ($request->status === 'pulled_out' && $repairRequest->serial_number) {
-            // Preserve the existing technician_id if not provided in the request
-            if (!$request->technician_id) {
-                $updateData['technician_id'] = $repairRequest->technician_id;
-            }
-            
-            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
-            if ($asset) {
-                $oldStatus = $asset->status;
-                // Update asset status to PULLED OUT
-                $asset->update([
-                    'status' => 'PULLED OUT'
-                ]);
-                
-                // Create repair history record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'REPAIR',
-                    'old_value' => $request->issue ?? 'Not specified',
-                    'new_value' => $request->status,
-                    'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}",
-                    'changed_by' => auth()->id()
-                ]);
 
-                // Add status change record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'STATUS',
-                    'old_value' => $oldStatus,
-                    'new_value' => 'PULLED OUT',
-                    'remarks' => "Asset status changed to PULLED OUT due to repair request",
-                    'changed_by' => auth()->id()
-                ]);
-            }
-        } elseif ($request->status === 'in_progress' && $repairRequest->serial_number) {
-            // If the user clicks 'No' in pull out modal, set status back to IN USE
-            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
-            if ($asset) {
-                // Update asset status back to IN USE
-                $asset->update([
-                    'status' => 'IN USE'
-                ]);
-                
-                // Create asset history record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'REPAIR',
-                    'old_value' => $request->issue ?? 'Not specified',
-                    'new_value' => $request->status,
-                    'remarks' => "Ticket: {$this->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}",
-                    'changed_by' => auth()->id()
-                ]);
-            }
-        }
-
-        // Handle asset status updates for completed requests
-        if ($request->status === 'completed' && $repairRequest->serial_number) {
-            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
-            if ($asset) {
-                // Update asset status to IN USE
-                $asset->update([
-                    'status' => 'IN USE'
-                ]);
-                
-                // Create repair history record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'REPAIR',
-                    'old_value' => $repairRequest->issue ?? 'Not specified',
-                    'new_value' => 'completed',
-                    'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
-                    'changed_by' => auth()->id()
-                ]);
-
-                // Create status change record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'STATUS',
-                    'old_value' => 'UNDER REPAIR',
-                    'new_value' => 'IN USE',
-                    'remarks' => "Asset repair completed: " . ($request->remarks ?? 'No remarks provided'),
-                    'changed_by' => auth()->id()
-                ]);
-            }
-        }
-
-        // Handle asset status updates for cancelled requests
-        if ($request->status === 'cancelled' && $repairRequest->serial_number) {
-            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
-            if ($asset) {
-                // Update asset status back to IN USE
-                $asset->update([
-                    'status' => 'IN USE'
-                ]);
-                
-                // Create repair history record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'REPAIR',
-                    'old_value' => $repairRequest->issue ?? 'Not specified',
-                    'new_value' => 'cancelled',
-                    'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
-                    'changed_by' => auth()->id()
-                ]);
-
-                // Create status change record
-                AssetHistory::create([
-                    'asset_id' => $asset->id,
-                    'change_type' => 'STATUS',
-                    'old_value' => 'UNDER REPAIR',
-                    'new_value' => 'IN USE',
-                    'remarks' => "Asset repair cancelled: " . ($request->remarks ?? 'No remarks provided'),
-                    'changed_by' => auth()->id()
-                ]);
-            }
-        }
-
-        // Set completion/cancellation datetime if applicable
-        if (in_array($request->status, ['completed', 'cancelled', 'pulled_out'])) {
-            // Use the provided date/time if available, otherwise use current date/time
-            if ($request->date_finished && $request->time_finished) {
-                $updateData['completed_at'] = date('Y-m-d H:i:s', strtotime($request->date_finished . ' ' . $request->time_finished));
-            } else {
-                $updateData['completed_at'] = now(); // Use current date and time
-            }
-        }
-    
-        // Perform the update
         try {
+            // Find the repair request
+            $repairRequest = RepairRequest::findOrFail($id);
+            \Log::info('Found repair request', ['repair_request' => $repairRequest->toArray()]);
+            
+            // Prepare update data
+            $updateData = $request->only([
+                'technician_id',
+                'status',
+                'issue',
+                'remarks',
+                'caller_name',
+                'findings',
+                'technician_signature',
+                'caller_signature'
+            ]);
+            \Log::info('Initial update data', ['update_data' => $updateData]);
+
+            // Handle photo upload if present
+            if ($request->has('photo') && $request->photo) {
+                // Delete old photo if exists
+                if ($repairRequest->photo) {
+                    Storage::disk('public')->delete($repairRequest->photo);
+                }
+                $updateData['photo'] = $this->savePhoto($request->photo);
+            }
+
+            // Handle time_started for in_progress status
+            if ($request->status === 'in_progress' && $request->time_started) {
+                $updateData['time_started'] = $request->time_started;
+                \Log::info('Added time_started to update data', ['time_started' => $request->time_started]);
+            }
+
+            // Handle asset status updates for in_progress requests
+            if ($request->status === 'in_progress' && $repairRequest->serial_number) {
+                \Log::info('Processing in_progress status for asset', ['serial_number' => $repairRequest->serial_number]);
+                
+                $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+                if ($asset) {
+                    $oldStatus = $asset->status;
+                    \Log::info('Found asset', ['asset' => $asset->toArray(), 'old_status' => $oldStatus]);
+                    
+                    // Update asset status to UNDER REPAIR if not already
+                    if ($asset->status !== 'UNDER REPAIR') {
+                        $asset->update([
+                            'status' => 'UNDER REPAIR'
+                        ]);
+                        
+                        // Create asset history record
+                        AssetHistory::create([
+                            'asset_id' => $asset->id,
+                            'change_type' => 'STATUS',
+                            'old_value' => $oldStatus,
+                            'new_value' => 'UNDER REPAIR',
+                            'remarks' => "Asset status changed to UNDER REPAIR due to repair request",
+                            'changed_by' => auth()->id()
+                        ]);
+                        \Log::info('Updated asset status to UNDER REPAIR');
+                    }
+                } else {
+                    \Log::warning('Asset not found for serial number', ['serial_number' => $repairRequest->serial_number]);
+                }
+            }
+
+            // Handle asset status updates for completed requests
+            if ($request->status === 'completed' && $repairRequest->serial_number) {
+                $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+                if ($asset) {
+                    // Update asset status to IN USE
+                    $asset->update([
+                        'status' => 'IN USE'
+                    ]);
+                    
+                    // Create repair history record
+                    AssetHistory::create([
+                        'asset_id' => $asset->id,
+                        'change_type' => 'REPAIR',
+                        'old_value' => $repairRequest->issue ?? 'Not specified',
+                        'new_value' => 'completed',
+                        'remarks' => "Ticket: {$repairRequest->ticket_number}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                        'changed_by' => auth()->id()
+                    ]);
+
+                    // Create status change record
+                    AssetHistory::create([
+                        'asset_id' => $asset->id,
+                        'change_type' => 'STATUS',
+                        'old_value' => 'UNDER REPAIR',
+                        'new_value' => 'IN USE',
+                        'remarks' => "Asset repair completed. Findings: {$request->findings}",
+                        'changed_by' => auth()->id()
+                    ]);
+                }
+            }
+
+            // Handle cancellation
+            if ($request->status === 'cancelled' && $repairRequest->serial_number) {
+                $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+                if ($asset) {
+                    // Update asset status to IN USE
+                    $asset->update([
+                        'status' => 'IN USE'
+                    ]);
+                    
+                    // Create status change record
+                    AssetHistory::create([
+                        'asset_id' => $asset->id,
+                        'change_type' => 'STATUS',
+                        'old_value' => 'UNDER REPAIR',
+                        'new_value' => 'IN USE',
+                        'remarks' => "Repair request cancelled. Ticket: {$repairRequest->ticket_number}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                        'changed_by' => auth()->id()
+                    ]);
+                }
+            }
+
+            // Handle asset status updates for pulled out requests
+            if ($request->status === 'pulled_out') {
+                if ($repairRequest->serial_number) {
+                    $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+                    if ($asset) {
+                        // Store the old status
+                        $oldStatus = $asset->status;
+                        
+                        // Update asset status to PULLED OUT
+                        $asset->update([
+                            'status' => 'PULLED OUT'
+                        ]);
+                        
+                        // Create asset history record for status change
+                        AssetHistory::create([
+                            'asset_id' => $asset->id,
+                            'change_type' => 'STATUS',
+                            'old_value' => $oldStatus,
+                            'new_value' => 'PULLED OUT',
+                            'remarks' => "Asset pulled out. Ticket: {$repairRequest->ticket_number}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'changed_by' => auth()->id()
+                        ]);
+
+                        // Create repair history record
+                        AssetHistory::create([
+                            'asset_id' => $asset->id,
+                            'change_type' => 'REPAIR',
+                            'old_value' => $repairRequest->issue ?? 'Not specified',
+                            'new_value' => 'pulled_out',
+                            'remarks' => "Ticket: {$repairRequest->ticket_number}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'changed_by' => auth()->id()
+                        ]);
+                    }
+                } else {
+                    // Create non-registered asset record for unknown assets
+                    NonRegisteredAsset::create([
+                        'equipment_name' => $repairRequest->equipment,
+                        'location' => $repairRequest->location,
+                        'category' => $repairRequest->category_id ? Category::find($repairRequest->category_id)->name : null,
+                        'findings' => $request->findings,
+                        'remarks' => $request->remarks,
+                        'ticket_number' => $repairRequest->ticket_number,
+                        'pulled_out_by' => Auth::user()->name,
+                        'pulled_out_at' => now(),
+                        'status' => 'PULLED OUT'
+                    ]);
+                }
+            }
+
+            // Set completion/cancellation datetime if applicable
+            if (in_array($request->status, ['completed', 'cancelled', 'pulled_out'])) {
+                $updateData['completed_at'] = now(); // Use current timestamp
+                if ($request->status === 'completed') {
+                    $updateData['technician_id'] = auth()->id();
+                }
+            }
+        
+            // Perform the update
+            \Log::info('Attempting to update repair request', ['final_update_data' => $updateData]);
             $repairRequest->update($updateData);
+            \Log::info('Successfully updated repair request');
+
+            // Notify admins about the update if the current user is a secretary or admin
+            if (in_array(auth()->user()->group_id, [1, 2])) {
+                $admins = User::where('group_id', 1)
+                    ->where('id', '!=', auth()->id()) // Don't notify the current admin
+                    ->get();
+
+                $action = match($request->status) {
+                    'completed' => 'completed',
+                    'cancelled' => 'cancelled',
+                    'pulled_out' => 'pulled out',
+                    'in_progress' => 'started working on',
+                    default => 'updated'
+                };
+
+                foreach ($admins as $admin) {
+                    Notification::create([
+                        'user_id' => $admin->id,
+                        'type' => 'repair_update',
+                        'message' => "Repair request {$repairRequest->ticket_number} has been {$action} by " . auth()->user()->name,
+                        'is_read' => false,
+                        'link' => url(route('repair.status', [], false))
+                    ]);
+                }
+            }
             
             if ($request->ajax()) {
+                \Log::info('Sending AJAX response');
                 return response()->json([
                     'success' => true,
-                    'message' => $request->status === 'cancelled' ? 'Request cancelled successfully' : 'Request updated successfully',
+                    'message' => $request->status === 'cancelled' ? 'Request cancelled successfully' : 
+                               ($request->status === 'in_progress' ? 'Repair started successfully' : 'Request updated successfully'),
                     'request' => $repairRequest
                 ]);
             }
             
-            $message = $request->status === 'cancelled' ? 'Request cancelled successfully' : 'Request updated successfully';
+            $message = $request->status === 'cancelled' ? 'Request cancelled successfully' : 
+                      ($request->status === 'in_progress' ? 'Repair started successfully' : 'Request updated successfully');
             return redirect()->back()->with('success', $message);
         } catch (\Exception $e) {
+            \Log::error('Error updating repair request', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update request: ' . $e->getMessage()
+                ], 500);
+            }
             throw $e;
         }
+    }
+
+    /**
+     * Show the repair completion form.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
+     */
+    public function showCompletionForm($id)
+    {
+        $repairRequest = RepairRequest::with(['technician', 'asset', 'creator'])->findOrFail($id);
+        
+        // Check if the user has permission to complete this request
+        if (auth()->user()->group_id == 2 && $repairRequest->technician_id != auth()->id()) {
+            abort(403, 'You are not authorized to complete this repair request.');
+        }
+
+        return view('repair-completion-form', compact('repairRequest'));
     }
 
     // Add new method to handle asset disposal
     public function disposeAsset(Request $request, $serialNumber)
     {
         $asset = Asset::where('serial_number', $serialNumber)->firstOrFail();
+        
+        // Get the associated repair request
+        $repairRequest = RepairRequest::where('serial_number', $serialNumber)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->latest()
+            ->first();
         
         // Update asset status to DISPOSED
         $asset->update([
@@ -382,10 +569,12 @@ class RepairRequestController extends Controller
         // Create asset history record
         AssetHistory::create([
             'asset_id' => $asset->id,
-            'change_type' => 'REPAIR',  // Change this from 'STATUS' to 'REPAIR'
-            'old_value' => $request->issue ?? 'Not specified',  // Store the issue instead of status
+            'change_type' => 'REPAIR',
+            'old_value' => $request->issue ?? 'Not specified',
             'new_value' => $request->status,
-            'remarks' => "Ticket: {$this->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}",
+            'remarks' => $repairRequest ? 
+                "Ticket: {$repairRequest->ticket_number}\nIssue: {$request->issue}\nRemarks: {$request->remarks}" :
+                "Issue: {$request->issue}\nRemarks: {$request->remarks}",
             'changed_by' => auth()->id()
         ]);
 
@@ -414,35 +603,82 @@ class RepairRequestController extends Controller
         }
     }
 
-    public function completed()
+    public function completed(Request $request)
     {
-        // Update this line to include both completed and cancelled requests
-        $completedRequests = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
-            ->with('technician')
-            ->orderBy('updated_at', 'desc')
-            ->get();
+        $query = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
+            ->with(['technician', 'asset']);
+
+        // Apply filters
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+        if ($request->location) {
+            $query->where('location', $request->location);
+        }
+
+        // Request date filters
+        if ($request->request_start_date) {
+            $query->whereDate('created_at', '>=', $request->request_start_date);
+        }
+        if ($request->request_end_date) {
+            $query->whereDate('created_at', '<=', $request->request_end_date);
+        }
+
+        // Completion date filters
+        if ($request->completion_start_date) {
+            $query->whereDate('completed_at', '>=', $request->completion_start_date);
+        }
+        if ($request->completion_end_date) {
+            $query->whereDate('completed_at', '<=', $request->completion_end_date);
+        }
+
+        $completedRequests = $query->orderBy('updated_at', 'desc')
+            ->paginate(10)
+            ->withQueryString();
+
+        // Calculate duration for each request
+        $completedRequests->getCollection()->transform(function ($request) {
+            if ($request->time_started && $request->completed_at) {
+                try {
+                    $start = \Carbon\Carbon::parse($request->time_started);
+                    $end = \Carbon\Carbon::parse($request->completed_at);
+                    
+                    // Calculate duration in minutes
+                    $durationInMinutes = $start->diffInMinutes($end);
+                    
+                    if($durationInMinutes >= 1440) { // More than 24 hours
+                        $days = floor($durationInMinutes / 1440);
+                        $remainingMinutes = $durationInMinutes % 1440;
+                        $hours = floor($remainingMinutes / 60);
+                        $minutes = $remainingMinutes % 60;
+                        $request->duration = $days . 'd' . 
+                                           ($hours > 0 ? ' ' . $hours . 'hrs' : '') . 
+                                           ($minutes > 0 ? ' ' . number_format($minutes, 2) . ' mins' : '');
+                    } elseif($durationInMinutes >= 60) { // More than 1 hour
+                        $hours = floor($durationInMinutes / 60);
+                        $minutes = $durationInMinutes % 60;
+                        $request->duration = $hours . 'hrs' . 
+                                           ($minutes > 0 ? ' ' . number_format($minutes, 2) . ' mins' : '');
+                    } else {
+                        $request->duration = number_format($durationInMinutes, 2) . ' mins';
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Error calculating duration', [
+                        'error' => $e->getMessage(),
+                        'request_id' => $request->id,
+                        'ticket_number' => $request->ticket_number,
+                        'time_started' => $request->time_started,
+                        'completed_at' => $request->completed_at
+                    ]);
+                    $request->duration = 'N/A';
+                }
+            } else {
+                $request->duration = 'N/A';
+            }
+            return $request;
+        });
 
         return view('repair-completed', compact('completedRequests'));
-    }
-
-    public function urgent()
-    {
-        $urgentRepairs = RepairRequest::where('status', 'urgent')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $totalOpen = RepairRequest::whereNotIn('status', ['completed'])->count();
-        $completedThisMonth = RepairRequest::where('status', 'completed')
-            ->whereMonth('updated_at', now()->month)
-            ->count();
-        
-        // Update this line to use completed_at instead of date_finished
-        $avgResponseTime = RepairRequest::whereNotNull('completed_at')
-            ->avg(DB::raw('DATEDIFF(completed_at, created_at)')) ?? 0;
-
-        $technicians = User::where('role', 'technician')->get();
-
-        return view('urgent-repairs', compact('urgentRepairs', 'totalOpen', 'completedThisMonth', 'avgResponseTime', 'technicians'));
     }
 
     public function markUrgent($id)
@@ -519,5 +755,162 @@ class RepairRequestController extends Controller
     public function exportExcel(Request $request)
     {
         return Excel::download(new CompletedRepairsExport($request->all()), 'completed-repairs.xlsx');
+    }
+
+    public function show($id)
+    {
+        return view('repair-details');
+    }
+
+    public function getData($id)
+    {
+        $request = RepairRequest::with(['asset', 'technician'])
+            ->findOrFail($id);
+
+        return response()->json($request);
+    }
+
+    public function details($id)
+    {
+        try {
+            $repairRequest = RepairRequest::with(['technician', 'asset'])->findOrFail($id);
+            
+            return view('repair-details', compact('repairRequest'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error fetching repair request details: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show the logged-in user's repair requests and allow evaluation if completed or pulled out.
+     */
+    public function calls()
+    {
+        $user = auth()->user();
+        $requests = RepairRequest::where('created_by', $user->id)
+            ->orderByDesc('created_at')
+            ->with(['technician', 'asset', 'evaluation'])
+            ->get();
+
+        return view('repair-requests.calls', compact('requests'));
+    }
+
+    /**
+     * Handle evaluation form submission for a repair request.
+     */
+    public function evaluate(Request $request, $id)
+    {
+        $repairRequest = RepairRequest::where('id', $id)
+            ->where('created_by', auth()->id())
+            ->firstOrFail();
+
+        // Check if the request was created by an admin or technician
+        if (in_array($repairRequest->creator->group_id, [1, 2])) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Evaluation is not required for admin/technician-created requests.'
+                ], 400);
+            }
+            return redirect()->back()->with('error', 'Evaluation is not required for admin/technician-created requests.');
+        }
+
+        if (!in_array($repairRequest->status, ['completed', 'pulled_out'])) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only evaluate after the repair is completed or pulled out.'
+                ], 400);
+            }
+            return redirect()->back()->with('error', 'You can only evaluate after the repair is completed or pulled out.');
+        }
+
+        if ($repairRequest->evaluation) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You have already evaluated this technician.'
+                ], 400);
+            }
+            return redirect()->back()->with('error', 'You have already evaluated this technician.');
+        }
+
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'feedback' => 'nullable|string',
+            'is_anonymous' => 'nullable|boolean',
+        ]);
+
+        $repairRequest->evaluation()->create([
+            'repair_request_id' => $repairRequest->id,
+            'technician_id' => $repairRequest->technician_id,
+            'evaluator_id' => auth()->id(),
+            'rating' => $validated['rating'],
+            'feedback' => $validated['feedback'] ?? null,
+            'is_anonymous' => $request->has('is_anonymous'),
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Thank you for evaluating your technician!'
+            ]);
+        }
+        return redirect()->back()->with('success', 'Thank you for evaluating your technician!');
+    }
+
+    public function completeRepair(Request $request, $id)
+    {
+        $repairRequest = RepairRequest::findOrFail($id);
+        
+        // Validate the request
+        $validated = $request->validate([
+            'findings' => 'required|string',
+            'remarks' => 'required|string',
+            'technician_signature' => 'required|string',
+            'caller_signature' => 'required_if:status,pulled_out',
+            'status' => 'required|in:completed,pulled_out'
+        ]);
+
+        // Update the repair request
+        $repairRequest->update([
+            'findings' => $validated['findings'],
+            'remarks' => $validated['remarks'],
+            'technician_signature' => $validated['technician_signature'],
+            'caller_signature' => $validated['caller_signature'] ?? null,
+            'status' => $validated['status'],
+            'completed_at' => now(),
+            'technician_id' => auth()->id()
+        ]);
+
+        // If the asset is pulled out and has no serial number, create a non-registered asset record
+        if ($validated['status'] === 'pulled_out' && empty($repairRequest->serial_number)) {
+            NonRegisteredAsset::create([
+                'equipment_name' => $repairRequest->equipment,
+                'location' => $repairRequest->location,
+                'category' => $repairRequest->category_id ? Category::find($repairRequest->category_id)->name : null,
+                'findings' => $validated['findings'],
+                'remarks' => $validated['remarks'],
+                'ticket_number' => $repairRequest->ticket_number,
+                'pulled_out_by' => Auth::user()->name,
+                'pulled_out_at' => now(),
+                'status' => 'PULLED OUT'
+            ]);
+        }
+
+        // If the asset has a serial number, update its status
+        if (!empty($repairRequest->serial_number)) {
+            $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+            if ($asset) {
+                $asset->update([
+                    'status' => $validated['status'] === 'pulled_out' ? 'PULLED OUT' : 'OPERATIONAL',
+                    'last_updated_by' => Auth::user()->name,
+                    'last_updated_at' => now()
+                ]);
+            }
+        }
+
+        return redirect()->route('repair-requests.show', $repairRequest->id)
+            ->with('success', 'Repair request has been completed successfully.');
     }
 }

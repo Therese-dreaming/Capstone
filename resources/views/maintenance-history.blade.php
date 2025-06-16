@@ -267,6 +267,11 @@
         </div>
     </div>
 
+    <!-- Pagination -->
+    <div class="mt-6">
+        {{ $maintenances->links() }}
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-4 md:p-8 max-w-xs sm:max-w-md mx-auto w-full">
@@ -341,88 +346,42 @@
         const endDate = document.getElementById('endDate').value;
         const issueFilter = document.getElementById('issueFilter').value;
 
-        // --- Card view (mobile) ---
-        const cards = document.querySelectorAll('#maintenanceCards > div.bg-white');
-        cards.forEach(card => {
-            // Get values from card
-            const dateText = card.querySelector('span.font-semibold.text-red-800')?.textContent.trim();
-            const labText = card.querySelector('.text-sm.text-gray-700 .font-semibold')?.textContent.trim();
-            const statusText = card.querySelector('span.px-2')?.textContent.trim().toLowerCase();
-            const hasIssues = !!card.querySelector('button.inline-flex, button.text-blue-600');
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (labFilter) params.append('lab', labFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (issueFilter) params.append('issue', issueFilter);
 
-            // Filtering logic
-            let labMatch = !labFilter || (labText && labText === labFilter);
-            let statusMatch = !statusFilter || (statusText && statusText === statusFilter);
-            let dateMatch = true;
-            if (startDate || endDate) {
-                const cellDate = dateText ? new Date(dateText) : null;
-                const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-                if (cellDate) {
-                    if (start && end) {
-                        dateMatch = cellDate >= start && cellDate <= end;
-                    } else if (start) {
-                        dateMatch = cellDate >= start;
-                    } else if (end) {
-                        dateMatch = cellDate <= end;
-                    }
-                }
-            }
-            let issueMatch = true;
-            if (issueFilter) {
-                if (issueFilter === 'with_issues') {
-                    issueMatch = hasIssues;
-                } else if (issueFilter === 'no_issues') {
-                    issueMatch = !hasIssues;
-                }
-            }
-            card.style.display = (labMatch && statusMatch && dateMatch && issueMatch) ? '' : 'none';
-        });
-
-        // --- Table view (desktop) ---
-        const rows = document.querySelectorAll('#maintenanceTable tbody tr');
-        rows.forEach(row => {
-            const labMatch = !labFilter || row.dataset.lab === labFilter;
-            const statusMatch = !statusFilter || row.dataset.status === statusFilter;
-
-            // Date filtering
-            let dateMatch = true;
-            if (startDate || endDate) {
-                const dateCell = row.querySelector('td:nth-child(2)');
-                if (dateCell) {
-                    const dateText = dateCell.textContent.trim();
-                    const cellDate = new Date(dateText);
-                    const start = startDate ? new Date(startDate + 'T00:00:00') : null;
-                    const end = endDate ? new Date(endDate + 'T23:59:59') : null;
-
-                    if (start && end) {
-                        dateMatch = cellDate >= start && cellDate <= end;
-                    } else if (start) {
-                        dateMatch = cellDate >= start;
-                    } else if (end) {
-                        dateMatch = cellDate <= end;
-                    }
-                }
-            }
-
-            // Asset issues filtering
-            let issueMatch = true;
-            if (issueFilter) {
-                const hasIssues = row.querySelector('td:nth-child(4) .bg-red-100') !== null;
-                if (issueFilter === 'with_issues') {
-                    issueMatch = hasIssues;
-                } else if (issueFilter === 'no_issues') {
-                    issueMatch = !hasIssues;
-                }
-            }
-
-            row.style.display = (labMatch && statusMatch && dateMatch && issueMatch) ? '' : 'none';
-        });
+        // Redirect to the filtered URL
+        window.location.href = '{{ route("maintenance.history") }}?' + params.toString();
     }
 
     // Add event listeners for date inputs
     document.getElementById('startDate').addEventListener('change', filterHistory);
     document.getElementById('endDate').addEventListener('change', filterHistory);
+
+    // Set initial filter values from URL parameters
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.has('lab')) {
+            document.getElementById('labFilter').value = urlParams.get('lab');
+        }
+        if (urlParams.has('status')) {
+            document.getElementById('statusFilter').value = urlParams.get('status');
+        }
+        if (urlParams.has('start_date')) {
+            document.getElementById('startDate').value = urlParams.get('start_date');
+        }
+        if (urlParams.has('end_date')) {
+            document.getElementById('endDate').value = urlParams.get('end_date');
+        }
+        if (urlParams.has('issue')) {
+            document.getElementById('issueFilter').value = urlParams.get('issue');
+        }
+    });
 
     function exportToPDF() {
         const modal = document.getElementById('pdfPreviewModal');

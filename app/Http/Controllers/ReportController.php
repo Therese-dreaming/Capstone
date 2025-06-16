@@ -7,6 +7,12 @@ use App\Models\Category;
 use App\Models\AssetHistory;
 use App\Models\Maintenance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\User;
+use App\Models\RepairRequest;
+use App\Models\MaintenanceRequest;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
@@ -129,7 +135,7 @@ class ReportController extends Controller
             $query->where('purchase_date', '<=', $request->end_date);
         }
 
-        $assets = $query->get();
+        $assets = $query->paginate(10);
 
         return view('reports.procurement-history', compact('assets'));
     }
@@ -148,8 +154,528 @@ class ReportController extends Controller
             $query->where('disposal_date', '<=', $request->end_date . ' 23:59:59');
         }
     
-        $disposedAssets = $query->get();
+        $disposedAssets = $query->paginate(10);
     
         return view('reports.disposal-history', compact('disposedAssets'));
+    }
+
+    public function labUsage(Request $request)
+    {
+        // Group by period based on filter
+        $period = $request->get('period', 'day');
+        $periodFormat = match($period) {
+            'month' => 'DATE_FORMAT(time_in, "%Y-%m")',
+            'year' => 'YEAR(time_in)',
+            default => 'DATE(time_in)'
+        };
+
+        $query = DB::table('lab_logs')
+            ->select(
+                DB::raw("{$periodFormat} as period"),
+                'users.department as department_name',
+                'lab_logs.laboratory as lab_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours'),
+                DB::raw('AVG(TIMESTAMPDIFF(HOUR, time_in, time_out)) as avg_duration'),
+                DB::raw('COUNT(DISTINCT user_id) as unique_users')
+            )
+            ->join('users', 'lab_logs.user_id', '=', 'users.id');
+
+        // Apply filters
+        if ($request->has('department_id')) {
+            $query->where('users.department', $request->department_id);
+        }
+
+        if ($request->has('lab_id')) {
+            $query->where('lab_logs.laboratory', $request->lab_id);
+        }
+
+        // Date range filter
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+        }
+
+        // Group by period and names
+        $query->groupBy('period', 'users.department', 'lab_logs.laboratory');
+
+        // Get summary statistics
+        $summary = DB::table('lab_logs')
+            ->selectRaw('
+                COUNT(*) as total_sessions,
+                SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours,
+                AVG(TIMESTAMPDIFF(HOUR, time_in, time_out)) as avg_duration,
+                COUNT(DISTINCT user_id) as unique_users,
+                COUNT(DISTINCT laboratory) as labs_used
+            ')
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->first();
+
+        // Get usage by department
+        $departmentUsage = DB::table('lab_logs')
+            ->join('users', 'lab_logs.user_id', '=', 'users.id')
+            ->select(
+                'users.department as department_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->groupBy('users.department')
+            ->orderBy('total_hours', 'desc')
+            ->paginate(5);
+
+        // Get usage by lab
+        $labUsage = DB::table('lab_logs')
+            ->select(
+                'laboratory as lab_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->groupBy('laboratory')
+            ->orderBy('total_hours', 'desc')
+            ->paginate(5);
+
+        // Get peak usage times
+        $peakUsage = DB::table('lab_logs')
+            ->select(
+                DB::raw('HOUR(time_in) as hour'),
+                DB::raw('COUNT(*) as total_sessions')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->groupBy('hour')
+            ->orderBy('total_sessions', 'desc')
+            ->get();
+
+        // Get data for the table
+        $usageData = $query->paginate(10);
+
+        // Get all departments and labs for filters
+        $departments = DB::table('users')
+            ->select('department as name')
+            ->distinct()
+            ->get()
+            ->map(function($dept) {
+                return (object)[
+                    'id' => $dept->name,
+                    'name' => $dept->name
+                ];
+            });
+            
+        $labs = DB::table('lab_logs')
+            ->select('laboratory as name')
+            ->distinct()
+            ->get()
+            ->map(function($lab) {
+                return (object)[
+                    'id' => $lab->name,
+                    'name' => $lab->name
+                ];
+            });
+
+        return view('reports.lab-usage', compact(
+            'summary',
+            'departmentUsage',
+            'labUsage',
+            'peakUsage',
+            'usageData',
+            'departments',
+            'labs',
+            'period'
+        ));
+    }
+
+    public function exportLabUsageToPdf(Request $request)
+    {
+        // Get the same data as the main report
+        $period = $request->get('period', 'day');
+        $periodFormat = match($period) {
+            'month' => 'DATE_FORMAT(time_in, "%Y-%m")',
+            'year' => 'YEAR(time_in)',
+            default => 'DATE(time_in)'
+        };
+
+        $query = DB::table('lab_logs')
+            ->select(
+                DB::raw("{$periodFormat} as period"),
+                'users.department as department_name',
+                'lab_logs.laboratory as lab_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours'),
+                DB::raw('AVG(TIMESTAMPDIFF(HOUR, time_in, time_out)) as avg_duration'),
+                DB::raw('COUNT(DISTINCT user_id) as unique_users')
+            )
+            ->join('users', 'lab_logs.user_id', '=', 'users.id');
+
+        // Apply filters
+        if ($request->has('department_id')) {
+            $query->where('users.department', $request->department_id);
+        }
+
+        if ($request->has('lab_id')) {
+            $query->where('lab_logs.laboratory', $request->lab_id);
+        }
+
+        // Date range filter
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+        }
+
+        // Group by period and names
+        $query->groupBy('period', 'users.department', 'lab_logs.laboratory');
+
+        // Get summary statistics
+        $summary = DB::table('lab_logs')
+            ->selectRaw('
+                COUNT(*) as total_sessions,
+                SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours,
+                AVG(TIMESTAMPDIFF(HOUR, time_in, time_out)) as avg_duration,
+                COUNT(DISTINCT user_id) as unique_users,
+                COUNT(DISTINCT laboratory) as labs_used
+            ')
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->first();
+
+        // Get usage by department
+        $departmentUsage = DB::table('lab_logs')
+            ->join('users', 'lab_logs.user_id', '=', 'users.id')
+            ->select(
+                'users.department as department_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->groupBy('users.department')
+            ->orderBy('total_hours', 'desc')
+            ->paginate(5);
+
+        // Get usage by lab
+        $labUsage = DB::table('lab_logs')
+            ->select(
+                'laboratory as lab_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->groupBy('laboratory')
+            ->orderBy('total_hours', 'desc')
+            ->paginate(5);
+
+        // Get peak usage times
+        $peakUsage = DB::table('lab_logs')
+            ->select(
+                DB::raw('HOUR(time_in) as hour'),
+                DB::raw('COUNT(*) as total_sessions')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->groupBy('hour')
+            ->orderBy('total_sessions', 'desc')
+            ->get();
+
+        // Get data for the table
+        $usageData = $query->paginate(10);
+
+        // Generate PDF
+        $pdf = PDF::loadView('reports.lab-usage-pdf', compact(
+            'summary',
+            'departmentUsage',
+            'labUsage',
+            'peakUsage',
+            'usageData',
+            'period'
+        ));
+
+        // Set PDF options
+        $pdf->setPaper('a4', 'landscape');
+        $pdf->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true
+        ]);
+
+        // Generate filename
+        $filename = 'lab-usage-report-' . now()->format('Y-m-d') . '.pdf';
+
+        // Return the PDF for download
+        return $pdf->download($filename);
+    }
+
+    public function employeePerformance(Request $request)
+    {
+        // Check if user is a secretary
+        if (auth()->user()->group_id !== 2) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        // Get all employees with group_id 2 (secretaries)
+        $employees = User::where('group_id', 2)->get();
+
+        // Initialize arrays for statistics
+        $employeeStats = collect();
+        $totalRepairs = 0;
+        $totalMaintenance = 0;
+        $totalResponseTime = 0;
+        $totalTasks = 0;
+        $completedTasks = 0;
+
+        foreach ($employees as $employee) {
+            // Get completed repairs
+            $repairsQuery = RepairRequest::where('technician_id', $employee->id)
+                ->where('status', 'completed');
+
+            $employeeRepairs = $repairsQuery->count();
+            
+            $repairsThisMonth = (clone $repairsQuery)
+                ->whereMonth('completed_at', now()->month)
+                ->whereYear('completed_at', now()->year)
+                ->count();
+            
+            // Get maintenance tasks completed by this employee
+            $maintenanceQuery = Maintenance::where('technician_id', $employee->id)
+                ->where('status', 'completed');
+
+            // Apply date filters if provided
+            if ($startDate) {
+                $repairsQuery->where('completed_at', '>=', $startDate);
+                $maintenanceQuery->where('completed_at', '>=', $startDate);
+            }
+            if ($endDate) {
+                $repairsQuery->where('completed_at', '<=', $endDate);
+                $maintenanceQuery->where('completed_at', '<=', $endDate);
+            }
+
+            $maintenanceTasks = $maintenanceQuery->count();
+            
+            // Calculate average response time (time between request and start of work)
+            $repairResponseTime = $repairsQuery->get()->avg(function ($repair) {
+                return Carbon::parse($repair->created_at)->diffInHours($repair->time_started);
+            });
+            $maintenanceResponseTime = $maintenanceQuery->get()->avg(function ($maintenance) {
+                return Carbon::parse($maintenance->created_at)->diffInHours($maintenance->scheduled_date);
+            });
+            
+            // Calculate overall average response time
+            $avgResponseTime = 0;
+            $responseTimeCount = 0;
+            if ($repairResponseTime) {
+                $avgResponseTime += $repairResponseTime;
+                $responseTimeCount++;
+            }
+            if ($maintenanceResponseTime) {
+                $avgResponseTime += $maintenanceResponseTime;
+                $responseTimeCount++;
+            }
+            $avgResponseTime = $responseTimeCount > 0 ? $avgResponseTime / $responseTimeCount : 0;
+
+            // Calculate completion rate
+            $totalAssignedTasks = $repairsQuery->count() + $maintenanceQuery->count();
+            $completionRate = $totalAssignedTasks > 0 ? 
+                (($employeeRepairs + $maintenanceTasks) / $totalAssignedTasks) * 100 : 0;
+
+            // Calculate performance score (weighted average of metrics)
+            $performanceScore = 0;
+            $weights = [
+                'repairs' => 0.3,
+                'maintenance' => 0.3,
+                'response_time' => 0.2,
+                'completion_rate' => 0.2
+            ];
+
+            // Normalize metrics to 0-100 scale
+            $maxRepairs = $employees->max(function ($emp) use ($startDate, $endDate) {
+                return RepairRequest::where('technician_id', $emp->id)
+                    ->where('status', 'completed')
+                    ->when($startDate, fn($q) => $q->where('completed_at', '>=', $startDate))
+                    ->when($endDate, fn($q) => $q->where('completed_at', '<=', $endDate))
+                    ->count();
+            });
+            $maxMaintenance = $employees->max(function ($emp) use ($startDate, $endDate) {
+                return Maintenance::where('technician_id', $emp->id)
+                    ->where('status', 'completed')
+                    ->when($startDate, fn($q) => $q->where('completed_at', '>=', $startDate))
+                    ->when($endDate, fn($q) => $q->where('completed_at', '<=', $endDate))
+                    ->count();
+            });
+
+            $repairScore = $maxRepairs > 0 ? ($employeeRepairs / $maxRepairs) * 100 : 0;
+            $maintenanceScore = $maxMaintenance > 0 ? ($maintenanceTasks / $maxMaintenance) * 100 : 0;
+            $responseTimeScore = $avgResponseTime > 0 ? (1 / $avgResponseTime) * 100 : 0;
+            $responseTimeScore = min($responseTimeScore, 100); // Cap at 100
+
+            $performanceScore = 
+                ($repairScore * $weights['repairs']) +
+                ($maintenanceScore * $weights['maintenance']) +
+                ($responseTimeScore * $weights['response_time']) +
+                ($completionRate * $weights['completion_rate']);
+
+            // Add employee stats to collection
+            $employeeStats->push((object)[
+                'name' => $employee->name,
+                'role' => 'Secretary', // Since we're only looking at group_id 2 users
+                'repairs_completed' => $employeeRepairs,
+                'repairs_this_month' => $repairsThisMonth,
+                'maintenance_tasks' => $maintenanceTasks,
+                'avg_response_time' => round($avgResponseTime, 1),
+                'completion_rate' => round($completionRate, 1),
+                'performance_score' => round($performanceScore, 1)
+            ]);
+
+            // Update overall statistics
+            $totalRepairs += $employeeRepairs;
+            $totalMaintenance += $maintenanceTasks;
+            $totalResponseTime += $avgResponseTime;
+            $totalTasks += $totalAssignedTasks;
+            $completedTasks += ($employeeRepairs + $maintenanceTasks);
+        }
+
+        // Calculate overall statistics
+        $employeeCount = $employees->count();
+        $overallStats = [
+            'total_repairs' => $totalRepairs,
+            'total_maintenance' => $totalMaintenance,
+            'avg_repairs_per_employee' => $employeeCount > 0 ? $totalRepairs / $employeeCount : 0,
+            'avg_maintenance_per_employee' => $employeeCount > 0 ? $totalMaintenance / $employeeCount : 0,
+            'avg_response_time' => $employeeCount > 0 ? round($totalResponseTime / $employeeCount, 1) : 0,
+            'best_response_time' => $employeeStats->min('avg_response_time'),
+            'completion_rate' => $totalTasks > 0 ? ($completedTasks / $totalTasks) * 100 : 0,
+            'total_tasks' => $totalTasks
+        ];
+
+        // Generate analysis
+        $analysis = $this->generatePerformanceAnalysis($employeeStats, $overallStats);
+
+        return view('reports.employee-performance', compact('employeeStats', 'overallStats', 'analysis'));
+    }
+
+    private function generatePerformanceAnalysis($employeeStats, $overallStats)
+    {
+        $keyFindings = [];
+        $recommendations = [];
+
+        // Analyze performance distribution
+        $avgPerformance = $employeeStats->avg('performance_score');
+        $maxPerformance = $employeeStats->max('performance_score');
+        $minPerformance = $employeeStats->min('performance_score');
+        $performanceGap = $maxPerformance - $minPerformance;
+
+        // Add key findings
+        $keyFindings[] = "Average employee performance score is " . number_format($avgPerformance, 1) . "%";
+        $keyFindings[] = "Performance gap between highest and lowest performers is " . number_format($performanceGap, 1) . "%";
+        $keyFindings[] = "Overall task completion rate is " . number_format($overallStats['completion_rate'], 1) . "%";
+        $keyFindings[] = "Average response time across all employees is " . $overallStats['avg_response_time'] . " hours";
+
+        // Analyze role-specific performance
+        $secretaryStats = $employeeStats->where('role', 'Secretary');
+        $technicianStats = $employeeStats->where('role', 'Technician');
+
+        if ($secretaryStats->isNotEmpty()) {
+            $secretaryAvg = $secretaryStats->avg('performance_score');
+            $keyFindings[] = "Secretaries average performance score is " . number_format($secretaryAvg, 1) . "%";
+        }
+
+        if ($technicianStats->isNotEmpty()) {
+            $technicianAvg = $technicianStats->avg('performance_score');
+            $keyFindings[] = "Technicians average performance score is " . number_format($technicianAvg, 1) . "%";
+        }
+
+        // Generate recommendations
+        if ($performanceGap > 20) {
+            $recommendations[] = "Consider implementing a mentoring program to help lower-performing employees improve their skills";
+        }
+
+        if ($overallStats['avg_response_time'] > 24) {
+            $recommendations[] = "Review and optimize the task assignment process to reduce response times";
+        }
+
+        if ($overallStats['completion_rate'] < 90) {
+            $recommendations[] = "Investigate reasons for incomplete tasks and implement measures to improve completion rates";
+        }
+
+        if ($secretaryStats->isNotEmpty() && $technicianStats->isNotEmpty()) {
+            $roleGap = abs($secretaryAvg - $technicianAvg);
+            if ($roleGap > 10) {
+                $recommendations[] = "Address the performance gap between secretaries and technicians through targeted training";
+            }
+        }
+
+        // Add general recommendations
+        $recommendations[] = "Regularly review and update performance metrics to ensure they align with organizational goals";
+        $recommendations[] = "Implement a feedback system to gather employee input on performance metrics and improvement areas";
+
+        return [
+            'key_findings' => $keyFindings,
+            'recommendations' => $recommendations
+        ];
     }
 }

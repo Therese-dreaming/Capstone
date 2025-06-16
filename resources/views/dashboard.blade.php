@@ -32,30 +32,52 @@
             </div>
             <div class="overflow-x-auto">
                 @if($personalStats['completed_repairs_history']->count() > 0)
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($personalStats['completed_repairs_history']->take(5) as $repair)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->serial_number }}</a>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $repair->issue }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <!-- Desktop Table View -->
+                <div class="hidden md:block">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($personalStats['completed_repairs_history']->take(5) as $repair)
+                            <tr>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->serial_number }}</a>
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $repair->issue }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div class="md:hidden space-y-4">
+                    @foreach($personalStats['completed_repairs_history']->take(5) as $repair)
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <a href="{{ route('assets.index', ['search' => $repair->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->serial_number }}</a>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">Issue: {{ $repair->issue }}</div>
+                        <div class="text-sm text-gray-500">Completed: {{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                @if($personalStats['completed_repairs_history']->count() > 5)
+                <div class="mt-4 flex justify-center">
+                    <a href="{{ route('repairs.history') }}" class="text-sm text-red-600 hover:text-red-800 font-medium">View All Repairs</a>
+                </div>
+                @endif
                 @else
                 <div class="text-center py-8">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -71,33 +93,50 @@
         <!-- Completed Maintenance Table -->
         <div class="bg-white rounded-lg shadow p-3 md:p-6 mt-4 md:mt-6 mb-4 md:mb-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Completed Maintenance History</h2>
-                <a href="{{ route('user.maintenance.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All</a>
+                <h2 class="text-base md:text-lg font-semibold">Completed Maintenance History</h2>
+                <a href="{{ route('user.maintenance.history') }}" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium">View All</a>
             </div>
             <div class="overflow-x-auto">
                 @if($personalStats['completed_maintenance_history']->count() > 0)
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laboratory</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenance->lab_number }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <!-- Desktop Table View -->
+                <div class="hidden md:block">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laboratory</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
+                            <tr>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenance->lab_number }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div class="md:hidden space-y-4">
+                    @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-medium text-gray-900">{{ $maintenance->lab_number }}</span>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">Task: {{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</div>
+                        <div class="text-sm text-gray-500">Completed: {{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</div>
+                    </div>
+                    @endforeach
+                </div>
                 @else
                 <div class="text-center py-8">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -131,10 +170,10 @@
 
         <!-- Procurement Chart -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="h-64">
+            <div class="h-48 md:h-64">
                 <canvas id="procurementValueChart"></canvas>
             </div>
-            <div class="h-64 mt-4 md:mt-0">
+            <div class="h-48 md:h-64 mt-4 md:mt-0">
                 <canvas id="assetCountChart"></canvas>
             </div>
         </div>
@@ -244,7 +283,21 @@
                             @if($avgResponseDays)
                             {{ $avgResponseDays }} days
                             @else
-                            {{ $avgResponseTime }} hrs
+                            {{ $avgResponseTime }}
+                            @endif
+                        </p>
+                    </div>
+                    <div class="bg-yellow-50 p-3 md:p-4 rounded-lg">
+                        <p class="text-xs md:text-sm text-gray-600">Pulled Out This Month</p>
+                        <p class="text-xl md:text-2xl font-bold text-yellow-600">{{ $pulledOutThisMonth }}</p>
+                    </div>
+                    <div class="bg-purple-50 p-3 md:p-4 rounded-lg">
+                        <p class="text-xs md:text-sm text-gray-600">Avg. Pulled Out Time</p>
+                        <p class="text-xl md:text-2xl font-bold text-purple-600">
+                            @if($avgPulledOutDays)
+                            {{ $avgPulledOutDays }} days
+                            @else
+                            {{ $avgPulledOutTime }}
                             @endif
                         </p>
                     </div>
@@ -389,36 +442,63 @@
 
             <div class="overflow-x-auto">
                 @if($warrantyExpiringAssets->count() > 0)
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Serial Number</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warranty Ends</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($warrantyExpiringAssets as $asset)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->days_until_warranty_expires <= 0 ? 'bg-red-100 text-red-800' : ($asset->days_until_warranty_expires <= 30 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') }}">
-                                    @if($asset->days_until_warranty_expires <= 0) Expired @else {{ $asset->days_until_warranty_expires }} days left @endif
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $asset->status }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <!-- Desktop Table View -->
+                <div class="hidden md:block">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Serial Number</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warranty Ends</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($warrantyExpiringAssets->take(5) as $asset)
+                            <tr>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->days_until_warranty_expires <= 0 ? 'bg-red-100 text-red-800' : ($asset->days_until_warranty_expires <= 30 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') }}">
+                                        @if($asset->days_until_warranty_expires <= 0) Expired @else {{ $asset->days_until_warranty_expires }} days left @endif
+                                    </span>
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $asset->status }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div class="md:hidden space-y-4">
+                    @foreach($warrantyExpiringAssets->take(5) as $asset)
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-medium text-gray-900">{{ $asset->name }}</span>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->days_until_warranty_expires <= 0 ? 'bg-red-100 text-red-800' : ($asset->days_until_warranty_expires <= 30 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') }}">
+                                @if($asset->days_until_warranty_expires <= 0) Expired @else {{ $asset->days_until_warranty_expires }} days left @endif
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">
+                            <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                        </div>
+                        <div class="text-sm text-gray-500 mb-1">Warranty Ends: {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}</div>
+                        <div class="text-sm text-gray-500">Status: {{ $asset->status }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                @if($warrantyExpiringAssets->lastPage() > 1)
+                <div class="mt-4">
+                    {{ $warrantyExpiringAssets->links() }}
+                </div>
+                @endif
                 @else
                 <div class="text-center py-8">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -439,40 +519,67 @@
 
             <div class="overflow-x-auto">
                 @if($criticalAndWarningAssets->count() > 0)
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End of Life Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining Life</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($criticalAndWarningAssets as $asset)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : 'N/A' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ number_format($asset->remaining_life, 2) }} years
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ ucfirst($asset->life_status) }}
-                                </span>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <!-- Desktop Table View -->
+                <div class="hidden md:block">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End of Life Date</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining Life</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($criticalAndWarningAssets->take(5) as $asset)
+                            <tr>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : 'N/A' }}
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                        {{ number_format($asset->remaining_life, 2) }} years
+                                    </span>
+                                </td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                        {{ ucfirst($asset->life_status) }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div class="md:hidden space-y-4">
+                    @foreach($criticalAndWarningAssets->take(5) as $asset)
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-medium text-gray-900">{{ $asset->name }}</span>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $asset->life_status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                {{ ucfirst($asset->life_status) }}
+                            </span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">
+                            <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                        </div>
+                        <div class="text-sm text-gray-500 mb-1">End of Life: {{ $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : 'N/A' }}</div>
+                        <div class="text-sm text-gray-500">Remaining Life: {{ number_format($asset->remaining_life, 2) }} years</div>
+                    </div>
+                    @endforeach
+                </div>
+                @if($criticalAndWarningAssets->lastPage() > 1)
+                <div class="mt-4">
+                    {{ $criticalAndWarningAssets->links() }}
+                </div>
+                @endif
                 @else
                 <div class="text-center py-8">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

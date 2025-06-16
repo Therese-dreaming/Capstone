@@ -237,15 +237,24 @@ class LabScheduleController extends Controller
             ->when($request->laboratory, function ($q) use ($request) {
                 return $q->where('laboratory', $request->laboratory);
             })
-            ->when($request->date, function ($q) use ($request) {
-                return $q->whereDate('time_in', $request->date);
-            })
             ->when($request->status, function ($q) use ($request) {
                 return $q->where('status', $request->status);
             })
+            ->when($request->time_in_start_date, function ($q) use ($request) {
+                return $q->whereDate('time_in', '>=', $request->time_in_start_date);
+            })
+            ->when($request->time_in_end_date, function ($q) use ($request) {
+                return $q->whereDate('time_in', '<=', $request->time_in_end_date);
+            })
+            ->when($request->time_out_start_date, function ($q) use ($request) {
+                return $q->whereDate('time_out', '>=', $request->time_out_start_date);
+            })
+            ->when($request->time_out_end_date, function ($q) use ($request) {
+                return $q->whereDate('time_out', '<=', $request->time_out_end_date);
+            })
             ->orderBy('time_in', 'desc');
 
-        $logs = $query->get();
+        $logs = $query->paginate(10)->withQueryString();
 
         return view('lab-schedule.history', [
             'logs' => $logs,

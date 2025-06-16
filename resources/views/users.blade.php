@@ -64,7 +64,7 @@
         @foreach($users as $user)
         <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200 ease-in-out overflow-hidden flex flex-col">
             <div class="flex items-center p-4 border-b border-gray-200">
-                <img src="{{ $user->profile_picture ?? asset('images/default-profile.png') }}" alt="{{ $user->name }}'s profile picture" class="w-12 h-12 rounded-full object-cover mr-4">
+                <img src="{{ $user->profile_picture ? asset($user->profile_picture) : asset('images/default-profile.png') }}" alt="{{ $user->name }}'s profile picture" class="w-12 h-12 rounded-full object-cover mr-4">
                 <div>
                     <h3 class="font-bold text-lg text-gray-800">{{ $user->name }}</h3>
                     <p class="text-sm text-gray-600">{{ $user->username }}</p>

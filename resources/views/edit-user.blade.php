@@ -32,6 +32,17 @@
             @csrf
             @method('PUT')
             <div class="grid grid-cols-2 gap-4">
+                <!-- Profile Picture Display -->
+                <div class="col-span-2 flex items-center space-x-4 mb-4">
+                    <img src="{{ $user->profile_picture ? asset($user->profile_picture) : asset('images/default-profile.png') }}" 
+                         alt="{{ $user->name }}'s profile picture" 
+                         class="w-20 h-20 rounded-full object-cover">
+                    <div>
+                        <p class="text-sm text-gray-600">Current Profile Picture</p>
+                        <p class="text-xs text-gray-500">To change profile picture, go to your profile settings</p>
+                    </div>
+                </div>
+
                 <div class="col-span-2 sm:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
                     <input type="text" name="name" value="{{ old('name', $user->name) }}" 

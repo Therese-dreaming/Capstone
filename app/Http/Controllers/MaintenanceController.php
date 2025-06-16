@@ -215,12 +215,38 @@ class MaintenanceController extends Controller
         }
     }
 
-    public function history()
+    public function history(Request $request)
     {
-        $maintenances = Maintenance::whereIn('status', ['completed', 'cancelled'])
-            ->orderBy('scheduled_date', 'desc')
+        $query = Maintenance::whereIn('status', ['completed', 'cancelled']);
+
+        // Apply filters
+        if ($request->lab) {
+            $query->where('lab_number', $request->lab);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+        if ($request->start_date) {
+            $query->whereDate('scheduled_date', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('scheduled_date', '<=', $request->end_date);
+        }
+        if ($request->issue) {
+            if ($request->issue === 'with_issues') {
+                $query->whereNotNull('asset_issues')->where('asset_issues', '!=', '[]');
+            } else if ($request->issue === 'no_issues') {
+                $query->where(function($q) {
+                    $q->whereNull('asset_issues')
+                      ->orWhere('asset_issues', '[]');
+                });
+            }
+        }
+
+        $maintenances = $query->orderBy('scheduled_date', 'desc')
             ->orderBy('updated_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('maintenance-history', compact('maintenances'));
     }

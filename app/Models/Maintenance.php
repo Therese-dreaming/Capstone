@@ -16,14 +16,15 @@ class Maintenance extends Model
         'completed_at',
         'excluded_assets',
         'asset_issues',
-        'serial_number'  // Add this line if not present
+        'serial_number'
     ];
 
     protected $casts = [
         'excluded_assets' => 'array',
         'scheduled_date' => 'datetime',
         'maintenance_task' => 'array',
-        'asset_issues' => 'array'  // Add this line
+        'asset_issues' => 'array',
+        'completed_at' => 'datetime'
     ];
 
     public function actionBy()
@@ -36,7 +37,6 @@ class Maintenance extends Model
         return $this->belongsTo(User::class, 'technician_id');
     }
 
-    // Add this new method
     public function assets()
     {
         return Asset::where('location', 'LIKE', '%' . $this->lab_number)

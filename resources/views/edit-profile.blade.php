@@ -26,7 +26,7 @@
             <div class="w-full md:w-1/3 mb-6 md:mb-0">
                 <div class="text-center">
                     <div class="relative w-64 h-64 mx-auto mb-6">
-                        <img src="{{ auth()->user()->profile_picture ?? asset('images/default-profile.png') }}" 
+                        <img src="{{ auth()->user()->profile_picture ? asset(auth()->user()->profile_picture) : asset('images/default-profile.png') }}" 
                             alt="Profile Picture" 
                             id="preview-image"
                             class="rounded-full w-full h-full object-cover bg-yellow-300">

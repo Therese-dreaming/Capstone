@@ -26,13 +26,115 @@ class DashboardController extends Controller
         $completedThisMonth = RepairRequest::where('status', 'completed')
             ->whereMonth('created_at', now()->month)
             ->count();
-        $avgResponseTime = RepairRequest::where('status', 'completed')
-            ->whereNotNull('completed_at')
-            ->select(DB::raw('ROUND(AVG(ABS(TIMESTAMPDIFF(HOUR, created_at, completed_at))), 1) as avg_hours'))
-            ->value('avg_hours') ?? 0;
+        
+        // Add pulled out assets statistics
+        $pulledOutThisMonth = RepairRequest::where('status', 'pulled_out')
+            ->whereMonth('created_at', now()->month)
+            ->count();
 
-        // Convert to days if more than 24 hours
-        $avgResponseDays = $avgResponseTime >= 24 ? round($avgResponseTime / 24, 1) : null;
+        // Calculate average response time for pulled out assets
+        $pulledOutRepairs = RepairRequest::where('status', 'pulled_out')
+            ->whereNotNull('time_started')
+            ->whereNotNull('completed_at')
+            ->where('time_started', '!=', '0000-00-00 00:00:00')
+            ->where('completed_at', '!=', '0000-00-00 00:00:00')
+            ->get();
+
+        // Log the raw data for debugging
+        \Log::info('Pulled Out Repairs Raw Data', [
+            'repairs' => $pulledOutRepairs->map(function($repair) {
+                return [
+                    'id' => $repair->id,
+                    'ticket_number' => $repair->ticket_number,
+                    'time_started' => $repair->time_started,
+                    'completed_at' => $repair->completed_at
+                ];
+            })
+        ]);
+
+        $pulledOutDurations = [];
+        foreach ($pulledOutRepairs as $repair) {
+            $start = \Carbon\Carbon::parse($repair->time_started);
+            $end = \Carbon\Carbon::parse($repair->completed_at);
+            $minutes = $start->diffInMinutes($end);
+            $pulledOutDurations[] = $minutes;
+        }
+
+        // Calculate average manually to ensure accuracy
+        $avgPulledOutMinutes = count($pulledOutDurations) > 0 ? array_sum($pulledOutDurations) / count($pulledOutDurations) : 0;
+
+        // Log the calculation details
+        \Log::info('Pulled Out Duration Calculation', [
+            'durations' => $pulledOutDurations,
+            'sum' => array_sum($pulledOutDurations),
+            'count' => count($pulledOutDurations),
+            'average' => $avgPulledOutMinutes
+        ]);
+
+        // Convert pulled out average to appropriate format
+        if ($avgPulledOutMinutes >= 1440) { // More than 24 hours
+            $avgPulledOutDays = round($avgPulledOutMinutes / 1440, 1);
+            $avgPulledOutTime = null;
+        } elseif ($avgPulledOutMinutes >= 60) { // More than 1 hour
+            $hours = floor($avgPulledOutMinutes / 60);
+            $remainingMinutes = round($avgPulledOutMinutes % 60, 1);
+            $avgPulledOutTime = $hours . ($remainingMinutes > 0 ? 'hrs ' . $remainingMinutes . ' mins' : 'hrs');
+            $avgPulledOutDays = null;
+        } else {
+            $avgPulledOutTime = round($avgPulledOutMinutes, 1) . ' mins';
+            $avgPulledOutDays = null;
+        }
+
+        // Calculate average response time using time_started and completed_at
+        $repairs = RepairRequest::where('status', 'completed')
+            ->whereNotNull('time_started')
+            ->whereNotNull('completed_at')
+            ->where('time_started', '!=', '0000-00-00 00:00:00')
+            ->where('completed_at', '!=', '0000-00-00 00:00:00')
+            ->get();
+
+        $durations = $repairs->map(function($repair) {
+            $start = \Carbon\Carbon::parse($repair->time_started);
+            $end = \Carbon\Carbon::parse($repair->completed_at);
+            $minutes = $start->diffInMinutes($end);
+            return [
+                'id' => $repair->id,
+                'ticket_number' => $repair->ticket_number,
+                'time_started' => $repair->time_started,
+                'completed_at' => $repair->completed_at,
+                'duration_minutes' => $minutes
+            ];
+        });
+
+        $avgResponseMinutes = $durations->avg('duration_minutes');
+
+        // Convert to appropriate format
+        if ($avgResponseMinutes >= 1440) { // More than 24 hours
+            $avgResponseDays = round($avgResponseMinutes / 1440, 1);
+            $avgResponseTime = null;
+        } elseif ($avgResponseMinutes >= 60) { // More than 1 hour
+            $hours = floor($avgResponseMinutes / 60);
+            $remainingMinutes = round($avgResponseMinutes % 60, 1);
+            $avgResponseTime = $hours . ($remainingMinutes > 0 ? 'hrs ' . $remainingMinutes . ' mins' : 'hrs');
+            $avgResponseDays = null;
+        } else {
+            $avgResponseTime = round($avgResponseMinutes, 1) . ' mins';
+            $avgResponseDays = null;
+        }
+
+        // Log the query and result for debugging
+        \Log::info('Average Response Time Calculation', [
+            'total_repairs' => $repairs->count(),
+            'durations' => $durations->toArray(),
+            'avg_minutes' => $avgResponseMinutes,
+            'avg_hours' => $avgResponseTime,
+            'avg_days' => $avgResponseDays,
+            'calculation' => [
+                'sum_minutes' => $durations->sum('duration_minutes'),
+                'count' => $durations->count(),
+                'average' => $durations->count() > 0 ? $durations->sum('duration_minutes') / $durations->count() : 0
+            ]
+        ]);
 
         // Get urgent repairs
         $urgentRepairs = RepairRequest::where('status', 'urgent')
@@ -50,20 +152,20 @@ class DashboardController extends Controller
                       ->orWhere('warranty_period', '<', now());
             })
             ->orderBy('warranty_period')
-            ->limit(5)
-            ->get();
+            ->paginate(5, ['*'], 'warranty_page');
 
         // Get critical and warning assets using stored values
         $criticalAndWarningAssets = Asset::where('status', '!=', 'DISPOSED')
             ->whereIn('life_status', ['critical', 'warning'])
             ->orderBy('remaining_life')
-            ->limit(5)
-            ->get()
-            ->each(function ($asset) {
-                $asset->days_left = $asset->end_of_life_date
-                    ? now()->diffInDays($asset->end_of_life_date, false)
-                    : 0;
-            });
+            ->paginate(5, ['*'], 'lifespan_page');
+
+        $criticalAndWarningAssets->getCollection()->transform(function ($asset) {
+            $asset->days_left = $asset->end_of_life_date
+                ? now()->diffInDays($asset->end_of_life_date, false)
+                : 0;
+            return $asset;
+        });
 
         // Keep the rest of the method unchanged
         // Get all months of the current year
@@ -161,7 +263,7 @@ class DashboardController extends Controller
         $deptUsageData = LabLog::select(
             'users.department as department', // Using actual department field
             DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as hours'),
-            DB::raw('(SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) / ' . ($totalLabHours ?: 1) . ' * 100) as usage_percentage')
+            DB::raw('(SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) / NULLIF(' . ($totalLabHours ?: 1) . ', 0) * 100) as usage_percentage')
         )
             ->join('users', 'lab_logs.user_id', '=', 'users.id')
             ->where('time_in', '>=', Carbon::now()->startOfMonth())
@@ -210,7 +312,10 @@ class DashboardController extends Controller
             'avgDailyUsage',
             'criticalAndWarningAssets',
             'peakHour',
-            'personalStats' // Add this to the compact list
+            'personalStats',
+            'pulledOutThisMonth',
+            'avgPulledOutTime',
+            'avgPulledOutDays'
         ));
     }
 
@@ -376,7 +481,7 @@ class DashboardController extends Controller
             $query->whereDate('completed_at', '<=', $request->end_date);
         }
         
-        $repairs = $query->orderBy('completed_at', 'desc')->get();
+        $repairs = $query->orderBy('completed_at', 'desc')->paginate(10);
         return view('repairs-history', compact('repairs'));
     }
 
@@ -397,7 +502,7 @@ class DashboardController extends Controller
             $query->whereDate('completed_at', '<=', $request->end_date);
         }
         
-        $maintenance = $query->orderBy('completed_at', 'desc')->get();
+        $maintenance = $query->orderBy('completed_at', 'desc')->paginate(10);
         
         return view('user-maintenance-history', compact('maintenance'));
     }

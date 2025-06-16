@@ -14,9 +14,33 @@ use Carbon\Carbon;  // Add this import
 
 class AssetController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $assets = Asset::all()->map(function ($asset) {
+        $query = Asset::query();
+
+        // Apply filters if they exist
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where('serial_number', 'like', "%{$search}%");
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->has('location')) {
+            $query->where('location', $request->location);
+        }
+
+        // Get the assets with pagination
+        $assets = $query->paginate(10)->withQueryString();
+
+        // Calculate lifespan and other metrics for each asset
+        $assets->getCollection()->transform(function ($asset) {
             $today = Carbon::now();
             $purchaseDate = Carbon::parse($asset->purchase_date);
             $warrantyDate = Carbon::parse($asset->warranty_period);
@@ -154,8 +178,6 @@ class AssetController extends Controller
             // Generate QR code with proper data
             $qrCode = new QrCode(json_encode([
                 'id' => $asset->id,
-                'name' => $asset->name,
-                'category' => $category->name, // Include category name
                 'serial_number' => $asset->serial_number
             ]));
 
@@ -399,9 +421,7 @@ class AssetController extends Controller
             // Generate new QR code using Endroid - match the store method structure
             $qrCode = new QrCode(json_encode([
                 'id' => $asset->id,
-                'name' => $asset->name, // Use the asset model instead of validated data
-                'category_id' => $asset->category_id, // Use the asset model instead of validated data
-                'serial_number' => $asset->serial_number // Use the asset model instead of validated data
+                'serial_number' => $asset->serial_number
             ]));
 
             $writer = new PngWriter();
@@ -424,26 +444,92 @@ class AssetController extends Controller
 
     public function fetch($serialNumber)
     {
-        $lab = request()->query('lab');
-        $asset = Asset::where('serial_number', $serialNumber)
-            ->when($lab, function($query) use ($lab) {
-                return $query->where('location', $lab);
-            })
-            ->first();
-    
-        if (!$asset) {
+        try {
+            \Log::info('Fetching asset with serial number: ' . $serialNumber);
+            
+            // Validate serial number
+            if (empty($serialNumber)) {
+                return response()->json([
+                    'message' => 'Serial number is required'
+                ], 400);
+            }
+            
+            $lab = request()->query('lab');
+            
+            // Log the query we're about to make
+            \Log::info('Searching for asset with conditions:', [
+                'serial_number' => $serialNumber,
+                'lab' => $lab
+            ]);
+            
+            $asset = Asset::where('serial_number', $serialNumber)
+                ->when($lab, function($query) use ($lab) {
+                    return $query->where('location', $lab);
+                })
+                ->with('category')
+                ->first();
+            
+            // Log the query that was executed
+            \Log::info('SQL Query:', [
+                'sql' => Asset::where('serial_number', $serialNumber)->toSql(),
+                'bindings' => ['serialNumber' => $serialNumber]
+            ]);
+            
+            if (!$asset) {
+                \Log::warning('Asset not found with serial number: ' . $serialNumber);
+                
+                // Check if the serial number exists in any format
+                $similarAssets = Asset::where('serial_number', 'LIKE', '%' . $serialNumber . '%')
+                    ->select('serial_number')
+                    ->get();
+                
+                if ($similarAssets->isNotEmpty()) {
+                    \Log::info('Similar serial numbers found:', ['similar' => $similarAssets->pluck('serial_number')]);
+                    return response()->json([
+                        'message' => 'Asset not found. Similar serial numbers exist: ' . 
+                            $similarAssets->pluck('serial_number')->implode(', '),
+                        'similar_serial_numbers' => $similarAssets->pluck('serial_number')
+                    ], 404);
+                }
+                
+                return response()->json([
+                    'message' => $lab ? 'Asset not found in this lab' : 'Asset not found',
+                    'serial_number' => $serialNumber
+                ], 404);
+            }
+            
+            \Log::info('Asset found:', ['asset' => $asset->toArray()]);
+            
             return response()->json([
-                'message' => $lab ? 'Asset not found in this lab' : 'Asset not found'
-            ], 404);
+                'id' => $asset->id,
+                'name' => $asset->name,
+                'location' => $asset->location,
+                'category_id' => $asset->category_id,
+                'category' => $asset->category,
+                'serial_number' => $asset->serial_number,
+                'status' => $asset->status,
+                'model' => $asset->model,
+                'specification' => $asset->specification,
+                'vendor' => $asset->vendor,
+                'purchase_date' => $asset->purchase_date,
+                'warranty_period' => $asset->warranty_period,
+                'purchase_price' => $asset->purchase_price,
+                'end_of_life_date' => $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : null,
+                'life_status' => $asset->life_status,
+                'calculated_lifespan' => $asset->calculated_lifespan,
+                'remaining_life' => $asset->remaining_life
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching asset:', [
+                'serial_number' => $serialNumber,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Error fetching asset: ' . $e->getMessage()
+            ], 500);
         }
-    
-        return response()->json([
-            'name' => $asset->name,
-            'location' => $asset->location,
-            'category_id' => $asset->category_id,
-            'category' => $asset->category,
-            'end_of_life_date' => $asset->end_of_life_date ? $asset->end_of_life_date->format('M d, Y') : null
-        ]);
     }
 
     public function show(\App\Models\Asset $asset)

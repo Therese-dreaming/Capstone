@@ -7,10 +7,10 @@
     <title>Login</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="flex h-screen">
+<body class="flex h-screen flex-col md:flex-row">
 
     <!-- Left Side -->
-    <div class="w-1/2 bg-red-800 flex flex-col items-center justify-center relative">
+    <div class="w-full md:w-1/2 bg-red-800 flex flex-col items-center justify-center relative p-8 md:p-0">
         <!-- Content container -->
         <div class="relative z-10 text-center">
             <h1 class="text-white text-4xl font-bold mb-6">Laboratory Management</h1>
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Right Side -->
-    <div class="w-1/2 bg-white flex flex-col items-center justify-center p-8">
+    <div class="w-full md:w-1/2 bg-white flex flex-col items-center justify-center p-8">
         <div class="w-full max-w-md">
             <div class="flex justify-center mb-6">
                 <img src="{{ asset('images/logo-small.png') }}" alt="Right Side Image" width="227" height="230" class="drop-shadow-2xl">

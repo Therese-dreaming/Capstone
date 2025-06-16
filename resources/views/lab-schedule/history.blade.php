@@ -164,6 +164,11 @@
             </table>
         </div>
     </div>
+
+    <!-- Add pagination links -->
+    <div class="mt-6">
+        {{ $logs->links() }}
+    </div>
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -215,118 +220,38 @@
         const timeInEndDate = document.getElementById('timeInEndDate').value;
         const timeOutStartDate = document.getElementById('timeOutStartDate').value;
         const timeOutEndDate = document.getElementById('timeOutEndDate').value;
-        const rows = document.querySelectorAll('#labLogsTable tbody tr');
 
-        rows.forEach(row => {
-            const statusCell = row.querySelector('td:nth-child(6)');
-            const laboratoryCell = row.querySelector('td:nth-child(3)');
-            const timeInCell = row.querySelector('td:nth-child(4)');
-            const timeOutCell = row.querySelector('td:nth-child(5)');
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (statusFilter) params.append('status', statusFilter);
+        if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
+        if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
+        if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
+        if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
+        if (timeOutEndDate) params.append('time_out_end_date', timeOutEndDate);
 
-            const statusText = statusCell.textContent.trim().toLowerCase();
-            const statusMatch = !statusFilter || statusText.includes(statusFilter);
-            const laboratoryMatch = !laboratoryFilter || laboratoryCell.textContent.trim() === laboratoryFilter;
-
-            let timeInMatch = true;
-            if (timeInStartDate || timeInEndDate) {
-                const dateText = timeInCell.textContent.trim();
-                if (dateText !== '-') {
-                    const cellDate = new Date(dateText);
-                    const start = timeInStartDate ? new Date(timeInStartDate + 'T00:00:00') : null;
-                    const end = timeInEndDate ? new Date(timeInEndDate + 'T23:59:59') : null;
-                    if (start && end) {
-                        timeInMatch = cellDate >= start && cellDate <= end;
-                    } else if (start) {
-                        timeInMatch = cellDate >= start;
-                    } else if (end) {
-                        timeInMatch = cellDate <= end;
-                    }
-                } else {
-                    timeInMatch = false;
-                }
-            }
-
-            let timeOutMatch = true;
-            if (timeOutStartDate || timeOutEndDate) {
-                const dateText = timeOutCell.textContent.trim();
-                if (dateText !== '-') {
-                    const cellDate = new Date(dateText);
-                    const start = timeOutStartDate ? new Date(timeOutStartDate + 'T00:00:00') : null;
-                    const end = timeOutEndDate ? new Date(timeOutEndDate + 'T23:59:59') : null;
-                    if (start && end) {
-                        timeOutMatch = cellDate >= start && cellDate <= end;
-                    } else if (start) {
-                        timeOutMatch = cellDate >= start;
-                    } else if (end) {
-                        timeOutMatch = cellDate <= end;
-                    }
-                } else {
-                    timeOutMatch = false;
-                }
-            }
-
-            row.style.display = statusMatch && laboratoryMatch && timeInMatch && timeOutMatch ? '' : 'none';
-        });
-
-        const cards = document.querySelectorAll('div.grid > [data-id]');
-        cards.forEach(card => {
-            if (window.getComputedStyle(card.parentElement).display === 'none') return;
-            let status = '', laboratory = '', timeIn = '', timeOut = '';
-            card.querySelectorAll('.text-sm').forEach(div => {
-                const text = div.textContent.toLowerCase();
-                if (text.includes('laboratory:')) {
-                    laboratory = div.textContent.replace('Laboratory:', '').trim();
-                } else if (text.includes('time in:')) {
-                    timeIn = div.textContent.replace('Time In:', '').trim();
-                } else if (text.includes('time out:')) {
-                    timeOut = div.textContent.replace('Time Out:', '').trim();
-                }
-            });
-            const statusBadge = card.querySelector('span.inline-flex');
-            if (statusBadge) status = statusBadge.textContent.trim().toLowerCase();
-
-            const statusMatch = !statusFilter || status.includes(statusFilter);
-            const laboratoryMatch = !laboratoryFilter || laboratory === laboratoryFilter;
-
-            let timeInMatch = true;
-            if (timeInStartDate || timeInEndDate) {
-                if (timeIn !== '-') {
-                    const cellDate = new Date(timeIn);
-                    const start = timeInStartDate ? new Date(timeInStartDate + 'T00:00:00') : null;
-                    const end = timeInEndDate ? new Date(timeInEndDate + 'T23:59:59') : null;
-                    if (start && end) {
-                        timeInMatch = cellDate >= start && cellDate <= end;
-                    } else if (start) {
-                        timeInMatch = cellDate >= start;
-                    } else if (end) {
-                        timeInMatch = cellDate <= end;
-                    }
-                } else {
-                    timeInMatch = false;
-                }
-            }
-            let timeOutMatch = true;
-            if (timeOutStartDate || timeOutEndDate) {
-                if (timeOut !== '-') {
-                    const cellDate = new Date(timeOut);
-                    const start = timeOutStartDate ? new Date(timeOutStartDate + 'T00:00:00') : null;
-                    const end = timeOutEndDate ? new Date(timeOutEndDate + 'T23:59:59') : null;
-                    if (start && end) {
-                        timeOutMatch = cellDate >= start && cellDate <= end;
-                    } else if (start) {
-                        timeOutMatch = cellDate >= start;
-                    } else if (end) {
-                        timeOutMatch = cellDate <= end;
-                    }
-                } else {
-                    timeOutMatch = false;
-                }
-            }
-            card.style.display = statusMatch && laboratoryMatch && timeInMatch && timeOutMatch ? '' : 'none';
-        });
+        // Redirect to filtered URL
+        window.location.href = `{{ route('lab-schedule.history') }}?${params.toString()}`;
     }
 
-    // Add event listeners for new date filters
+    // Set initial filter values from URL parameters
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Set status and laboratory filters
+        document.getElementById('statusFilter').value = urlParams.get('status') || '';
+        document.getElementById('laboratoryFilter').value = urlParams.get('laboratory') || '';
+        
+        // Set time in date filters
+        document.getElementById('timeInStartDate').value = urlParams.get('time_in_start_date') || '';
+        document.getElementById('timeInEndDate').value = urlParams.get('time_in_end_date') || '';
+        
+        // Set time out date filters
+        document.getElementById('timeOutStartDate').value = urlParams.get('time_out_start_date') || '';
+        document.getElementById('timeOutEndDate').value = urlParams.get('time_out_end_date') || '';
+    });
+
+    // Add event listeners for filters
     document.getElementById('timeInStartDate').addEventListener('change', filterHistory);
     document.getElementById('timeInEndDate').addEventListener('change', filterHistory);
     document.getElementById('timeOutStartDate').addEventListener('change', filterHistory);

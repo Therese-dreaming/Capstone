@@ -55,7 +55,7 @@
                         <div class="space-y-5">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
-                                <input type="text" name="name" required value="{{ old('name') }}" class="w-full p-2.5 border @error('name') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                                <input type="text" name="name" required value="{{ request('equipment') ?? old('name') }}" class="w-full p-2.5 border @error('name') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
                                 @error('name')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -64,18 +64,18 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
                                 <select name="location_select" id="locationSelect" class="w-full p-2 border @error('location') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 mb-2">
                                     <option value="">Select Location</option>
-                                    <option value="Computer Lab 401">Computer Lab 401</option>
-                                    <option value="Computer Lab 402">Computer Lab 402</option>
-                                    <option value="Computer Lab 403">Computer Lab 403</option>
-                                    <option value="Computer Lab 404">Computer Lab 404</option>
-                                    <option value="Computer Lab 405">Computer Lab 405</option>
-                                    <option value="Computer Lab 406">Computer Lab 406</option>
-                                    <option value="others">Others (Specify)</option>
+                                    <option value="Computer Lab 401" {{ request('location') == 'Computer Lab 401' ? 'selected' : '' }}>Computer Lab 401</option>
+                                    <option value="Computer Lab 402" {{ request('location') == 'Computer Lab 402' ? 'selected' : '' }}>Computer Lab 402</option>
+                                    <option value="Computer Lab 403" {{ request('location') == 'Computer Lab 403' ? 'selected' : '' }}>Computer Lab 403</option>
+                                    <option value="Computer Lab 404" {{ request('location') == 'Computer Lab 404' ? 'selected' : '' }}>Computer Lab 404</option>
+                                    <option value="Computer Lab 405" {{ request('location') == 'Computer Lab 405' ? 'selected' : '' }}>Computer Lab 405</option>
+                                    <option value="Computer Lab 406" {{ request('location') == 'Computer Lab 406' ? 'selected' : '' }}>Computer Lab 406</option>
+                                    <option value="others" {{ !in_array(request('location'), ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) && request('location') ? 'selected' : '' }}>Others (Specify)</option>
                                 </select>
                                 @error('location')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
-                                <input type="text" name="location" id="otherLocation" placeholder="Please specify location" class="w-full p-2 border @error('location') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 hidden">
+                                <input type="text" name="location" id="otherLocation" placeholder="Please specify location" value="{{ !in_array(request('location'), ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? request('location') : '' }}" class="w-full p-2 border @error('location') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 {{ !in_array(request('location'), ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) && request('location') ? '' : 'hidden' }}">
                             </div>
 
                             <div>
@@ -113,8 +113,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Specification</label>
-                                        <textarea name="specification" rows="2" class="w-full p-2 border @error('specification') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">{{ old('specification') }}</textarea>
-                                        @error('specification')
+                                        <textarea name="specification" rows="2" class="w-full p-2 border @error('specification') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">{{ old('specification') }}</textarea>                                        @error('specification')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
@@ -166,7 +165,7 @@
                                     <select name="category_id" required class="w-full p-2 border @error('category_id') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
                                         <option value="">Select Product Category</option>
                                         @foreach($categories as $category)
-                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                        <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : (old('category_id') == $category->id ? 'selected' : '') }}>
                                             {{ $category->name }}
                                         </option>
                                         @endforeach
@@ -472,6 +471,17 @@
             otherLocation.required = false;
             otherLocation.value = '';
             document.querySelector('input[name="location"]').value = locationValue;
+        }
+    });
+
+    // Handle pre-filled location on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const locationSelect = document.getElementById('locationSelect');
+        const otherLocation = document.getElementById('otherLocation');
+        
+        if (locationSelect.value === 'others') {
+            otherLocation.classList.remove('hidden');
+            otherLocation.required = true;
         }
     });
 </script>

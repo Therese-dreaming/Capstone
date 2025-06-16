@@ -25,9 +25,10 @@
     </div>
 
     <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
-        <form action="{{ route('repair.store') }}" method="POST" class="space-y-6" id="repairForm">
+        <form action="{{ route('repair.request.store') }}" method="POST" class="space-y-6" id="repairForm">
             @csrf
             <input type="hidden" name="_method" value="POST">
+            <input type="hidden" name="created_by" value="{{ auth()->id() }}">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Class/Event Ongoing -->
@@ -121,6 +122,48 @@
                 <div class="flex flex-col md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Issue</label>
                     <textarea name="issue" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Describe the issue..." required></textarea>
+                </div>
+
+                <!-- Photo Upload (full width) -->
+                <div class="flex flex-col md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Photo of the Issue (Optional)</label>
+                    <div class="space-y-4">
+                        <!-- Preview Container -->
+                        <div id="photoPreview" class="hidden w-full max-w-md mx-auto">
+                            <img id="previewImage" src="" alt="Preview" class="w-full h-64 object-contain rounded-lg border border-gray-300">
+                            <button type="button" onclick="removePhoto()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                Remove Photo
+                            </button>
+                        </div>
+
+                        <!-- Upload Options -->
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <!-- Camera Input -->
+                            <div class="flex-1">
+                                <button type="button" onclick="openCamera()" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    Take Photo
+                                </button>
+                                <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoUpload(event)">
+                            </div>
+
+                            <!-- File Upload -->
+                            <div class="flex-1">
+                                <button type="button" onclick="document.getElementById('fileInput').click()" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Upload Photo
+                                </button>
+                                <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+                            </div>
+                        </div>
+                        <input type="hidden" name="photo" id="photoData">
+                        <p class="text-sm text-gray-500">Take a photo or upload an image of the issue. Maximum file size: 5MB</p>
+                    </div>
                 </div>
             </div> <!-- End of grid -->
 
@@ -279,7 +322,7 @@
             }
 
             try {
-                const response = await fetch(`/assets/fetch/${serialNumber}`);
+                const response = await fetch(`{{ url('/assets/fetch') }}/${serialNumber}`);
                 const data = await response.json();
 
                 if (!response.ok) {
@@ -343,6 +386,54 @@
                 document.getElementById('location').value = location;
             }
         });
+
+        // Photo handling functions
+        function openCamera() {
+            document.getElementById('cameraInput').click();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size exceeds 5MB limit');
+                return;
+            }
+
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('photoPreview');
+                const previewImage = document.getElementById('previewImage');
+                const photoData = document.getElementById('photoData');
+
+                previewImage.src = e.target.result;
+                photoData.value = e.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePhoto() {
+            const preview = document.getElementById('photoPreview');
+            const previewImage = document.getElementById('previewImage');
+            const photoData = document.getElementById('photoData');
+            const cameraInput = document.getElementById('cameraInput');
+            const fileInput = document.getElementById('fileInput');
+
+            previewImage.src = '';
+            photoData.value = '';
+            preview.classList.add('hidden');
+            cameraInput.value = '';
+            fileInput.value = '';
+        }
 
     </script>
 </div>

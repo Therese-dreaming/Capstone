@@ -160,7 +160,7 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($assets as $asset)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration + ($assets->currentPage() - 1) * $assets->perPage() }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($asset->photo)
                                 <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
@@ -237,6 +237,11 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Add pagination links -->
+        <div class="mt-6">
+            {{ $assets->links() }}
         </div>
     </div>
 </div>
@@ -389,7 +394,7 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($assets as $asset)
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration + ($assets->currentPage() - 1) * $assets->perPage() }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($asset->photo)
                             <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity shadow-sm" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
@@ -558,7 +563,7 @@
     }
 
     function openImageModal(imageSrc) {
-        event.stopPropagation(); // Add this line
+        event.stopPropagation();
         const modal = document.getElementById('imageModal');
         const enlargedImage = document.getElementById('enlargedImage');
         enlargedImage.src = imageSrc;
@@ -584,6 +589,47 @@
             if (e.target === this) {
                 closeFullList();
             }
+        });
+
+        const searchInput = document.getElementById('searchInput');
+        const modalSearchInput = document.getElementById('modalSearchInput');
+
+        // Check for search parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchParam = urlParams.get('search');
+        
+        if (searchParam) {
+            // Set search input values
+            if (searchInput) searchInput.value = searchParam;
+            if (modalSearchInput) modalSearchInput.value = searchParam;
+        }
+
+        // Main search input event listener
+        searchInput.addEventListener('input', function() {
+            const searchValue = this.value;
+            const currentUrl = new URL(window.location.href);
+            
+            if (searchValue) {
+                currentUrl.searchParams.set('search', searchValue);
+            } else {
+                currentUrl.searchParams.delete('search');
+            }
+            
+            window.location.href = currentUrl.toString();
+        });
+
+        // Modal search input event listener
+        modalSearchInput.addEventListener('input', function() {
+            const searchValue = this.value;
+            const currentUrl = new URL(window.location.href);
+            
+            if (searchValue) {
+                currentUrl.searchParams.set('search', searchValue);
+            } else {
+                currentUrl.searchParams.delete('search');
+            }
+            
+            window.location.href = currentUrl.toString();
         });
     });
 
@@ -664,63 +710,6 @@
             document.body.appendChild(form);
             form.submit();
         }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        const modalSearchInput = document.getElementById('modalSearchInput');
-
-        // Check for search parameter in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchParam = urlParams.get('search');
-        
-        if (searchParam) {
-            // Set search input values
-            if (searchInput) searchInput.value = searchParam;
-            if (modalSearchInput) modalSearchInput.value = searchParam;
-            
-            // Trigger the search
-            filterTables(searchParam);
-        }
-
-        function filterTables(searchValue) {
-            searchValue = searchValue.toLowerCase();
-
-            // Search in preview table
-            const previewTable = document.querySelector('table:not(.full-list-table)');
-            const previewRows = previewTable.querySelectorAll('tbody tr');
-            previewRows.forEach(row => {
-                const serialNumber = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-                row.style.display = serialNumber.includes(searchValue) ? '' : 'none';
-            });
-
-            // Search in full list table
-            const fullListTable = document.querySelector('.full-list-table');
-            const fullListRows = fullListTable.querySelectorAll('tbody tr');
-            fullListRows.forEach(row => {
-                const serialNumber = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
-                row.style.display = serialNumber.includes(searchValue) ? '' : 'none';
-            });
-            
-            // Search in mobile cards
-            const mobileCards = document.querySelectorAll('.md\\:hidden > div');
-            mobileCards.forEach(card => {
-                const serialNumber = card.querySelector('p.text-sm.text-gray-600').textContent.toLowerCase();
-                card.style.display = serialNumber.includes(searchValue) ? '' : 'none';
-            });
-        }
-
-        // Main search input event listener
-        searchInput.addEventListener('input', function() {
-            filterTables(this.value);
-            if (modalSearchInput) modalSearchInput.value = this.value;
-        });
-
-        // Modal search input event listener
-        modalSearchInput.addEventListener('input', function() {
-            filterTables(this.value);
-            if (searchInput) searchInput.value = this.value;
-        });
     });
 
     document.addEventListener('DOMContentLoaded', function() {

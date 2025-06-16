@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Lab Usage Report</title>
+    <style>
+        @font-face {
+            font-family: 'Poppins';
+            src: url('{{ storage_path('fonts/Poppins-Regular.ttf') }}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url('{{ storage_path('fonts/Poppins-Bold.ttf') }}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #dc2626;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            color: #dc2626;
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .header p {
+            color: #666;
+            margin: 5px 0 0;
+        }
+        .summary-cards {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            width: 18%;
+            text-align: center;
+        }
+        .card h3 {
+            margin: 0;
+            color: #374151;
+            font-size: 14px;
+        }
+        .card p {
+            margin: 5px 0 0;
+            color: #dc2626;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+            font-size: 12px;
+        }
+        th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: bold;
+        }
+        .section-title {
+            color: #374151;
+            font-size: 16px;
+            margin: 20px 0 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Lab Usage Report</h1>
+        <p>Generated on {{ now()->format('F d, Y') }}</p>
+    </div>
+
+    <div class="section-title">Usage by Department</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Department</th>
+                <th>Total Sessions</th>
+                <th>Total Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($departmentUsage as $dept)
+            <tr>
+                <td>{{ $dept->department_name }}</td>
+                <td>{{ number_format($dept->total_sessions) }}</td>
+                <td>{{ number_format($dept->total_hours, 1) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="section-title">Usage by Laboratory</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Laboratory</th>
+                <th>Total Sessions</th>
+                <th>Total Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($labUsage as $lab)
+            <tr>
+                <td>{{ $lab->lab_name }}</td>
+                <td>{{ number_format($lab->total_sessions) }}</td>
+                <td>{{ number_format($lab->total_hours, 1) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="section-title">Detailed Usage Data</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th>Department</th>
+                <th>Laboratory</th>
+                <th>Total Sessions</th>
+                <th>Total Hours</th>
+                <th>Avg. Duration</th>
+                <th>Unique Users</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($usageData as $data)
+            <tr>
+                <td>{{ $data->period }}</td>
+                <td>{{ $data->department_name }}</td>
+                <td>{{ $data->lab_name }}</td>
+                <td>{{ number_format($data->total_sessions) }}</td>
+                <td>{{ number_format($data->total_hours, 1) }}</td>
+                <td>{{ number_format($data->avg_duration, 1) }}h</td>
+                <td>{{ number_format($data->unique_users) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>This report was generated by the Operations Management System</p>
+    </div>
+</body>
+</html> 

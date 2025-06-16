@@ -18,16 +18,22 @@ class RepairRequest extends Model
         'equipment',
         'serial_number',
         'issue',
+        'photo',
         'status',
         'technician_id',
-        'remarks',
+        'time_started',
         'completed_at',
-        'created_at',
-        'updated_at'
+        'remarks',
+        'caller_name',
+        'findings',
+        'technician_signature',
+        'caller_signature',
+        'created_by',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'time_started' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
@@ -46,5 +52,15 @@ class RepairRequest extends Model
     public function technician()
     {
         return $this->belongsTo(User::class, 'technician_id');
+    }
+
+    public function evaluation()
+    {
+        return $this->hasOne(TechnicianEvaluation::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

@@ -33,57 +33,81 @@
         </div>
         @endif
         
-        {{-- Table view for larger screens --}}
-        <div class="overflow-x-auto hidden sm:block">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($repairs as $repair)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <a href="{{ url('assets?search=' . urlencode($repair->asset->name)) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->name }}</a>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $repair->issue }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        @if($repairs->count() > 0)
+            {{-- Table view for larger screens --}}
+            <div class="overflow-x-auto hidden sm:block">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($repairs as $repair)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <a href="{{ url('assets?search=' . urlencode($repair->asset->name)) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->name }}</a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $repair->issue }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        {{-- Card view for mobile screens --}}
-        <div class="sm:hidden space-y-4">
-            @php
-                $currentDate = null;
-            @endphp
-            @foreach($repairs as $repair)
+            {{-- Card view for mobile screens --}}
+            <div class="sm:hidden space-y-4">
                 @php
-                    $itemDate = \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y');
+                    $currentDate = null;
                 @endphp
-                @if ($itemDate != $currentDate)
-                    <h2 class="text-lg font-semibold text-gray-800 mt-4 mb-2">{{ $itemDate }}</h2>
+                @foreach($repairs as $repair)
                     @php
-                        $currentDate = $itemDate;
+                        $itemDate = \Carbon\Carbon::parse($repair->completed_at)->format('M j, Y');
                     @endphp
-                @endif
-                <div class="bg-gray-50 rounded-lg p-4 shadow">
-                    <div class="text-sm font-medium text-gray-500">Asset: <a href="{{ url('assets?search=' . urlencode($repair->asset->name)) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->name }}</a></div>
-                    <div class="text-sm text-gray-500 mt-1">Issue: {{ $repair->issue }}</div>
-                    <div class="text-sm text-gray-500 mt-1">Completion Date: {{ $itemDate }}</div>
-                    <div class="text-sm mt-1">Status: <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span></div>
+                    @if ($itemDate != $currentDate)
+                        <h2 class="text-lg font-semibold text-gray-800 mt-4 mb-2">{{ $itemDate }}</h2>
+                        @php
+                            $currentDate = $itemDate;
+                        @endphp
+                    @endif
+                    <div class="bg-gray-50 rounded-lg p-4 shadow">
+                        <div class="text-sm font-medium text-gray-500">Asset: <a href="{{ url('assets?search=' . urlencode($repair->asset->name)) }}" class="font-bold text-red-600 hover:underline">{{ $repair->asset->name }}</a></div>
+                        <div class="text-sm text-gray-500 mt-1">Issue: {{ $repair->issue }}</div>
+                        <div class="text-sm text-gray-500 mt-1">Completion Date: {{ $itemDate }}</div>
+                        <div class="text-sm mt-1">Status: <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span></div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- Pagination --}}
+            @if($repairs->hasPages())
+            <div class="mt-6">
+                <div class="flex flex-col sm:flex-row items-center justify-between">
+                    <div class="text-sm text-gray-700 mb-4 sm:mb-0">
+                        Showing {{ $repairs->firstItem() ?? 0 }} to {{ $repairs->lastItem() ?? 0 }} of {{ $repairs->total() }} results
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {{ $repairs->appends(request()->query())->links() }}
+                    </div>
                 </div>
-            @endforeach
-        </div>
+            </div>
+            @endif
+        @else
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No repairs history</h3>
+                <p class="mt-1 text-sm text-gray-500">You have not completed any repair tasks at this time.</p>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

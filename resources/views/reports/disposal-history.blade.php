@@ -91,6 +91,11 @@
                 </table>
             </div>
 
+            <!-- Pagination for Desktop -->
+            <div class="mt-4 hidden md:block">
+                {{ $disposedAssets->appends(request()->query())->links() }}
+            </div>
+
             <!-- Assets List (Mobile View) -->
             <div class="grid grid-cols-1 gap-4 md:hidden">
                 @foreach($disposedAssets as $asset)
@@ -113,6 +118,11 @@
                     <div class="text-sm font-medium text-gray-900">Total Value of Disposed Assets</div>
                     <div class="text-sm font-medium text-gray-900">₱{{ number_format($disposedAssets->sum('purchase_price'), 2) }}</div>
                 </div>
+            </div>
+
+            <!-- Pagination for Mobile -->
+            <div class="mt-4 md:hidden">
+                {{ $disposedAssets->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

@@ -10,4 +10,12 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    server: {
+        host: 'localhost',
+        port: 5173,
+        https: false,
+        hmr: {
+            host: 'localhost'
+        },
+    },
 });
