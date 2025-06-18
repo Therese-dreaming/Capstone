@@ -46,18 +46,6 @@
                     <p class="mt-2 text-sm text-gray-500">Toggle this if there is an ongoing class or event that requires immediate attention.</p>
                 </div>
 
-                <!-- Serial Number -->
-                <div class="flex flex-col">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Asset Serial Number (Optional)</label>
-                    <div class="flex gap-2">
-                        <input type="text" name="serial_number" id="serial_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter asset serial number if available">
-                        <button type="button" onclick="fetchAssetDetails()" class="w-auto md:w-auto px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700">
-                            Search
-                        </button>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-500">If this repair is for a tracked asset, enter its serial number.</p>
-                </div>
-
                 <!-- Date Called -->
                 <div class="flex flex-col">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Date Called</label>
@@ -307,86 +295,6 @@
             form.submit();
         }
 
-        async function fetchAssetDetails() {
-            const serialNumber = document.getElementById('serial_number').value;
-            const messageDiv = document.getElementById('assetMessage');
-            const messageTitle = messageDiv.querySelector('.message-title');
-            const messageContent = messageDiv.querySelector('.message-content');
-
-            if (!serialNumber) {
-                messageDiv.className = 'mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
-                messageTitle.textContent = 'Error!';
-                messageContent.textContent = 'Please enter a serial number';
-                messageDiv.classList.remove('hidden');
-                return;
-            }
-
-            try {
-                const response = await fetch(`{{ url('/assets/fetch') }}/${serialNumber}`);
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error('Asset not found');
-                }
-
-                // Auto-fill location
-                document.getElementById('location').value = data.location || '';
-
-                if (data.name) {
-                    document.getElementById('equipment').value = data.name;
-                }
-
-                // Handle category selection
-                if (data.category_id) {
-                    document.getElementById('category_select').value = data.category_id;
-                }
-
-                // Show success message
-                messageDiv.className = 'mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded';
-                messageTitle.textContent = 'Success!';
-                messageContent.textContent = 'Asset details found and filled in';
-                messageDiv.classList.remove('hidden');
-                hideMessages();
-
-            } catch (error) {
-                console.error('Error fetching asset details:', error);
-                messageDiv.className = 'mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
-                messageTitle.textContent = 'Error!';
-                messageContent.textContent = 'No asset found with this serial number. Please check and try again.';
-                messageDiv.classList.remove('hidden');
-                hideMessages();
-            }
-        }
-
-        // Function to get URL parameters
-        function getUrlParameter(name) {
-            name = name.replace(/[[]/g, '\\[').replace(/[\\]]/g, '\\]');
-            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-            var results = regex.exec(location.search);
-            return results === null ? null : decodeURIComponent(results[1].replace(/\+/g, ' '));
-        }
-
-        // On page load, check for URL parameters and pre-fill form
-        document.addEventListener('DOMContentLoaded', function() {
-            const serialNumber = getUrlParameter('serial_number');
-            const issue = getUrlParameter('issue');
-            const location = getUrlParameter('location');
-
-            if (serialNumber) {
-                document.getElementById('serial_number').value = serialNumber;
-                // Optionally fetch asset details automatically if serial number is provided
-                fetchAssetDetails();
-            }
-
-            if (issue) {
-                document.querySelector('textarea[name="issue"]').value = issue;
-            }
-
-            if (location) {
-                document.getElementById('location').value = location;
-            }
-        });
-
         // Photo handling functions
         function openCamera() {
             document.getElementById('cameraInput').click();
@@ -434,7 +342,6 @@
             cameraInput.value = '';
             fileInput.value = '';
         }
-
     </script>
 </div>
 @endsection

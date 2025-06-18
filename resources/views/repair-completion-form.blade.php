@@ -28,6 +28,19 @@
             @method('PUT')
             <input type="hidden" name="status" value="completed">
             <input type="hidden" name="completed_at" id="completedAt">
+            <input type="hidden" name="serial_number" id="serialNumber">
+
+            <!-- QR Code Scanner Section -->
+            <div class="space-y-2">
+                <label class="block text-gray-700 text-sm font-semibold">
+                    Scan Asset QR Code
+                </label>
+                <div class="border border-gray-300 rounded-md p-4">
+                    <div id="reader" class="w-full"></div>
+                    <div id="scanResult" class="mt-2 text-sm text-gray-600"></div>
+                </div>
+                <p class="text-sm text-gray-500">Scan the QR code on the asset to automatically fill in the serial number.</p>
+            </div>
 
             <!-- Caller's Name -->
             @if(!in_array($repairRequest->creator->group_id ?? null, [1, 2]))
@@ -143,9 +156,12 @@
 
 <!-- Add SignaturePad library -->
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<!-- Add HTML5-QRCode library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
     let technicianPad, callerPad;
+    let html5QrCode;
 
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize signature pads
@@ -180,6 +196,20 @@
                 throttle: 16
             });
         }
+
+        // Initialize QR Code Scanner
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).catch((err) => {
+            console.error("Error starting QR scanner:", err);
+            showMessage("Failed to start QR scanner. Please check camera permissions.", "error");
+        });
 
         // Set current timestamp
         document.getElementById('completedAt').value = new Date().toISOString();
@@ -265,6 +295,37 @@
             technicianPad.clear();
         });
     });
+
+    // QR Code Scanner Functions
+    function onScanSuccess(decodedText, decodedResult) {
+        try {
+            // Parse the JSON data from QR code
+            const qrData = JSON.parse(decodedText);
+            
+            // Validate the data structure
+            if (!qrData.serial_number) {
+                throw new Error('Invalid QR code format: serial number not found');
+            }
+
+            // Stop scanning after successful scan
+            html5QrCode.stop().then(() => {
+                // Set the serial number from the parsed data
+                document.getElementById('serialNumber').value = qrData.serial_number;
+                document.getElementById('scanResult').innerHTML = `Scanned Serial Number: ${qrData.serial_number}`;
+                showMessage('QR code scanned successfully!', 'success');
+            }).catch(err => {
+                console.error("Error stopping scanner:", err);
+            });
+        } catch (error) {
+            console.error("Error parsing QR code data:", error);
+            showMessage('Invalid QR code format. Please scan a valid asset QR code.', 'error');
+        }
+    }
+
+    function onScanFailure(error) {
+        // Handle scan failure silently
+        console.warn(`QR Code scan failed: ${error}`);
+    }
 
     function clearTechnicianSignature() {
         if (technicianPad) {
@@ -405,6 +466,17 @@
         border-radius: 0.375rem;
         background-color: white;
         touch-action: none;
+    }
+
+    #reader {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    #reader video {
+        width: 100%;
+        border-radius: 0.375rem;
     }
 </style>
 @endsection 

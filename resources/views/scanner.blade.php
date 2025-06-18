@@ -97,7 +97,7 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="{{ asset('js/html5-qrcode.min.js') }}"></script>
 
 <script>
     let html5QrCode = null;
