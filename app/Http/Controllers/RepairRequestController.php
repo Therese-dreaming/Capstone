@@ -314,7 +314,8 @@ class RepairRequestController extends Controller
                 'caller_name',
                 'findings',
                 'technician_signature',
-                'caller_signature'
+                'caller_signature',
+                'serial_number'
             ]);
             \Log::info('Initial update data', ['update_data' => $updateData]);
 
@@ -365,33 +366,38 @@ class RepairRequestController extends Controller
             }
 
             // Handle asset status updates for completed requests
-            if ($request->status === 'completed' && $repairRequest->serial_number) {
-                $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
-                if ($asset) {
-                    // Update asset status to IN USE
-                    $asset->update([
-                        'status' => 'IN USE'
-                    ]);
-                    
-                    // Create repair history record
-                    AssetHistory::create([
-                        'asset_id' => $asset->id,
-                        'change_type' => 'REPAIR',
-                        'old_value' => $repairRequest->issue ?? 'Not specified',
-                        'new_value' => 'completed',
-                        'remarks' => "Ticket: {$repairRequest->ticket_number}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
-                        'changed_by' => auth()->id()
-                    ]);
+            if ($request->status === 'completed') {
+                // Get the serial number from the request or existing repair request
+                $serialNumber = $request->serial_number ?? $repairRequest->serial_number;
+                
+                if ($serialNumber) {
+                    $asset = Asset::where('serial_number', $serialNumber)->first();
+                    if ($asset) {
+                        // Update asset status to IN USE
+                        $asset->update([
+                            'status' => 'IN USE'
+                        ]);
+                        
+                        // Create repair history record
+                        AssetHistory::create([
+                            'asset_id' => $asset->id,
+                            'change_type' => 'REPAIR',
+                            'old_value' => $repairRequest->issue ?? 'Not specified',
+                            'new_value' => 'completed',
+                            'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'changed_by' => auth()->id()
+                        ]);
 
-                    // Create status change record
-                    AssetHistory::create([
-                        'asset_id' => $asset->id,
-                        'change_type' => 'STATUS',
-                        'old_value' => 'UNDER REPAIR',
-                        'new_value' => 'IN USE',
-                        'remarks' => "Asset repair completed. Findings: {$request->findings}",
-                        'changed_by' => auth()->id()
-                    ]);
+                        // Create status change record
+                        AssetHistory::create([
+                            'asset_id' => $asset->id,
+                            'change_type' => 'STATUS',
+                            'old_value' => 'UNDER REPAIR',
+                            'new_value' => 'IN USE',
+                            'remarks' => "Asset repair completed. Findings: {$request->findings}",
+                            'changed_by' => auth()->id()
+                        ]);
+                    }
                 }
             }
 
@@ -418,8 +424,11 @@ class RepairRequestController extends Controller
 
             // Handle asset status updates for pulled out requests
             if ($request->status === 'pulled_out') {
-                if ($repairRequest->serial_number) {
-                    $asset = Asset::where('serial_number', $repairRequest->serial_number)->first();
+                // Get the serial number from the request or existing repair request
+                $serialNumber = $request->serial_number ?? $repairRequest->serial_number;
+                
+                if ($serialNumber) {
+                    $asset = Asset::where('serial_number', $serialNumber)->first();
                     if ($asset) {
                         // Store the old status
                         $oldStatus = $asset->status;
@@ -445,7 +454,7 @@ class RepairRequestController extends Controller
                             'change_type' => 'REPAIR',
                             'old_value' => $repairRequest->issue ?? 'Not specified',
                             'new_value' => 'pulled_out',
-                            'remarks' => "Ticket: {$repairRequest->ticket_number}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
                             'changed_by' => auth()->id()
                         ]);
                     }

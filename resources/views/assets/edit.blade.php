@@ -141,7 +141,32 @@
                                 <label class="block text-gray-700 text-sm font-bold mb-2" for="vendor">
                                     Vendor
                                 </label>
-                                <input type="text" name="vendor" id="vendor" value="{{ old('vendor', $asset->vendor) }}" class="w-full p-2.5 border @error('vendor') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
+                                <div class="border border-gray-300 rounded-md bg-gray-50 p-4">
+                                    <!-- Add New Vendor Input -->
+                                    <div class="mb-4 flex space-x-2">
+                                        <div class="flex-1 relative">
+                                            <input type="text" id="newVendorName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white" placeholder="Enter new vendor name">
+                                            <!-- Autocomplete dropdown -->
+                                            <div id="vendorAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto hidden">
+                                                <!-- Suggestions will be populated here -->
+                                            </div>
+                                        </div>
+                                        <button type="button" onclick="addNewVendor(event)" class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+                                            Add Vendor
+                                        </button>
+                                    </div>
+                                    <select name="vendor_id" class="w-full px-3 py-2 border @error('vendor_id') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
+                                        <option value="">Select Vendor</option>
+                                        @foreach($vendors as $vendor)
+                                        <option value="{{ $vendor->id }}" {{ $asset->vendor_id == $vendor->id ? 'selected' : '' }}>
+                                            {{ $vendor->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    @error('vendor_id')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 
@@ -226,5 +251,155 @@
         }
     });
 
+    // Vendor autocomplete functionality
+    let vendorAutocompleteTimeout;
+
+    const vendorInput = document.getElementById('newVendorName');
+    const vendorAutocomplete = document.getElementById('vendorAutocomplete');
+    const vendorSelect = document.querySelector('select[name="vendor_id"]');
+
+    vendorInput.addEventListener('input', function() {
+        clearTimeout(vendorAutocompleteTimeout);
+        const query = this.value.trim();
+
+        if (query.length < 2) {
+            hideVendorAutocomplete();
+            return;
+        }
+
+        vendorAutocompleteTimeout = setTimeout(() => {
+            fetch(`/vendors/search?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayVendorSuggestions(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching vendors:', error);
+                });
+        }, 300);
+    });
+
+    // Keyboard navigation
+    vendorInput.addEventListener('keydown', function(e) {
+        const suggestions = vendorAutocomplete.querySelectorAll('.suggestion-item');
+        const activeSuggestion = vendorAutocomplete.querySelector('.suggestion-item.active');
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!activeSuggestion) {
+                suggestions[0]?.classList.add('active');
+            } else {
+                const nextSuggestion = activeSuggestion.nextElementSibling;
+                if (nextSuggestion) {
+                    activeSuggestion.classList.remove('active');
+                    nextSuggestion.classList.add('active');
+                }
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (activeSuggestion) {
+                const prevSuggestion = activeSuggestion.previousElementSibling;
+                if (prevSuggestion) {
+                    activeSuggestion.classList.remove('active');
+                    prevSuggestion.classList.add('active');
+                } else {
+                    activeSuggestion.classList.remove('active');
+                }
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeSuggestion) {
+                selectVendor(activeSuggestion.dataset.id, activeSuggestion.dataset.name);
+            }
+        } else if (e.key === 'Escape') {
+            hideVendorAutocomplete();
+        }
+    });
+
+    // Click outside to hide
+    document.addEventListener('click', function(e) {
+        if (!vendorInput.contains(e.target) && !vendorAutocomplete.contains(e.target)) {
+            hideVendorAutocomplete();
+        }
+    });
+
+    function displayVendorSuggestions(vendors) {
+        vendorAutocomplete.innerHTML = '';
+
+        if (vendors.length === 0) {
+            vendorAutocomplete.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">No vendors found</div>';
+        } else {
+            vendors.forEach(vendor => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm';
+                suggestionItem.dataset.id = vendor.id;
+                suggestionItem.dataset.name = vendor.name;
+                suggestionItem.textContent = vendor.name;
+                suggestionItem.addEventListener('click', () => selectVendor(vendor.id, vendor.name));
+                vendorAutocomplete.appendChild(suggestionItem);
+            });
+        }
+
+        vendorAutocomplete.classList.remove('hidden');
+    }
+
+    function selectVendor(id, name) {
+        vendorSelect.value = id;
+        vendorInput.value = name;
+        hideVendorAutocomplete();
+    }
+
+    function hideVendorAutocomplete() {
+        vendorAutocomplete.classList.add('hidden');
+        vendorAutocomplete.querySelectorAll('.suggestion-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
+
+    // Add new vendor functionality
+    function addNewVendor(event) {
+        event.preventDefault();
+        const vendorName = document.getElementById('newVendorName').value.trim();
+        
+        if (!vendorName) {
+            alert('Please enter a vendor name');
+            return;
+        }
+
+        fetch('/vendors', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ name: vendorName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new vendor to select dropdown
+                const option = document.createElement('option');
+                option.value = data.vendor.id;
+                option.textContent = data.vendor.name;
+                vendorSelect.appendChild(option);
+                
+                // Select the new vendor
+                vendorSelect.value = data.vendor.id;
+                vendorInput.value = data.vendor.name;
+                
+                // Clear input
+                document.getElementById('newVendorName').value = '';
+                
+                // Show success message
+                alert('Vendor added successfully!');
+            } else {
+                alert(data.message || 'Error adding vendor');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding vendor');
+        });
+    }
 </script>
 @endsection

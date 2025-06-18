@@ -144,7 +144,7 @@ class AssetController extends Controller
                 'model' => 'required|string|max:255',
                 'serial_number' => 'required|string|max:255|unique:assets,serial_number',
                 'specification' => 'required|string',
-                'vendor' => 'required|string|max:255',
+                'vendor_id' => 'required|exists:vendors,id',
                 'purchase_date' => 'required|date',
                 'warranty_period' => 'required|date|after_or_equal:purchase_date',
                 'purchase_price' => 'required|numeric|min:0',
@@ -215,7 +215,8 @@ class AssetController extends Controller
     public function create()
     {
         $categories = \App\Models\Category::all();
-        return view('add-asset', compact('categories'));
+        $vendors = \App\Models\Vendor::orderBy('name')->get();
+        return view('add-asset', compact('categories', 'vendors'));
     }
 
     public function qrList()
@@ -327,7 +328,8 @@ class AssetController extends Controller
     public function edit(Asset $asset)
     {
         $categories = Category::all();
-        return view('assets.edit', compact('asset', 'categories'));
+        $vendors = \App\Models\Vendor::orderBy('name')->get();
+        return view('assets.edit', compact('asset', 'categories', 'vendors'));
     }
 
     public function update(Request $request, Asset $asset)
@@ -341,7 +343,7 @@ class AssetController extends Controller
             'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
             'model' => 'required',
             'specification' => 'required',
-            'vendor' => 'required',
+            'vendor_id' => 'required|exists:vendors,id',
             'purchase_date' => 'required|date',
             'warranty_period' => 'required|date',
         ];
@@ -510,7 +512,7 @@ class AssetController extends Controller
                 'status' => $asset->status,
                 'model' => $asset->model,
                 'specification' => $asset->specification,
-                'vendor' => $asset->vendor,
+                'vendor_id' => $asset->vendor_id,
                 'purchase_date' => $asset->purchase_date,
                 'warranty_period' => $asset->warranty_period,
                 'purchase_price' => $asset->purchase_price,

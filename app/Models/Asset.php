@@ -16,7 +16,7 @@ class Asset extends Model
         'status',
         'model',
         'specification',
-        'vendor',
+        'vendor_id',
         'purchase_date',
         'warranty_period',
         'lifespan',
@@ -48,9 +48,14 @@ class Asset extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
     public function repairRequests()
     {
-        return $this->hasMany(RepairRequest::class);
+        return $this->hasMany(RepairRequest::class, 'serial_number', 'serial_number');
     }
 
     // Add this new method

@@ -195,6 +195,16 @@
                     </a>
                     @endif
 
+                    <!-- Vendors - Hide from secretary -->
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    <a href="{{ route('vendors.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('vendors.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>Vendors</span>
+                    </a>
+                    @endif
+
                     <!-- Assets -->
                     @if(auth()->check() && auth()->user()->group_id !== 3)
                     <!-- Asset List -->
@@ -326,6 +336,9 @@
                             </a>
                             <a href="{{ route('reports.location') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.location') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
                                 Location-Based Report
+                            </a>
+                            <a href="{{ route('reports.vendor-analysis') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.vendor-analysis') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
+                                Vendor Analysis
                             </a>
                             <a href="{{ route('reports.disposal-history') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.disposal-history') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
                                 Disposal History

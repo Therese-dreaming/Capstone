@@ -1,4 +1,17 @@
 <div class="mb-8">
+    @php
+        // Get status changes and apply pagination
+        $statusChanges = collect($history['STATUS'] ?? []);
+        $perPage = 10;
+        $currentPage = request()->get('status_page', 1);
+        $totalRecords = $statusChanges->count();
+        $totalPages = ceil($totalRecords / $perPage);
+        
+        // Get records for current page
+        $offset = ($currentPage - 1) * $perPage;
+        $currentPageRecords = $statusChanges->slice($offset, $perPage);
+    @endphp
+
     <div class="overflow-x-auto shadow-md rounded-lg hidden md:block">
         <table class="min-w-full divide-y divide-gray-200 bg-white">
             <thead class="bg-gray-50">
@@ -11,7 +24,7 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($history['STATUS'] ?? [] as $record)
+                @forelse($currentPageRecords as $record)
                 <tr class="hover:bg-gray-50 transition-colors duration-200">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $record->created_at->format('M d, Y') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -98,8 +111,8 @@
     <!-- Status Change Cards (Mobile View) -->
     <div class="md:hidden">
         @php
-            // Sort status changes by date (newest first)
-            $sortedStatusChanges = collect($history['STATUS'] ?? [])->sortByDesc('created_at');
+            // Sort status changes by date (newest first) and apply pagination
+            $sortedStatusChanges = $currentPageRecords->sortByDesc('created_at');
 
             // Group status changes by year and month
             $statusChangesByYearMonth = $sortedStatusChanges->groupBy(function($record) {
@@ -203,4 +216,38 @@
             </div>
         @endforelse
     </div>
+
+    <!-- Pagination Controls -->
+    @if($totalPages > 1)
+        <div class="mt-8 flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+                Showing {{ ($currentPage - 1) * $perPage + 1 }} to {{ min($currentPage * $perPage, $totalRecords) }} of {{ $totalRecords }} status changes
+            </div>
+            <div class="flex items-center space-x-2">
+                @if($currentPage > 1)
+                    <a href="?status_page={{ $currentPage - 1 }}&page={{ request()->get('page') }}&start_date={{ request()->get('start_date') }}&end_date={{ request()->get('end_date') }}&active_tab={{ request()->get('active_tab', 'timeline') }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                        Previous
+                    </a>
+                @endif
+                
+                @for($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++)
+                    @if($i == $currentPage)
+                        <span class="px-3 py-2 text-sm font-medium text-white bg-red-800 border border-red-800 rounded-md">
+                            {{ $i }}
+                        </span>
+                    @else
+                        <a href="?status_page={{ $i }}&page={{ request()->get('page') }}&start_date={{ request()->get('start_date') }}&end_date={{ request()->get('end_date') }}&active_tab={{ request()->get('active_tab', 'timeline') }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                            {{ $i }}
+                        </a>
+                    @endif
+                @endfor
+                
+                @if($currentPage < $totalPages)
+                    <a href="?status_page={{ $currentPage + 1 }}&page={{ request()->get('page') }}&start_date={{ request()->get('start_date') }}&end_date={{ request()->get('end_date') }}&active_tab={{ request()->get('active_tab', 'timeline') }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                        Next
+                    </a>
+                @endif
+            </div>
+        </div>
+    @endif
 </div>

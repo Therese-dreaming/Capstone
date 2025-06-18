@@ -46,11 +46,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                                <input type="date" id="start_date" class="w-full h-9 px-3 py-0 text-sm rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring focus:ring-red-200">
+                                <input type="date" id="start_date" value="{{ request()->get('start_date') }}" class="w-full h-9 px-3 py-0 text-sm rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring focus:ring-red-200">
                             </div>
                             <div>
                                 <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                                <input type="date" id="end_date" class="w-full h-9 px-3 py-0 text-sm rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring focus:ring-red-200">
+                                <input type="date" id="end_date" value="{{ request()->get('end_date') }}" class="w-full h-9 px-3 py-0 text-sm rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring focus:ring-red-200">
                             </div>
                             <div class="flex items-end">
                                 <button onclick="filterTimeline()" class="bg-red-800 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out mr-2">
@@ -166,8 +166,38 @@
                         // Sort all events by date (newest first)
                         $allEvents = $allEvents->sortByDesc('date');
                         
+                        // Apply date filtering if provided
+                        $startDate = request()->get('start_date');
+                        $endDate = request()->get('end_date');
+                        
+                        if ($startDate || $endDate) {
+                            $allEvents = $allEvents->filter(function($event) use ($startDate, $endDate) {
+                                $eventDate = $event['date'];
+                                
+                                if ($startDate && $eventDate < \Carbon\Carbon::parse($startDate)->startOfDay()) {
+                                    return false;
+                                }
+                                
+                                if ($endDate && $eventDate > \Carbon\Carbon::parse($endDate)->endOfDay()) {
+                                    return false;
+                                }
+                                
+                                return true;
+                            });
+                        }
+                        
+                        // Paginate the events (10 per page)
+                        $perPage = 10;
+                        $currentPage = request()->get('page', 1);
+                        $totalEvents = $allEvents->count();
+                        $totalPages = ceil($totalEvents / $perPage);
+                        
+                        // Get events for current page
+                        $offset = ($currentPage - 1) * $perPage;
+                        $currentPageEvents = $allEvents->slice($offset, $perPage);
+                        
                         // Group events by year and month for the timeline
-                        $eventsByYearMonth = $allEvents->groupBy(function($event) {
+                        $eventsByYearMonth = $currentPageEvents->groupBy(function($event) {
                             return $event['date']->format('Y-m');
                         });
                     @endphp
@@ -337,6 +367,40 @@
                             </div>
                         @endforelse
                     </div>
+                    
+                    <!-- Pagination Controls -->
+                    @if($totalPages > 1)
+                        <div class="mt-8 flex items-center justify-between">
+                            <div class="text-sm text-gray-700">
+                                Showing {{ ($currentPage - 1) * $perPage + 1 }} to {{ min($currentPage * $perPage, $totalEvents) }} of {{ $totalEvents }} events
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                @if($currentPage > 1)
+                                    <a href="?page={{ $currentPage - 1 }}&start_date={{ request()->get('start_date') }}&end_date={{ request()->get('end_date') }}&active_tab={{ request()->get('active_tab', 'timeline') }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                                        Previous
+                                    </a>
+                                @endif
+                                
+                                @for($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++)
+                                    @if($i == $currentPage)
+                                        <span class="px-3 py-2 text-sm font-medium text-white bg-red-800 border border-red-800 rounded-md">
+                                            {{ $i }}
+                                        </span>
+                                    @else
+                                        <a href="?page={{ $i }}&start_date={{ request()->get('start_date') }}&end_date={{ request()->get('end_date') }}&active_tab={{ request()->get('active_tab', 'timeline') }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                                            {{ $i }}
+                                        </a>
+                                    @endif
+                                @endfor
+                                
+                                @if($currentPage < $totalPages)
+                                    <a href="?page={{ $currentPage + 1 }}&start_date={{ request()->get('start_date') }}&end_date={{ request()->get('end_date') }}&active_tab={{ request()->get('active_tab', 'timeline') }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 transition-colors">
+                                        Next
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -433,26 +497,12 @@
 
 <script>
     function showTab(tabId) {
-        // Hide all tab contents
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.add('hidden');
-        });
-
-        // Remove active class and all styling from all tabs
-        document.querySelectorAll('.tab-button').forEach(tab => {
-            tab.classList.remove('active');
-            tab.classList.remove('bg-red-800');
-            tab.classList.remove('!text-white');
-            tab.classList.remove('!font-bold');
-        });
-
-        // Show selected tab content and activate tab with all styles
-        document.getElementById(tabId).classList.remove('hidden');
-        const activeTab = document.querySelector(`[data-tab="${tabId}"]`);
-        activeTab.classList.add('active');
-        activeTab.classList.add('bg-red-800');
-        activeTab.classList.add('!text-white');
-        activeTab.classList.add('!font-bold');
+        // Update URL with active_tab parameter and redirect
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('active_tab', tabId);
+        
+        // Redirect to the new URL so the server can see the parameter
+        window.location.href = currentUrl.toString();
     }
 
     // Date filtering functionality
@@ -466,104 +516,69 @@
             return;
         }
         
-        const startDate = startDateInput ? new Date(startDateInput + 'T00:00:00') : null;
-        const endDate = endDateInput ? new Date(endDateInput + 'T23:59:59.999') : null; // Set to end of day
+        // Build the filter URL with page reset to 1
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('page', '1');
         
-        const timelineItems = document.querySelectorAll('.timeline-item');
-        const timelineMonths = document.querySelectorAll('.timeline-month');
-        let visibleItemsCount = 0;
-        
-        timelineItems.forEach(item => {
-            const dateText = item.querySelector('.timeline-item-date').textContent;
-            // Extract just the date part (before the hyphen and time)
-            const datePart = dateText.split(' - ')[0];
-            const itemDate = new Date(datePart);
-            
-            let showItem = true;
-            
-            // Special case for single day search
-            if (startDateInput && endDateInput && startDateInput === endDateInput) {
-                // Compare only year, month, and day components
-                const itemYear = itemDate.getFullYear();
-                const itemMonth = itemDate.getMonth();
-                const itemDay = itemDate.getDate();
-                
-                const searchDate = new Date(startDateInput);
-                const searchYear = searchDate.getFullYear();
-                const searchMonth = searchDate.getMonth();
-                const searchDay = searchDate.getDate();
-                
-                showItem = (itemYear === searchYear && itemMonth === searchMonth && itemDay === searchDay);
-            } else {
-                // Normal date range comparison
-                if (startDate && startDate > itemDate) {
-                    showItem = false;
-                }
-                
-                if (endDate && endDate < itemDate) {
-                    showItem = false;
-                }
-            }
-            
-            if (showItem) {
-                item.style.display = '';
-                visibleItemsCount++;
-            } else {
-                item.style.display = 'none';
-            }
-        });
-        
-        // Hide month headers if all items in that month are hidden
-        timelineMonths.forEach(month => {
-            const monthItems = month.querySelectorAll('.timeline-item');
-            const visibleMonthItems = Array.from(monthItems).filter(item => item.style.display !== 'none');
-            
-            if (visibleMonthItems.length === 0) {
-                month.style.display = 'none';
-            } else {
-                month.style.display = '';
-            }
-        });
-        
-        // Show message if no items match filter
-        const noResultsMessage = document.getElementById('no-filter-results');
-        if (noResultsMessage) {
-            noResultsMessage.remove();
+        if (startDateInput) {
+            currentUrl.searchParams.set('start_date', startDateInput);
+        } else {
+            currentUrl.searchParams.delete('start_date');
         }
         
-        if (visibleItemsCount === 0) {
-            const message = document.createElement('div');
-            message.id = 'no-filter-results';
-            message.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 text-center mt-4';
-            message.innerHTML = '<p class="text-gray-500">No records found for the selected date range.</p>';
-            document.getElementById('timeline-container').appendChild(message);
+        if (endDateInput) {
+            currentUrl.searchParams.set('end_date', endDateInput);
+        } else {
+            currentUrl.searchParams.delete('end_date');
         }
+        
+        // Preserve active_tab parameter
+        const activeTab = currentUrl.searchParams.get('active_tab') || 'timeline';
+        currentUrl.searchParams.set('active_tab', activeTab);
+        
+        // Redirect to filtered URL
+        window.location.href = currentUrl.toString();
     }
     
     function resetFilter() {
-        document.getElementById('start_date').value = '';
-        document.getElementById('end_date').value = '';
+        // Reset to page 1 and clear all filters
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.delete('page');
+        currentUrl.searchParams.delete('start_date');
+        currentUrl.searchParams.delete('end_date');
         
-        const timelineItems = document.querySelectorAll('.timeline-item');
-        const timelineMonths = document.querySelectorAll('.timeline-month');
+        // Preserve active_tab parameter
+        const activeTab = currentUrl.searchParams.get('active_tab') || 'timeline';
+        currentUrl.searchParams.set('active_tab', activeTab);
         
-        timelineItems.forEach(item => {
-            item.style.display = '';
-        });
-        
-        timelineMonths.forEach(month => {
-            month.style.display = '';
-        });
-        
-        const noResultsMessage = document.getElementById('no-filter-results');
-        if (noResultsMessage) {
-            noResultsMessage.remove();
-        }
+        window.location.href = currentUrl.toString();
     }
 
-    // Ensure the initial tab is properly styled
+    // Initialize the correct tab based on URL parameter
     document.addEventListener('DOMContentLoaded', function() {
-        showTab('timeline');
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('active_tab') || 'timeline';
+        
+        // Hide all tab contents first
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        // Remove active class and all styling from all tabs
+        document.querySelectorAll('.tab-button').forEach(tab => {
+            tab.classList.remove('active');
+            tab.classList.remove('bg-red-800');
+            tab.classList.remove('!text-white');
+            tab.classList.remove('!font-bold');
+        });
+
+        // Show selected tab content and activate tab with all styles
+        document.getElementById(activeTab).classList.remove('hidden');
+        const activeTabElement = document.querySelector(`[data-tab="${activeTab}"]`);
+        activeTabElement.classList.add('active');
+        activeTabElement.classList.add('bg-red-800');
+        activeTabElement.classList.add('!text-white');
+        activeTabElement.classList.add('!font-bold');
     });
 </script>
 @endsection

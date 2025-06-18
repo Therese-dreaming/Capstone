@@ -6,6 +6,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\VendorController;
 use App\Http\Controllers\RepairRequestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MaintenanceController;
@@ -70,6 +71,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::resource('users', UserController::class);
         Route::resource('categories', CategoryController::class);
+        Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
+        Route::post('/vendors/add-new', [VendorController::class, 'addNewVendor'])->name('vendors.addNew');
+        Route::get('/vendors/get-all', [VendorController::class, 'getAllVendors'])->name('vendors.getAll');
+        Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
         Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
         
         // Reports routes - Admin only
@@ -81,6 +86,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/asset-history/{asset}', [ReportController::class, 'assetHistory'])->name('reports.asset-history');
             Route::get('/procurement-history', [ReportController::class, 'procurementHistory'])->name('reports.procurement-history');
             Route::get('/disposal-history', [ReportController::class, 'disposalHistory'])->name('reports.disposal-history');
+            Route::get('/vendor-analysis', [ReportController::class, 'vendorAnalysis'])->name('reports.vendor-analysis');
+            Route::get('/vendor-details/{vendor}', [ReportController::class, 'vendorDetails'])->name('reports.vendor-details');
             Route::get('/asset-history/{asset}/maintenance', [ReportController::class, 'assetMaintenanceHistory'])->name('reports.asset-maintenance-history');
             Route::get('/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])->name('reports.asset-repair-history');
             Route::get('/lab-usage', [ReportController::class, 'labUsage'])->name('reports.lab-usage');

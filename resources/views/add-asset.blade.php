@@ -133,10 +133,32 @@
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                                    <input type="text" name="vendor" value="{{ old('vendor') }}" class="w-full p-2 border @error('vendor') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
-                                    @error('vendor')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
+                                    <div class="border border-gray-300 rounded-md bg-gray-50 p-4">
+                                        <!-- Add New Vendor Input -->
+                                        <div class="mb-4 flex space-x-2">
+                                            <div class="flex-1 relative">
+                                                <input type="text" id="newVendorName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white" placeholder="Enter new vendor name">
+                                                <!-- Autocomplete dropdown -->
+                                                <div id="vendorAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto hidden">
+                                                    <!-- Suggestions will be populated here -->
+                                                </div>
+                                            </div>
+                                            <button type="button" onclick="addNewVendor(event)" class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+                                                Add Vendor
+                                            </button>
+                                        </div>
+                                        <select name="vendor_id" required class="w-full px-3 py-2 border @error('vendor_id') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">
+                                            <option value="">Select Vendor</option>
+                                            @foreach($vendors as $vendor)
+                                            <option value="{{ $vendor->id }}" {{ old('vendor_id') == $vendor->id ? 'selected' : '' }}>
+                                                {{ $vendor->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @error('vendor_id')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
 
                                 <div>
@@ -298,7 +320,7 @@
                 , 'model': 'Model'
                 , 'serial_number': 'Serial Number'
                 , 'specification': 'Specification'
-                , 'vendor': 'Vendor'
+                , 'vendor_id': 'Vendor'
                 , 'purchase_date': 'Purchase Date'
                 , 'warranty_period': 'Warranty Period'
                 , 'purchase_price': 'Purchase Price'
@@ -484,5 +506,259 @@
             otherLocation.required = true;
         }
     });
+
+    // Add new vendor function
+    function addNewVendor(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const newVendorName = document.getElementById('newVendorName');
+        const name = newVendorName.value.trim();
+
+        if (!name) {
+            showNotification('Please enter a vendor name', 'error');
+            return false;
+        }
+
+        // Send AJAX request to add new vendor
+        fetch('{{ route("vendors.addNew") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                name: name
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new vendor to the dropdown
+                const vendorSelect = document.querySelector('select[name="vendor_id"]');
+                const newOption = document.createElement('option');
+                newOption.value = data.vendor.id;
+                newOption.textContent = data.vendor.name;
+                vendorSelect.appendChild(newOption);
+                
+                // Select the new vendor
+                vendorSelect.value = data.vendor.id;
+                
+                // Clear the input field
+                newVendorName.value = '';
+                
+                // Hide autocomplete dropdown
+                hideVendorAutocomplete();
+                
+                showNotification(data.message, 'success');
+            } else {
+                showNotification(data.message || 'Failed to add vendor', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to add vendor. Please try again.', 'error');
+        });
+
+        return false;
+    }
+
+    // Vendor autocomplete functionality
+    let vendorAutocompleteTimeout;
+    const vendorInput = document.getElementById('newVendorName');
+    const vendorAutocomplete = document.getElementById('vendorAutocomplete');
+
+    vendorInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Clear previous timeout
+        clearTimeout(vendorAutocompleteTimeout);
+        
+        if (query.length < 2) {
+            hideVendorAutocomplete();
+            return;
+        }
+
+        // Debounce the search
+        vendorAutocompleteTimeout = setTimeout(() => {
+            searchVendors(query);
+        }, 300);
+    });
+
+    // Handle keyboard navigation
+    vendorInput.addEventListener('keydown', function(e) {
+        const suggestions = vendorAutocomplete.querySelectorAll('.suggestion-item');
+        const activeSuggestion = vendorAutocomplete.querySelector('.suggestion-item.active');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!activeSuggestion) {
+                suggestions[0]?.classList.add('active');
+            } else {
+                const nextSuggestion = activeSuggestion.nextElementSibling;
+                if (nextSuggestion) {
+                    activeSuggestion.classList.remove('active');
+                    nextSuggestion.classList.add('active');
+                }
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (activeSuggestion) {
+                const prevSuggestion = activeSuggestion.previousElementSibling;
+                if (prevSuggestion) {
+                    activeSuggestion.classList.remove('active');
+                    prevSuggestion.classList.add('active');
+                } else {
+                    activeSuggestion.classList.remove('active');
+                }
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeSuggestion) {
+                selectVendorSuggestion(activeSuggestion);
+            } else {
+                addNewVendor();
+            }
+        } else if (e.key === 'Escape') {
+            hideVendorAutocomplete();
+        }
+    });
+
+    // Hide autocomplete when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!vendorInput.contains(e.target) && !vendorAutocomplete.contains(e.target)) {
+            hideVendorAutocomplete();
+        }
+    });
+
+    function searchVendors(query) {
+        fetch(`{{ route('vendors.getAll') }}?search=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(vendors => {
+            displayVendorSuggestions(vendors, query);
+        })
+        .catch(error => {
+            console.error('Error searching vendors:', error);
+        });
+    }
+
+    function displayVendorSuggestions(vendors, query) {
+        vendorAutocomplete.innerHTML = '';
+        
+        if (vendors.length === 0) {
+            vendorAutocomplete.innerHTML = `
+                <div class="px-3 py-2 text-sm text-gray-500">
+                    No vendors found. Press Enter to add "${query}" as a new vendor.
+                </div>
+            `;
+        } else {
+            vendors.forEach(vendor => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-100';
+                suggestionItem.textContent = vendor.name;
+                suggestionItem.addEventListener('click', () => selectVendorSuggestion(suggestionItem, vendor));
+                vendorAutocomplete.appendChild(suggestionItem);
+            });
+        }
+        
+        vendorAutocomplete.classList.remove('hidden');
+    }
+
+    function selectVendorSuggestion(suggestionItem, vendor = null) {
+        if (vendor) {
+            // Vendor exists, select it in the dropdown
+            const vendorSelect = document.querySelector('select[name="vendor_id"]');
+            vendorSelect.value = vendor.id;
+            vendorInput.value = vendor.name;
+        } else {
+            // Use the text content as the vendor name
+            const vendorName = suggestionItem.textContent;
+            vendorInput.value = vendorName;
+        }
+        
+        hideVendorAutocomplete();
+    }
+
+    function hideVendorAutocomplete() {
+        vendorAutocomplete.classList.add('hidden');
+        vendorAutocomplete.querySelectorAll('.suggestion-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
+
+    // Add notification function
+    function showNotification(message, type) {
+        // Create notification element if it doesn't exist
+        let notification = document.getElementById('notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'notification';
+            notification.className = 'fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg hidden';
+            document.body.appendChild(notification);
+        }
+
+        notification.textContent = message;
+        notification.classList.remove('hidden', 'bg-green-100', 'border-green-400', 'text-green-700', 'bg-red-100', 'border-red-400', 'text-red-700');
+
+        if (type === 'success') {
+            notification.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
+        } else {
+            notification.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+        }
+
+        // Show notification
+        notification.classList.remove('hidden');
+
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 3000);
+    }
 </script>
+
+<style>
+    * {
+        font-family: 'Poppins', sans-serif !important;
+    }
+
+    .menu-open {
+        display: block !important;
+    }
+
+    /* Mobile sidebar */
+    @media (max-width: 768px) {
+        .sidebar-open {
+            transform: translateX(0) !important;
+        }
+
+        .sidebar-overlay {
+            display: block !important;
+            opacity: 0.5 !important;
+        }
+
+        .content-shifted {
+            margin-left: 0 !important;
+        }
+    }
+
+    /* Autocomplete styling */
+    .suggestion-item.active {
+        background-color: #f3f4f6;
+        font-weight: 500;
+    }
+
+    .suggestion-item:hover {
+        background-color: #f9fafb;
+    }
+
+</style>
 @endsection
