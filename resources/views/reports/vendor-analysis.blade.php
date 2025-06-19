@@ -58,51 +58,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="bg-red-50 rounded-lg p-6 shadow-lg border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-tools text-3xl text-red-800"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-red-800">Avg Repair Rate</p>
-                                <p class="text-2xl font-bold text-red-900">{{ number_format($overallStats['average_repair_rate'], 1) }}%</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reliability Distribution -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-red-50 rounded-lg p-6 relative overflow-hidden shadow-lg border border-gray-200">
-                        <div class="relative z-10">
-                            <h3 class="text-3xl font-bold text-red-900">{{ $overallStats['high_reliability_vendors'] }}</h3>
-                            <p class="text-red-800">High Reliability Vendors</p>
-                        </div>
-                        <div class="absolute right-4 top-4 text-red-200 opacity-20">
-                            <i class="fas fa-star text-6xl"></i>
-                        </div>
-                    </div>
-
-                    <div class="bg-red-50 rounded-lg p-6 relative overflow-hidden shadow-lg border border-gray-200">
-                        <div class="relative z-10">
-                            <h3 class="text-3xl font-bold text-red-900">{{ $overallStats['medium_reliability_vendors'] }}</h3>
-                            <p class="text-red-800">Medium Reliability Vendors</p>
-                        </div>
-                        <div class="absolute right-4 top-4 text-red-200 opacity-20">
-                            <i class="fas fa-star-half-alt text-6xl"></i>
-                        </div>
-                    </div>
-
-                    <div class="bg-red-50 rounded-lg p-6 relative overflow-hidden shadow-lg border border-gray-200">
-                        <div class="relative z-10">
-                            <h3 class="text-3xl font-bold text-red-900">{{ $overallStats['low_reliability_vendors'] }}</h3>
-                            <p class="text-red-800">Low Reliability Vendors</p>
-                        </div>
-                        <div class="absolute right-4 top-4 text-red-200 opacity-20">
-                            <i class="fas fa-exclamation-triangle text-6xl"></i>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Vendor Performance Table -->
@@ -115,7 +70,7 @@
                                 <i class="fas fa-search text-gray-400"></i>
                             </div>
                             <input type="text" id="vendorSearch" placeholder="Search vendors..." 
-                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                   class="pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500">
                         </div>
                         @endif
                     </div>
@@ -141,10 +96,9 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assets</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repair Rate</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Repairs</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operational Rate</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reliability Rating</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disposed Assets</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Age (Years)</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
@@ -163,68 +117,17 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         ₱{{ number_format($vendor['total_value'], 2) }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($vendor['repair_rate'] <= 10)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {{ $vendor['repair_rate'] }}%
-                                            </span>
-                                        @elseif($vendor['repair_rate'] <= 25)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                {{ $vendor['repair_rate'] }}%
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                {{ $vendor['repair_rate'] }}%
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($vendor['completion_rate'] >= 90)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {{ $vendor['completion_rate'] }}%
-                                            </span>
-                                        @elseif($vendor['completion_rate'] >= 75)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                {{ $vendor['completion_rate'] }}%
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                {{ $vendor['completion_rate'] }}%
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($vendor['operational_rate'] >= 80)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {{ $vendor['operational_rate'] }}%
-                                            </span>
-                                        @elseif($vendor['operational_rate'] >= 60)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                {{ $vendor['operational_rate'] }}%
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                {{ $vendor['operational_rate'] }}%
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($vendor['reliability_rating'] == 'High')
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <i class="fas fa-star mr-1"></i>High
-                                            </span>
-                                        @elseif($vendor['reliability_rating'] == 'Medium')
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                <i class="fas fa-star-half-alt mr-1"></i>Medium
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                <i class="fas fa-exclamation-triangle mr-1"></i>Low
-                                            </span>
-                                        @endif
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $vendor['total_repairs'] }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $vendor['average_age'] }}
+                                        {{ number_format($vendor['completion_rate'], 1) }}%
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold">
+                                        {{ $vendor['disposed_count'] }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ $vendor['average_age'] ?? '-' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <button type="button" 
@@ -262,8 +165,12 @@
         </div>
     </div>
 </div>
+@endsection
 
 <script>
+// Pass the correct vendor details base URL from Laravel to JS
+const vendorDetailsBaseUrl = "{{ url('reports/vendor-details') }}";
+
 document.addEventListener('DOMContentLoaded', function() {
     // Vendor search functionality using vanilla JavaScript
     const vendorSearch = document.getElementById('vendorSearch');
@@ -284,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function showVendorDetails(vendorId, vendorName) {
+window.showVendorDetails = function(vendorId, vendorName) {
     console.log('Showing details for vendor:', vendorId, vendorName); // Debug log
     
     // Show loading state
@@ -299,8 +206,8 @@ function showVendorDetails(vendorId, vendorName) {
     // Show modal
     document.getElementById('vendorDetailsModal').classList.remove('hidden');
     
-    // Load vendor details via AJAX
-    fetch('/reports/vendor-details/' + vendorId)
+    // Load vendor details via AJAX (use correct base URL)
+    fetch(vendorDetailsBaseUrl + '/' + vendorId)
         .then(response => response.text())
         .then(data => {
             document.getElementById('vendorDetailsContent').innerHTML = data;
@@ -331,7 +238,7 @@ function showVendorDetails(vendorId, vendorName) {
                 </div>
             `;
         });
-}
+};
 
 function closeVendorDetails() {
     document.getElementById('vendorDetailsModal').classList.add('hidden');
@@ -352,8 +259,9 @@ document.addEventListener('keydown', function(e) {
         closeVendorDetails();
     }
 });
+</script>
 
-// Print styles
+<style>
 @media print {
     .print\\:hidden {
         display: none !important;
@@ -379,5 +287,4 @@ document.addEventListener('keydown', function(e) {
         border: 1px solid #e5e7eb !important;
     }
 }
-</script>
-@endsection 
+</style>

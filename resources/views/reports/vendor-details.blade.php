@@ -3,8 +3,8 @@
     <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-lg p-6 text-white">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold">{{ $vendor->name }}</h2>
-                <p class="text-red-100">Detailed Performance Analysis</p>
+                <h2 class="text-2xl font-bold text-red-800">{{ $vendor->name }}</h2>
+                <p class="text-red-800">Detailed Performance Analysis</p>
             </div>
             <div class="text-right">
                 <div class="text-3xl font-bold">{{ $totalAssets }}</div>
@@ -50,18 +50,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-clock text-2xl text-yellow-600"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500">Pending</p>
-                    <p class="text-lg font-semibold text-gray-900">{{ $pendingRepairs }}</p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Performance Metrics -->
@@ -69,44 +57,18 @@
         <div class="bg-white rounded-lg border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
             <div class="space-y-4">
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-medium text-gray-700">Repair Rate</span>
-                        <span class="text-sm font-semibold text-gray-900">{{ number_format($repairRate, 1) }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-{{ $repairRate <= 10 ? 'green' : ($repairRate <= 25 ? 'yellow' : 'red') }}-600 h-2 rounded-full" style="width: {{ min($repairRate, 100) }}%"></div>
-                    </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">Total Repairs</span>
+                    <span class="text-lg font-semibold text-gray-900">{{ $totalRepairs }}</span>
                 </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-medium text-gray-700">Completion Rate</span>
-                        <span class="text-sm font-semibold text-gray-900">{{ number_format($completionRate, 1) }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-{{ $completionRate >= 90 ? 'green' : ($completionRate >= 75 ? 'yellow' : 'red') }}-600 h-2 rounded-full" style="width: {{ $completionRate }}%"></div>
-                    </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">Completion Rate</span>
+                    <span class="text-lg font-semibold text-gray-900">{{ number_format($completionRate, 1) }}%</span>
                 </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-medium text-gray-700">Operational Rate</span>
-                        <span class="text-sm font-semibold text-gray-900">{{ number_format($operationalRate, 1) }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-{{ $operationalRate >= 80 ? 'green' : ($operationalRate >= 60 ? 'yellow' : 'red') }}-600 h-2 rounded-full" style="width: {{ $operationalRate }}%"></div>
-                    </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-700">Disposed Assets</span>
+                    <span class="text-lg font-semibold text-red-600">{{ $disposedCount }}</span>
                 </div>
-            </div>
-
-            <div class="mt-6">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
-                    {{ $reliabilityRating == 'High' ? 'bg-green-100 text-green-800' : 
-                       ($reliabilityRating == 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                    <i class="fas fa-{{ $reliabilityRating == 'High' ? 'star' : ($reliabilityRating == 'Medium' ? 'star-half-alt' : 'exclamation-triangle') }} mr-1"></i>
-                    {{ $reliabilityRating }} Reliability
-                </span>
             </div>
         </div>
 

@@ -92,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])->name('reports.asset-repair-history');
             Route::get('/lab-usage', [ReportController::class, 'labUsage'])->name('reports.lab-usage');
             Route::get('/lab-usage/export', [ReportController::class, 'exportLabUsageToPdf'])->name('reports.lab-usage.export');
+            Route::get('/reports/vendor-details/{vendorId}', [\App\Http\Controllers\VendorController::class, 'vendorDetails']);
         });
     });
 
@@ -103,7 +104,7 @@ Route::middleware(['auth'])->group(function () {
         })->name('check.auth');
 
         // Employee Performance Report - Accessible to both admin and staff
-        Route::get('/reports/employee-performance', [ReportController::class, 'employeePerformance'])->name('reports.employee-performance');
+        Route::get('/employee-performance', [ReportController::class, 'employeePerformance'])->name('employee-performance');
 
         // Asset management routes
         Route::resource('assets', AssetController::class);
@@ -173,6 +174,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/scanner', function () {
             return view('scanner');
         })->name('scanner');
+
+        // Identify Asset for Repair Request
+        Route::get('/repair-requests/{id}/identify-asset', [App\Http\Controllers\RepairRequestController::class, 'showIdentifyAssetForm'])->name('repair.identify-asset');
+        Route::post('/repair-requests/{id}/save-serial-number', [App\Http\Controllers\RepairRequestController::class, 'saveSerialNumber'])->name('repair.save-serial-number');
     });
 
     // Secretary Dashboard route (group_id = 2)

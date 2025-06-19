@@ -922,4 +922,48 @@ class RepairRequestController extends Controller
         return redirect()->route('repair-requests.show', $repairRequest->id)
             ->with('success', 'Repair request has been completed successfully.');
     }
+
+    /**
+     * Show the asset identification page for a repair request.
+     */
+    public function showIdentifyAssetForm($id)
+    {
+        $repairRequest = RepairRequest::findOrFail($id);
+        $serialNumber = $repairRequest->serial_number;
+        return view('repair-identify', compact('repairRequest', 'serialNumber'));
+    }
+
+    /**
+     * Save the serial number for a repair request and set asset status to UNDER REPAIR.
+     */
+    public function saveSerialNumber(Request $request, $id)
+    {
+        $request->validate([
+            'serial_number' => 'required|string',
+        ]);
+
+        $repairRequest = RepairRequest::findOrFail($id);
+        $serialNumber = trim($request->serial_number);
+        $repairRequest->serial_number = $serialNumber;
+        $repairRequest->save();
+
+        $asset = Asset::where('serial_number', $serialNumber)->first();
+        if ($asset && $asset->status !== 'UNDER REPAIR') {
+            $oldStatus = $asset->status;
+            $asset->update(['status' => 'UNDER REPAIR']);
+            AssetHistory::create([
+                'asset_id' => $asset->id,
+                'change_type' => 'STATUS',
+                'old_value' => $oldStatus,
+                'new_value' => 'UNDER REPAIR',
+                'remarks' => 'Asset status changed to UNDER REPAIR due to repair request asset identification',
+                'changed_by' => auth()->id(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Serial number saved and asset status updated to UNDER REPAIR.'
+        ]);
+    }
 }

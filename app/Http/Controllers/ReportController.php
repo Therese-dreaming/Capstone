@@ -180,12 +180,6 @@ class ReportController extends Controller
                 'total_vendors' => $vendors->count(),
                 'total_assets' => 0,
                 'total_value' => 0,
-                'average_repair_rate' => 0,
-                'average_completion_rate' => 0,
-                'average_operational_rate' => 0,
-                'high_reliability_vendors' => 0,
-                'medium_reliability_vendors' => 0,
-                'low_reliability_vendors' => 0
             ];
 
             return view('reports.vendor-analysis', compact('overallStats'))->with('noData', true);
@@ -205,69 +199,38 @@ class ReportController extends Controller
                 return $asset->repairRequests->where('status', 'completed')->count();
             });
             
-            $pendingRepairs = $assets->sum(function($asset) {
-                return $asset->repairRequests->where('status', 'pending')->count();
-            });
-
-            // Calculate asset status distribution
-            $inUseAssets = $assets->where('status', 'IN USE')->count();
-            $underRepairAssets = $assets->where('status', 'UNDER REPAIR')->count();
-            $pulledOutAssets = $assets->where('status', 'PULLED OUT')->count();
             $disposedAssets = $assets->where('status', 'DISPOSED')->count();
 
-            // Calculate reliability metrics
-            $repairRate = $totalAssets > 0 ? ($totalRepairs / $totalAssets) * 100 : 0;
+            // Calculate completion rate
             $completionRate = $totalRepairs > 0 ? ($completedRepairs / $totalRepairs) * 100 : 0;
-            $operationalRate = $totalAssets > 0 ? ($inUseAssets / $totalAssets) * 100 : 0;
 
-            // Calculate average asset age and lifespan
-            $averageAge = $assets->avg(function($asset) {
-                return Carbon::parse($asset->purchase_date)->diffInYears(now());
-            });
-
-            $averageLifespan = $assets->avg('calculated_lifespan');
-
-            // Determine vendor reliability rating
-            $reliabilityRating = $this->calculateReliabilityRating($repairRate, $completionRate, $operationalRate);
+            // Calculate average age (years)
+            $averageAge = null;
+            if ($totalAssets > 0) {
+                $totalYears = $assets->sum(function($asset) {
+                    return \Carbon\Carbon::parse($asset->purchase_date)->diffInYears(now());
+                });
+                $averageAge = round($totalYears / $totalAssets, 1);
+            }
 
             return [
                 'id' => $vendor->id,
                 'name' => $vendor->name,
                 'total_assets' => $totalAssets,
                 'total_value' => $totalValue,
-                'average_asset_value' => $totalAssets > 0 ? $totalValue / $totalAssets : 0,
                 'total_repairs' => $totalRepairs,
                 'completed_repairs' => $completedRepairs,
-                'pending_repairs' => $pendingRepairs,
-                'repair_rate' => round($repairRate, 2),
                 'completion_rate' => round($completionRate, 2),
-                'operational_rate' => round($operationalRate, 2),
-                'reliability_rating' => $reliabilityRating,
-                'average_age' => round($averageAge, 1),
-                'average_lifespan' => round($averageLifespan, 1),
-                'status_distribution' => [
-                    'in_use' => $inUseAssets,
-                    'under_repair' => $underRepairAssets,
-                    'pulled_out' => $pulledOutAssets,
-                    'disposed' => $disposedAssets
-                ]
+                'disposed_count' => $disposedAssets,
+                'average_age' => $averageAge,
             ];
         });
-
-        // Sort by reliability rating (best first)
-        $vendorAnalysis = $vendorAnalysis->sortByDesc('reliability_rating');
 
         // Calculate overall statistics
         $overallStats = [
             'total_vendors' => $vendors->count(),
             'total_assets' => $vendorsWithAssets->sum(function($vendor) { return $vendor->assets->count(); }),
             'total_value' => $vendorsWithAssets->sum(function($vendor) { return $vendor->assets->sum('purchase_price'); }),
-            'average_repair_rate' => $vendorAnalysis->avg('repair_rate'),
-            'average_completion_rate' => $vendorAnalysis->avg('completion_rate'),
-            'average_operational_rate' => $vendorAnalysis->avg('operational_rate'),
-            'high_reliability_vendors' => $vendorAnalysis->where('reliability_rating', 'High')->count(),
-            'medium_reliability_vendors' => $vendorAnalysis->where('reliability_rating', 'Medium')->count(),
-            'low_reliability_vendors' => $vendorAnalysis->where('reliability_rating', 'Low')->count()
         ];
 
         return view('reports.vendor-analysis', compact('vendorAnalysis', 'overallStats'));
@@ -318,9 +281,7 @@ class ReportController extends Controller
             return $asset->repairRequests->where('status', 'completed')->count();
         });
         
-        $pendingRepairs = $assets->sum(function($asset) {
-            return $asset->repairRequests->where('status', 'pending')->count();
-        });
+        $disposedCount = $assets->where('status', 'DISPOSED')->count();
         
         // Recent repair requests (last 10)
         $recentRepairs = collect();
@@ -356,53 +317,30 @@ class ReportController extends Controller
             })->count()
         ];
         
-        // Performance metrics
-        $repairRate = $totalAssets > 0 ? ($totalRepairs / $totalAssets) * 100 : 0;
+        // Completion rate
         $completionRate = $totalRepairs > 0 ? ($completedRepairs / $totalRepairs) * 100 : 0;
-        $operationalRate = $totalAssets > 0 ? ($statusBreakdown['in_use'] / $totalAssets) * 100 : 0;
         
-        // Reliability rating
-        $reliabilityRating = $this->calculateReliabilityRating($repairRate, $completionRate, $operationalRate);
-        
-        // Recommendations
-        $recommendations = $this->generateVendorRecommendations($vendor, $repairRate, $completionRate, $operationalRate, $statusBreakdown);
-        
-        return view('reports.vendor-details', compact(
-            'vendor', 'assets', 'totalAssets', 'totalValue', 'averageValue',
-            'statusBreakdown', 'categoryBreakdown', 'totalRepairs', 'completedRepairs',
-            'pendingRepairs', 'recentRepairs', 'ageGroups', 'repairRate',
-            'completionRate', 'operationalRate', 'reliabilityRating', 'recommendations'
-        ));
-    }
+        // Recommendations (simple example)
+        $recommendations = [];
+        if ($completionRate < 75) $recommendations[] = 'Improve repair completion rate for better reliability.';
+        if ($disposedCount > 0) $recommendations[] = 'Investigate reasons for asset disposal and implement measures to reduce disposal rate.';
+        if (empty($recommendations)) $recommendations[] = 'Vendor performance is within optimal range.';
 
-    private function calculateReliabilityRating($repairRate, $completionRate, $operationalRate)
-    {
-        // Weighted scoring system
-        $score = 0;
-        
-        // Lower repair rate is better (30% weight)
-        if ($repairRate <= 10) $score += 30;
-        elseif ($repairRate <= 25) $score += 20;
-        elseif ($repairRate <= 50) $score += 10;
-        else $score += 0;
-        
-        // Higher completion rate is better (30% weight)
-        if ($completionRate >= 90) $score += 30;
-        elseif ($completionRate >= 75) $score += 20;
-        elseif ($completionRate >= 50) $score += 10;
-        else $score += 0;
-        
-        // Higher operational rate is better (40% weight)
-        if ($operationalRate >= 80) $score += 40;
-        elseif ($operationalRate >= 60) $score += 30;
-        elseif ($operationalRate >= 40) $score += 20;
-        elseif ($operationalRate >= 20) $score += 10;
-        else $score += 0;
-        
-        // Determine rating based on total score
-        if ($score >= 80) return 'High';
-        elseif ($score >= 50) return 'Medium';
-        else return 'Low';
+        return view('reports.vendor-details', compact(
+            'vendor',
+            'totalAssets',
+            'totalValue',
+            'averageValue',
+            'statusBreakdown',
+            'categoryBreakdown',
+            'totalRepairs',
+            'completedRepairs',
+            'completionRate',
+            'disposedCount',
+            'recentRepairs',
+            'ageGroups',
+            'recommendations'
+        ));
     }
 
     public function labUsage(Request $request)
@@ -716,11 +654,6 @@ class ReportController extends Controller
 
     public function employeePerformance(Request $request)
     {
-        // Check if user is a secretary
-        if (auth()->user()->group_id !== 2) {
-            abort(403, 'Unauthorized action.');
-        }
-
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -861,7 +794,7 @@ class ReportController extends Controller
         // Generate analysis
         $analysis = $this->generatePerformanceAnalysis($employeeStats, $overallStats);
 
-        return view('reports.employee-performance', compact('employeeStats', 'overallStats', 'analysis'));
+        return view('employee-performance', compact('employeeStats', 'overallStats', 'analysis'));
     }
 
     private function generatePerformanceAnalysis($employeeStats, $overallStats)

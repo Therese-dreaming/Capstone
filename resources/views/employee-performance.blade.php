@@ -13,7 +13,7 @@
                 </div>
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto items-start sm:items-center">
                     <!-- Date Filter Form -->
-                    <form action="{{ route('reports.employee-performance') }}" method="GET" class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto" id="dateFilterForm">
+                    <form action="{{ route('employee-performance') }}" method="GET" class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto" id="dateFilterForm">
                         <div class="flex items-center space-x-2 w-full sm:w-auto">
                             <label for="start_date" class="text-sm font-medium text-gray-600 flex-shrink-0">From:</label>
                             <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" 
