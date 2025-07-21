@@ -96,10 +96,8 @@
     <div class="flex pt-16">
         <!-- Sidebar -->
         @auth
-        <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 pt-10 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+        <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
             <div class="p-4 pl-8">
-                <!-- Added pl-8 for more right padding -->
-                <h2 class="text-sm text-[#D5999B] mb-8">MENU</h2>
                 <nav class="space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
                     @auth
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [3]))

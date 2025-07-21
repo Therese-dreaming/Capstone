@@ -213,7 +213,7 @@
 
     function completeAllTasks(labNumber, date) {
         const form = document.getElementById('completeForm');
-        form.action = `/maintenance/${labNumber}/date/${date}/complete-all`;
+        form.action = `{{ url('maintenance') }}/${labNumber}/date/${date}/complete-all`;
         form.setAttribute('data-lab', labNumber); // Add this line to set the lab number
         document.getElementById('completionModal').classList.remove('hidden');
     }
@@ -224,7 +224,7 @@
 
     function markAsComplete(maintenanceId, labNumber) {
         const form = document.getElementById('completeForm');
-        form.action = `/maintenance/${maintenanceId}/complete`;
+        form.action = `{{ url('maintenance') }}/${maintenanceId}/complete`;
         form.setAttribute('data-lab', labNumber);
 
         // Reset form and hide issue details
@@ -241,13 +241,13 @@
 
     function cancelMaintenance(id) {
         const form = document.getElementById('cancelForm');
-        form.action = `/maintenance/${id}`;
+        form.action = `{{ url('maintenance') }}/${id}`;
         document.getElementById('cancellationModal').classList.remove('hidden');
     }
 
     function cancelAllTasks(labNumber, date) {
         const form = document.getElementById('cancelForm');
-        form.action = `/maintenance/${labNumber}/date/${date}/cancel-all`;
+        form.action = `{{ url('maintenance') }}/${labNumber}/date/${date}/cancel-all`;
         document.getElementById('cancellationModal').classList.remove('hidden');
     } 
 </script>

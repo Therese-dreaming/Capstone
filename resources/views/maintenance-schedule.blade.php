@@ -158,7 +158,7 @@
             assetSelect.innerHTML = '<option value="">Loading assets...</option>';
 
             // Fetch assets for the selected laboratory
-            fetch(`/maintenance/get-lab-assets/${labNumber}`, {
+            fetch(`{{ url('maintenance/get-lab-assets') }}/${labNumber}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',

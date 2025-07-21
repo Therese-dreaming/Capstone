@@ -6,7 +6,7 @@
 
     @if(auth()->user()->group_id == 1)
     <div class="mb-6">
-        <a href="{{ route('employee-performance') }}" class="block bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow px-6 py-4 text-center text-lg transition-colors">
+        <a href="{{ route('employee-performance') }}" class="block bg-red-800 text-white rounded-lg shadow px-6 py-4 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 text-center text-lg">
             <i class="fas fa-users mr-2"></i>Employee Performance Report
         </a>
     </div>
