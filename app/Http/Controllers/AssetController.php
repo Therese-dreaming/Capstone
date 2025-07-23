@@ -159,6 +159,12 @@ class AssetController extends Controller
                 $validated['photo'] = $photoPath;
             }
 
+            // Handle acquisition document upload
+            if ($request->hasFile('acquisition_document')) {
+                $acquisitionPath = $request->file('acquisition_document')->store('assets/acquisition_docs', 'public');
+                $validated['acquisition_document'] = $acquisitionPath;
+            }
+
             // Create the asset first
             $asset = Asset::create($validated);
 
@@ -368,6 +374,12 @@ class AssetController extends Controller
                 $validated['location'] = $request->location_select;
             }
             $fieldsToUpdate[] = 'location';
+        }
+
+        // Handle acquisition document update
+        if ($request->hasFile('acquisition_document')) {
+            $acquisitionPath = $request->file('acquisition_document')->store('assets/acquisition_docs', 'public');
+            $asset->acquisition_document = $acquisitionPath;
         }
 
         // Check for duplicate serial number only if it's being updated

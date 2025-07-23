@@ -362,6 +362,10 @@
                             <input type="checkbox" checked data-column="15" class="column-toggle">
                             <span>End of Lifespan Date</span>
                         </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="16" class="column-toggle">
+                            <span>Acquisition Doc</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -389,6 +393,7 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Warranty Period</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Lifespan (Yrs)</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">End of Lifespan Date</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Acquisition Doc</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -451,7 +456,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->model ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->specification ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->vendor ?? '' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->vendor->name ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}
                         </td>
@@ -487,6 +492,16 @@
                             @endswitch">
                                 {{ \Carbon\Carbon::parse($asset->end_of_life_date)->format('M d, Y') }}
                             </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($asset->acquisition_document)
+                                <a href="{{ asset('storage/' . $asset->acquisition_document) }}" target="_blank" class="text-blue-600 hover:underline flex items-center">
+                                    <svg class="w-5 h-5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    View
+                                </a>
+                            @else
+                                <span class="text-gray-400">N/A</span>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

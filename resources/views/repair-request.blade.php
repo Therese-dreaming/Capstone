@@ -71,7 +71,37 @@
                 <!-- Location (full width) -->
                 <div class="flex flex-col md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                    <input type="text" name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter the location (e.g., Room 101, Library, Admin Office)" required>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Building Selection -->
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Building</label>
+                            <select name="building" id="building" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" required>
+                                <option value="">Select Building</option>
+                                <option value="Urbano Building">Urbano Building</option>
+                                <option value="St Joseph Building">St Joseph Building</option>
+                                <option value="Carlos Building">Carlos Building</option>
+                                <option value="Msgr. Sunga Building">Msgr. Sunga Building</option>
+                                <option value="Gabriel Building">Gabriel Building</option>
+                                <option value="Bishop San Diego Building">Bishop San Diego Building</option>
+                                <option value="Smiths Building">Smiths Building</option>
+                            </select>
+                        </div>
+
+                        <!-- Floor Selection -->
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Floor</label>
+                            <select name="floor" id="floor" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" required>
+                                <option value="">Select Floor</option>
+                            </select>
+                        </div>
+
+                        <!-- Room Input -->
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Room</label>
+                            <input type="text" name="room" id="room" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Enter room number/name" required>
+                        </div>
+                    </div>
+                    <input type="hidden" name="location" id="location">
                 </div>
 
                 <!-- Equipment -->
@@ -342,6 +372,50 @@
             cameraInput.value = '';
             fileInput.value = '';
         }
-    </script>
+
+const buildingFloors = {
+    'Urbano Building': ['1st Floor', '2nd Floor', '3rd Floor'],
+    'St Joseph Building': ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor'],
+    'Carlos Building': ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor'],
+    'Msgr. Sunga Building': ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor'],
+    'Gabriel Building': ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor', '6th Floor (Gym)', '7th Floor (ESDO)', 'Chapel Floor'],
+    'Bishop San Diego Building': ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor', '6th Floor', '7th Floor'],
+    'Smiths Building': ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor']
+};
+
+document.getElementById('building').addEventListener('change', function() {
+    const floorSelect = document.getElementById('floor');
+    const selectedBuilding = this.value;
+    
+    // Clear existing options
+    floorSelect.innerHTML = '<option value="">Select Floor</option>';
+    
+    if (selectedBuilding && buildingFloors[selectedBuilding]) {
+        buildingFloors[selectedBuilding].forEach(floor => {
+            const option = document.createElement('option');
+            option.value = floor;
+            option.textContent = floor;
+            floorSelect.appendChild(option);
+        });
+    }
+    updateLocation();
+});
+
+document.getElementById('floor').addEventListener('change', updateLocation);
+document.getElementById('room').addEventListener('input', updateLocation);
+
+function updateLocation() {
+    const building = document.getElementById('building').value;
+    const floor = document.getElementById('floor').value;
+    const room = document.getElementById('room').value;
+    const locationInput = document.getElementById('location');
+    
+    if (building && floor && room) {
+        locationInput.value = `${building} - ${floor} - ${room}`;
+    } else {
+        locationInput.value = '';
+    }
+}
+</script>
 </div>
 @endsection

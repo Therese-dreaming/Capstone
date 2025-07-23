@@ -105,19 +105,25 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
     let html5QrCode;
+    let scannerActive = false; // To track camera scanner state
+
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize QR Code Scanner
         html5QrCode = new Html5Qrcode("reader");
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
         html5QrCode.start(
             { facingMode: "environment" },
             config,
             onScanSuccess,
             onScanFailure
-        ).catch((err) => {
+        ).then(() => {
+            scannerActive = true;
+        }).catch((err) => {
             console.error("Error starting QR scanner:", err);
             showMessage("Failed to start QR scanner. Please check camera permissions.", "error");
         });
+
         // Handle form submission via AJAX
         document.getElementById('identifyForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -134,9 +140,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message, 'success');
-                    // Optionally disable the form or update UI
-                    form.querySelector('button[type="submit"]').disabled = true;
+                    window.location.href = '/repair-status';
                 } else {
                     showMessage(data.message || 'Failed to save serial number', 'error');
                 }
@@ -146,88 +150,104 @@
             });
         });
     });
+
     function onScanSuccess(decodedText, decodedResult) {
+        // Stop the camera scanner if it's active
+        if (scannerActive) {
+            html5QrCode.stop().then(() => {
+                scannerActive = false;
+            }).catch(err => console.error("Error stopping scanner", err));
+        }
+
         try {
             let serial = '';
             try {
+                // First, try to parse as JSON (our standard format)
                 const qrData = JSON.parse(decodedText);
-                if (!qrData.serial_number) throw new Error('Invalid QR code format: serial number not found');
+                if (!qrData.serial_number) throw new Error('Invalid QR code format: serial_number key not found');
                 serial = qrData.serial_number;
             } catch (jsonError) {
+                // If JSON parsing fails, check if it's a raw serial number
                 if (typeof decodedText === 'string' && decodedText.trim() && /^[A-Z0-9-]+$/i.test(decodedText.trim())) {
                     serial = decodedText.trim();
                 } else {
-                    throw jsonError;
+                    // If it's not a valid raw serial, re-throw the original error
+                    throw new Error('QR code is not in the expected JSON format or a valid raw serial number.');
                 }
             }
+
+            // Update UI with the found serial number
             document.getElementById('serialNumber').value = serial;
-            document.getElementById('scanResult').innerHTML = `Scanned Serial Number: ${serial}`;
+            document.getElementById('scanResult').innerHTML = `Scanned Serial Number: <b>${serial}</b>`;
             document.getElementById('currentSerialValue').textContent = serial;
             showMessage('QR code scanned successfully!', 'success');
-            html5QrCode.stop();
+
         } catch (error) {
-            showMessage('Invalid QR code format. Please scan a valid asset QR code.', 'error');
+            showMessage(error.message, 'error');
         }
     }
+
     function onScanFailure(error) {
-        // Silent
+        // This is called frequently, so we keep it silent to avoid spamming the user/console.
     }
-    function handleQRCodeFileUpload(input) {
+
+    async function handleQRCodeFileUpload(input) {
         const file = input.files[0];
         if (!file) return;
+
+        // Basic file validation
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
         if (!allowedTypes.includes(file.type)) {
             showMessage('Please upload a valid image file (JPG, PNG, GIF, BMP)', 'error');
             input.value = '';
             return;
         }
-        const maxSize = 5 * 1024 * 1024;
+        const maxSize = 5 * 1024 * 1024; // 5MB
         if (file.size > maxSize) {
             showMessage('File size too large. Maximum size is 5MB.', 'error');
             input.value = '';
             return;
         }
+
         const fileInfo = document.getElementById('fileInfo');
         const fileName = document.getElementById('fileName');
         fileName.textContent = file.name;
         fileInfo.classList.remove('hidden');
+
+        // Stop the camera scanner before processing the file
+        if (scannerActive) {
+            showMessage('Processing image...', 'success');
+            await html5QrCode.stop();
+            scannerActive = false;
+        }
+
+        // Scan the file
         html5QrCode.scanFile(file, true)
             .then(decodedText => {
-                let serial = '';
-                try {
-                    const qrData = JSON.parse(decodedText);
-                    if (!qrData.serial_number) throw new Error('Invalid QR code format: serial number not found');
-                    serial = qrData.serial_number;
-                } catch (error) {
-                    if (typeof decodedText === 'string' && decodedText.trim() && /^[A-Z0-9-]+$/i.test(decodedText.trim())) {
-                        serial = decodedText.trim();
-                    } else {
-                        showMessage('Invalid QR code format. Please upload a valid asset QR code image.', 'error');
-                        input.value = '';
-                        fileInfo.classList.add('hidden');
-                        return;
-                    }
-                }
-                document.getElementById('serialNumber').value = serial;
-                document.getElementById('scanResult').innerHTML = `Uploaded QR Code - Serial Number: ${serial}`;
-                document.getElementById('currentSerialValue').textContent = serial;
-                showMessage('QR code uploaded and decoded successfully!', 'success');
-                input.value = '';
+                onScanSuccess(decodedText);
             })
             .catch(error => {
-                showMessage('Could not decode QR code from the uploaded image. Please check if the image contains a valid QR code.', 'error');
+                console.error('QR code parsing error:', error);
+                showMessage('Could not find a valid QR code in the image.', 'error');
                 input.value = '';
                 fileInfo.classList.add('hidden');
+                // Restart camera scanner if it was stopped
+                if (!scannerActive) {
+                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+                        .then(() => { scannerActive = true; });
+                }
             });
     }
+
     function showMessage(message, type = 'success') {
         const messageContainer = document.getElementById('message-container');
         const messageDiv = document.createElement('div');
-        messageDiv.className = type === 'success' 
-            ? 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700' 
+        messageDiv.className = type === 'success'
+            ? 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700'
             : 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
         messageDiv.innerHTML = `<strong class="font-bold">${type === 'success' ? 'Success!' : 'Error!'}</strong> <span class="block sm:inline">${message}</span>`;
-        messageContainer.innerHTML = '';
+        messageContainer.innerHTML = ''; // Clear previous messages
         messageContainer.appendChild(messageDiv);
         setTimeout(() => { messageDiv.remove(); }, 5000);
     }

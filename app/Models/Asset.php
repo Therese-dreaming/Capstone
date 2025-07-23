@@ -29,7 +29,8 @@ class Asset extends Model
         'calculated_lifespan',
         'remaining_life',
         'end_of_life_date',
-        'life_status'
+        'life_status',
+        'acquisition_document',
     ];
 
     protected $casts = [

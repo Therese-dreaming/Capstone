@@ -33,10 +33,12 @@ class RepairRequestController extends Controller
 
     public function store(Request $request)
     {
-        $rules = [
+        $validated = $request->validate([
             'date_called' => 'required|date',
             'time_called' => 'required',
-            'location' => 'required|string',
+            'building' => 'required|string|max:255',
+            'floor' => 'required|string|max:255',
+            'room' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'equipment' => 'required|string',
             'serial_number' => 'nullable|string',
@@ -44,9 +46,7 @@ class RepairRequestController extends Controller
             'status' => 'required|in:pending,urgent',
             'technician_id' => 'nullable|exists:users,id',
             'photo' => 'nullable|string|max:5242880' // 5MB base64 string
-        ];
-
-        $request->validate($rules);
+        ]);
 
         // If user is secretary, force technician_id to be their own ID
         if (auth()->user()->group_id === 2) {
@@ -93,7 +93,9 @@ class RepairRequestController extends Controller
         }
 
         // Check for existing active repair request
-        $existingRequest = RepairRequest::where('location', $request->location)
+        $existingRequest = RepairRequest::where('building', $request->building)
+            ->where('floor', $request->floor)
+            ->where('room', $request->room)
             ->where('equipment', $request->equipment)
             ->whereNotIn('status', ['completed', 'disposed', 'cancelled'])
             ->first();
@@ -137,7 +139,9 @@ class RepairRequestController extends Controller
             'ticket_number' => $ticketNumber,
             'date_called' => $request->date_called,
             'time_called' => $request->time_called,
-            'location' => $request->location,
+            'building' => $request->building,
+            'floor' => $request->floor,
+            'room' => $request->room,
             'category_id' => $request->category_id,
             'equipment' => $request->equipment,
             'serial_number' => $serialNumber,
@@ -245,7 +249,9 @@ class RepairRequestController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('ticket_number', 'like', '%' . $searchTerm . '%')
                   ->orWhere('equipment', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('location', 'like', '%' . $searchTerm . '%');
+                  ->orWhere('building', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('floor', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('room', 'like', '%' . $searchTerm . '%');
             });
         }
 
@@ -462,7 +468,7 @@ class RepairRequestController extends Controller
                     // Create non-registered asset record for unknown assets
                     NonRegisteredAsset::create([
                         'equipment_name' => $repairRequest->equipment,
-                        'location' => $repairRequest->location,
+                        'location' => $repairRequest->building . ' - ' . $repairRequest->floor . ' - ' . $repairRequest->room,
                         'category' => $repairRequest->category_id ? Category::find($repairRequest->category_id)->name : null,
                         'findings' => $request->findings,
                         'remarks' => $request->remarks,
@@ -896,7 +902,7 @@ class RepairRequestController extends Controller
         if ($validated['status'] === 'pulled_out' && empty($repairRequest->serial_number)) {
             NonRegisteredAsset::create([
                 'equipment_name' => $repairRequest->equipment,
-                'location' => $repairRequest->location,
+                'location' => $repairRequest->building . ' - ' . $repairRequest->floor . ' - ' . $repairRequest->room,
                 'category' => $repairRequest->category_id ? Category::find($repairRequest->category_id)->name : null,
                 'findings' => $validated['findings'],
                 'remarks' => $validated['remarks'],
@@ -929,6 +935,9 @@ class RepairRequestController extends Controller
     public function showIdentifyAssetForm($id)
     {
         $repairRequest = RepairRequest::findOrFail($id);
+        if ($repairRequest->serial_number) {
+            return redirect('/repair-status');
+        }
         $serialNumber = $repairRequest->serial_number;
         return view('repair-identify', compact('repairRequest', 'serialNumber'));
     }

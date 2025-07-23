@@ -34,7 +34,8 @@
                         </span>
                     </div>
                     <div class="text-sm text-gray-500">
-                        <p><span class="font-medium">Location:</span> {{ $asset->location }}</p>
+                        <p><span class="font-semibold">Location:</span> 
+                        {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
                         <p><span class="font-medium">Ticket Number:</span> {{ $asset->ticket_number }}</p>
                         <p><span class="font-medium">Pulled Out By:</span> {{ $asset->pulled_out_by }}</p>
                         <p><span class="font-medium">Date:</span> {{ $asset->pulled_out_at->format('M d, Y H:i') }}</p>

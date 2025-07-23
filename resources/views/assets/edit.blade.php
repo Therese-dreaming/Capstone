@@ -219,6 +219,40 @@
                     </div>
                 </div>
 
+                <!-- Acquisition Document Upload -->
+                <div class="bg-gray-50 p-6 rounded-lg mt-8">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Acquisition Document</h3>
+                    @if($asset->acquisition_document)
+                        <div class="mb-2">
+                            <a href="{{ asset('storage/' . $asset->acquisition_document) }}" target="_blank" class="text-blue-600 hover:underline flex items-center">
+                                <svg class="w-5 h-5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                View Current Document
+                            </a>
+                        </div>
+                    @endif
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-gray-400" id="acquisitionDropzone">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="acquisition_document" class="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
+                                    <span>Upload a file</span>
+                                    <input id="acquisition_document" name="acquisition_document" type="file" class="sr-only" accept="image/*,application/pdf" max="2048" onchange="validateAcquisitionFileSize(this)">
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">PNG, JPG, GIF, PDF up to 2MB</p>
+                        </div>
+                    </div>
+                    <!-- Acquisition Document Preview -->
+                    <div class="mt-4 hidden" id="acquisitionPreviewContainer">
+                        <img id="acquisitionPreview" src="#" alt="Acquisition Document Preview" class="max-w-full h-40 object-cover rounded-md shadow">
+                        <button type="button" id="removeAcquisitionButton" class="mt-2 text-red-600 hover:text-red-800 text-sm">Remove Document</button>
+                    </div>
+                    <p class="text-xs text-red-500 mt-1 hidden" id="acquisitionFileError"></p>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
                     <a href="{{ route('assets.index') }}" class="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
@@ -400,6 +434,84 @@
             console.error('Error:', error);
             alert('Error adding vendor');
         });
+    }
+
+    // Add JS for acquisition document preview and validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const acquisitionInput = document.getElementById('acquisition_document');
+        const acquisitionPreviewContainer = document.getElementById('acquisitionPreviewContainer');
+        const acquisitionPreview = document.getElementById('acquisitionPreview');
+        const removeAcquisitionButton = document.getElementById('removeAcquisitionButton');
+        const acquisitionDropzone = document.getElementById('acquisitionDropzone');
+
+        acquisitionInput.addEventListener('change', function() {
+            previewAcquisition(this.files[0]);
+        });
+
+        acquisitionDropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            acquisitionDropzone.classList.add('border-blue-400');
+        });
+        acquisitionDropzone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            acquisitionDropzone.classList.remove('border-blue-400');
+        });
+        acquisitionDropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            acquisitionDropzone.classList.remove('border-blue-400');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                acquisitionInput.files = files;
+                previewAcquisition(files[0]);
+            }
+        });
+        acquisitionDropzone.addEventListener('click', function() {
+            acquisitionInput.click();
+        });
+        function previewAcquisition(file) {
+            if (file) {
+                if (file.type === 'application/pdf') {
+                    acquisitionPreview.src = 'https://cdn.jsdelivr.net/gh/stephentian/pdf-icon@main/pdf-icon.png';
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        acquisitionPreview.src = e.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+                acquisitionPreviewContainer.classList.remove('hidden');
+                validateAcquisitionFileSize(acquisitionInput);
+            } else {
+                acquisitionPreview.src = '#';
+                acquisitionPreviewContainer.classList.add('hidden');
+                acquisitionInput.value = '';
+                document.getElementById('acquisitionFileError').classList.add('hidden');
+                document.querySelector('button[type="submit"]').disabled = false;
+            }
+        }
+        removeAcquisitionButton.addEventListener('click', function() {
+            previewAcquisition(null);
+        });
+        validateAcquisitionFileSize(acquisitionInput);
+    });
+    function validateAcquisitionFileSize(input) {
+        const fileError = document.getElementById('acquisitionFileError');
+        const submitButton = document.querySelector('button[type="submit"]');
+        if (input.files && input.files[0]) {
+            const fileSize = input.files[0].size / 1024 / 1024;
+            if (fileSize > 2) {
+                fileError.textContent = 'File size exceeds 2MB limit. Please choose a smaller file.';
+                fileError.classList.remove('hidden');
+                input.value = '';
+                submitButton.disabled = true;
+            } else {
+                fileError.classList.add('hidden');
+                submitButton.disabled = false;
+            }
+        }
     }
 </script>
 @endsection

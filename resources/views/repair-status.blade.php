@@ -78,7 +78,9 @@
                             {{ $request->equipment }}
                         @endif
                     </div>
-                    <div class="text-sm"><span class="font-semibold">Location:</span> {{ $request->location }}</div>
+                    <div class="text-sm"><span class="font-semibold">Location:</span> 
+                        {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+                    </div>
                     <div class="text-sm"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
                     <div class="text-sm"><span class="font-semibold">Time Started:</span> 
                         @if($request->time_started)

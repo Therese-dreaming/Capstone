@@ -45,7 +45,10 @@
                         </span>
                     </div>
                     <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Equipment:</span> {{ $request->equipment }}</div>
-                    <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Location:</span> {{ $request->location }}</div>
+                    <div class="text-sm text-gray-700 mb-1">
+                        <span class="font-semibold">Location:</span> 
+                        {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+                    </div>
                     <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
                     <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Issue:</span> {{ $request->issue }}</div>
                     <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Status:</span> {{ ucfirst(str_replace('_', ' ', $request->status)) }}</div>
@@ -248,4 +251,4 @@
         });
     });
 </script>
-@endsection 
+@endsection

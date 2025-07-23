@@ -17,7 +17,7 @@ class AssetSeeder extends Seeder
             'model' => 'HP ProDesk 400 G7',
             'serial_number' => 'HP123456',
             'specification' => 'Intel i5, 8GB RAM, 256GB SSD',
-            'vendor' => 'HP Philippines',
+            'vendor_id' => 1, // Reference to the first vendor seeded by VendorSeeder
             'purchase_date' => '2023-01-15',
             'warranty_period' => '2026-01-15',
             'calculated_lifespan' => 5,  // Changed from 'lifespan' to 'calculated_lifespan'

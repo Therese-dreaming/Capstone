@@ -55,9 +55,11 @@
                     </select>
                     <select id="locationFilter" onchange="filterHistory()" class="h-9 w-full md:w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
                         <option value="">All Locations</option>
-                        @foreach($completedRequests->pluck('location')->unique() as $location)
-                        @if($location)
-                        <option value="{{ $location }}">{{ $location }}</option>
+                        @foreach($completedRequests->pluck('building', 'floor', 'room')->unique() as $request)
+                        @if($request->building && $request->floor && $request->room)
+                        <option value="{{ $request->building }}-{{ $request->floor }}-{{ $request->room }}">
+                            {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+                        </option>
                         @endif
                         @endforeach
                     </select>
@@ -95,7 +97,9 @@
                 <div class="text-sm text-gray-700"><span class="font-semibold">Completion Date:</span> {{ \Carbon\Carbon::parse($request->completed_at)->format('M j, Y (g:i A)') }}</div>
                 <div class="text-sm"><span class="font-semibold">Item:</span> <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a></div>
                 <div class="text-sm"><span class="font-semibold">Ticket No.:</span> {{ $request->ticket_number }}</div>
-                <div class="text-sm"><span class="font-semibold">Location:</span> {{ $request->location }}</div>
+                <div class="text-sm"><span class="font-semibold">Location:</span> 
+                    {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+                </div>
                 <div class="text-sm"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
                 @if(!in_array($request->creator->group_id ?? null, [1, 2]))
                 <div class="text-sm"><span class="font-semibold">Caller's Name:</span> {{ $request->caller_name ?: 'N/A' }}</div>

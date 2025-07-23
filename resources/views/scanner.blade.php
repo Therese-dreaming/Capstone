@@ -193,7 +193,7 @@
     
     function setupFileInput() {
         const fileInput = document.getElementById('qr-file-selector');
-        fileInput.addEventListener('change', event => {
+        fileInput.addEventListener('change', async event => {
             if (event.target.files.length === 0) {
                 return;
             }
@@ -202,10 +202,10 @@
             
             // Stop the camera scanner before processing file
             if (html5QrCode && scannerActive) {
-                html5QrCode.stop();
-                scannerActive = false;
                 updateScannerStatus('processing', 'Processing image...');
                 stopScanAnimation();
+                await html5QrCode.stop();
+                scannerActive = false;
             }
             
             // Scan the file
@@ -316,7 +316,7 @@
             
             // Create the link to asset list with search, including /capstone/public
             const serialLink = document.getElementById('serial-link');
-            serialLink.href = `${protocol}//${host}/capstone/public/assets?search=${qrData.serial_number}`;
+            serialLink.href = `${protocol}//${host}/assets?search=${qrData.serial_number}`;
             serialLink.textContent = qrData.serial_number;
             
             // Show results

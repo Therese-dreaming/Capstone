@@ -83,7 +83,9 @@
                         @endif
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <p class="text-xs font-medium text-gray-500 uppercase">Location</p>
-                            <p class="location text-gray-900 text-sm font-medium mt-1"></p>
+                            <p class="location text-gray-900 text-sm font-medium mt-1">
+                                {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+                            </p>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -536,4 +538,4 @@
     window.showImageModal = showImageModal;
     window.closeImageModal = closeImageModal;
 </script>
-@endsection 
+@endsection
