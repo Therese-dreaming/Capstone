@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Maintenance;
+use Illuminate\Support\Str;
 
 class Asset extends Model
 {
@@ -12,7 +13,7 @@ class Asset extends Model
     protected $fillable = [
         'name',
         'category_id',
-        'location',
+        'location_id',
         'status',
         'model',
         'specification',
@@ -44,6 +45,31 @@ class Asset extends Model
         'disposal_date',
     ];
 
+    // Boot method to automatically generate serial number
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($asset) {
+            if (empty($asset->serial_number)) {
+                $asset->serial_number = self::generateUniqueSerialNumber();
+            }
+        });
+    }
+
+    // Generate unique serial number
+    public static function generateUniqueSerialNumber()
+    {
+        do {
+            // Generate a serial number with format: ASST-YYYYMMDD-XXXX
+            $date = date('Ymd');
+            $random = strtoupper(Str::random(4));
+            $serialNumber = "ASST-{$date}-{$random}";
+        } while (self::where('serial_number', $serialNumber)->exists());
+
+        return $serialNumber;
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -54,6 +80,11 @@ class Asset extends Model
         return $this->belongsTo(Vendor::class);
     }
 
+    public function location()
+    {
+        return $this->belongsTo(Location::class);
+    }
+
     public function repairRequests()
     {
         return $this->hasMany(RepairRequest::class, 'serial_number', 'serial_number');
@@ -62,18 +93,23 @@ class Asset extends Model
     // Add this new method
     public function maintenances()
     {
-        $labNumber = substr($this->location, -3); // Extract lab number from location
-        return Maintenance::where('lab_number', $labNumber)
+        if (!$this->location_id) {
+            return Maintenance::whereRaw('1=0'); // Return empty query if no location
+        }
+        
+        return Maintenance::where('location_id', $this->location_id)
             ->where('status', 'completed')
             ->where(function($query) {
                 $query->whereNull('excluded_assets')
-                    ->orWhereRaw('NOT JSON_CONTAINS(COALESCE(excluded_assets, "[]"), ?)', [(string) $this->id]);
+                    ->orWhere(function($q) {
+                        $q->whereJsonDoesntContain('excluded_assets', $this->id);
+                    });
             });
     }
 
     // Add this accessor
     public function getLabNumberAttribute()
     {
-        return substr($this->location, -3);
+        return $this->location ? $this->location->room_number : null;
     }
 }

@@ -15,6 +15,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\LabScheduleController;
 use App\Http\Controllers\NonRegisteredAssetController;
+use App\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Route;
 
 // Root route and public routes should be OUTSIDE any middleware
@@ -71,6 +72,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::resource('users', UserController::class);
         Route::resource('categories', CategoryController::class);
+        Route::resource('locations', LocationController::class);
+        Route::get('/locations-all', [LocationController::class, 'getAll'])->name('locations.getAll');
         Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
         Route::post('/vendors/add-new', [VendorController::class, 'addNewVendor'])->name('vendors.addNew');
         Route::get('/vendors/get-all', [VendorController::class, 'getAllVendors'])->name('vendors.getAll');
@@ -122,19 +125,20 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/maintenance/{id}', [MaintenanceController::class, 'destroy'])->name('maintenance.destroy');
         Route::get('/maintenance/lab/{labNumber}/edit', [MaintenanceController::class, 'editLab'])->name('maintenance.editLab');
         Route::patch('/maintenance/lab/{labNumber}', [MaintenanceController::class, 'updateLab'])->name('maintenance.updateLab');
-        Route::get('/maintenance/{lab}/date/{date}/edit', [MaintenanceController::class, 'editByDate'])->name('maintenance.editByDate');
-        Route::patch('/maintenance/{lab}/date/{date}', [MaintenanceController::class, 'updateByDate'])->name('maintenance.updateByDate');
-        Route::post('/maintenance/{lab}/date/{date}/task', [MaintenanceController::class, 'addTask'])->name('maintenance.addTask');
+        Route::get('/maintenance/{locationId}/date/{date}/edit', [MaintenanceController::class, 'editByDate'])->name('maintenance.editByDate');
+        Route::patch('/maintenance/{locationId}/date/{date}', [MaintenanceController::class, 'updateByDate'])->name('maintenance.updateByDate');
+        Route::post('/maintenance/{locationId}/date/{date}/task', [MaintenanceController::class, 'addTask'])->name('maintenance.addTask');
         Route::post('/maintenance/add-task', [MaintenanceController::class, 'addNewTask'])->name('maintenance.addNewTask');
         Route::delete('/maintenance/task/{maintenance}', [MaintenanceController::class, 'deleteTask'])->name('maintenance.deleteTask');
         Route::get('/maintenance/preview-pdf', [MaintenanceController::class, 'previewPDF'])->name('maintenance.previewPDF');
         Route::get('/maintenance/export-pdf', [MaintenanceController::class, 'exportPDF'])->name('maintenance.exportPDF');
         Route::get('/maintenance/export/excel', [MaintenanceController::class, 'exportExcel'])->name('maintenance.exportExcel');
-        Route::patch('/maintenance/{lab}/date/{date}/complete-all', [MaintenanceController::class, 'completeAllByDate'])->name('maintenance.completeAllByDate');
-        Route::delete('/maintenance/{lab}/date/{date}/cancel-all', [MaintenanceController::class, 'cancelAllByDate'])
+        Route::patch('/maintenance/{locationId}/date/{date}/complete-all', [MaintenanceController::class, 'completeAllByDate'])->name('maintenance.completeAllByDate');
+        Route::delete('/maintenance/{locationId}/date/{date}/cancel-all', [MaintenanceController::class, 'cancelAllByDate'])
             ->name('maintenance.cancelAllByDate');
         Route::post('/maintenance/destroy-multiple', [MaintenanceController::class, 'destroyMultiple'])->name('maintenance.destroyMultiple');
         Route::get('/maintenance/get-lab-assets/{labNumber}', [MaintenanceController::class, 'getLabAssets'])->name('maintenance.getLabAssets');
+        Route::get('/maintenance/get-location-assets/{locationId}', [MaintenanceController::class, 'getLocationAssets'])->name('maintenance.getLocationAssets');
 
         // Repair Request Routes
         Route::middleware([\App\Http\Middleware\CheckRole::class.':1,3'])->group(function () {

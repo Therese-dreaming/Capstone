@@ -62,20 +62,18 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                                <select name="location_select" id="locationSelect" class="w-full p-2 border @error('location') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 mb-2">
+                                <select name="location_id" required class="w-full p-2.5 border @error('location_id') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
                                     <option value="">Select Location</option>
-                                    <option value="Computer Lab 401" {{ request('location') == 'Computer Lab 401' ? 'selected' : '' }}>Computer Lab 401</option>
-                                    <option value="Computer Lab 402" {{ request('location') == 'Computer Lab 402' ? 'selected' : '' }}>Computer Lab 402</option>
-                                    <option value="Computer Lab 403" {{ request('location') == 'Computer Lab 403' ? 'selected' : '' }}>Computer Lab 403</option>
-                                    <option value="Computer Lab 404" {{ request('location') == 'Computer Lab 404' ? 'selected' : '' }}>Computer Lab 404</option>
-                                    <option value="Computer Lab 405" {{ request('location') == 'Computer Lab 405' ? 'selected' : '' }}>Computer Lab 405</option>
-                                    <option value="Computer Lab 406" {{ request('location') == 'Computer Lab 406' ? 'selected' : '' }}>Computer Lab 406</option>
-                                    <option value="others" {{ !in_array(request('location'), ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) && request('location') ? 'selected' : '' }}>Others (Specify)</option>
+                                    @foreach($locations as $location)
+                                    <option value="{{ $location->id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
+                                        {{ $location->full_location }}
+                                    </option>
+                                    @endforeach
                                 </select>
-                                @error('location')
+                                @error('location_id')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
-                                <input type="text" name="location" id="otherLocation" placeholder="Please specify location" value="{{ !in_array(request('location'), ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? request('location') : '' }}" class="w-full p-2 border @error('location') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 {{ !in_array(request('location'), ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) && request('location') ? '' : 'hidden' }}">
+                                <p class="mt-1 text-xs text-gray-500">If your location is not listed, please contact the administrator to add it.</p>
                             </div>
 
                             <div>
@@ -104,18 +102,22 @@
                                         @enderror
                                     </div>
 
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-                                        <input type="text" name="serial_number" value="{{ old('serial_number') }}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-200 @error('serial_number') border-red-500 @enderror">
-                                        @error('serial_number')
-                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
+
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Specification</label>
                                         <textarea name="specification" rows="2" class="w-full p-2 border @error('specification') border-red-500 @enderror border-gray-300 rounded-md focus:ring-2 focus:ring-red-200">{{ old('specification') }}</textarea>                                        @error('specification')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
+                                    </div>
+                                </div>
+                                
+                                <!-- Serial Number Info -->
+                                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="text-sm text-blue-700">Serial Number will be automatically generated in format: ASST-YYYYMMDD-XXXX</span>
                                     </div>
                                 </div>
                             </div>
@@ -343,7 +345,6 @@
                 , 'location_select': 'Location'
                 , 'status': 'Status'
                 , 'model': 'Model'
-                , 'serial_number': 'Serial Number'
                 , 'specification': 'Specification'
                 , 'vendor_id': 'Vendor'
                 , 'purchase_date': 'Purchase Date'

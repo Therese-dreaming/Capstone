@@ -111,7 +111,7 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laboratory</th>
+                                <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                                 <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
                                 <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
                                 <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -120,7 +120,7 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
                             <tr>
-                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenance->lab_number }}</td>
+                                <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenance->location ? $maintenance->location->building . ' - Floor ' . $maintenance->location->floor . ' - Room ' . $maintenance->location->room_number : 'Unknown Location' }}</td>
                                 <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</td>
                                 <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</td>
                                 <td class="px-3 md:px-6 py-4 whitespace-nowrap">
@@ -137,7 +137,7 @@
                     @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
                     <div class="bg-gray-50 rounded-lg p-4">
                         <div class="flex justify-between items-start mb-2">
-                            <span class="font-medium text-gray-900">{{ $maintenance->lab_number }}</span>
+                            <span class="font-medium text-gray-900">{{ $maintenance->location ? $maintenance->location->building . ' - Floor ' . $maintenance->location->floor . ' - Room ' . $maintenance->location->room_number : 'Unknown Location' }}</span>
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Completed</span>
                         </div>
                         <div class="text-sm text-gray-600 mb-1">Task: {{ is_array($maintenance->maintenance_task) ? implode(', ', $maintenance->maintenance_task) : $maintenance->maintenance_task }}</div>

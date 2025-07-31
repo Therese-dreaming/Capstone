@@ -18,24 +18,46 @@
     </div>
     @endif
 
+    @if($maintenances->isEmpty())
+        <div class="bg-white rounded-lg shadow-md p-8 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No Upcoming Maintenance</h3>
+            <p class="text-gray-500 mb-4">There are currently no maintenance tasks scheduled.</p>
+            <a href="{{ route('maintenance.schedule') }}" class="inline-flex items-center px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Schedule New Maintenance
+            </a>
+        </div>
+    @else
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        @foreach(['401', '402', '403', '404', '405', '406'] as $labNumber)
+        @php
+        $locationMaintenances = $maintenances->groupBy('location_id');
+        @endphp
+        @foreach($locationMaintenances as $locationId => $locationMaintenance)
+        @php
+        $location = $locationMaintenance->first()->location;
+        $locationName = $location ? $location->building . ' - Floor ' . $location->floor . ' - Room ' . $location->room_number : 'Unknown Location';
+        @endphp
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="flex justify-between items-center p-4 md:p-6 bg-gray-50 cursor-pointer" onclick="toggleLab('lab-{{ $labNumber }}')">
-                <h3 class="text-lg md:text-xl font-semibold text-gray-800">Computer Laboratory {{ $labNumber }}</h3>
+            <div class="flex justify-between items-center p-4 md:p-6 bg-gray-50 cursor-pointer" onclick="toggleLab('location-{{ $locationId }}')">
+                <h3 class="text-lg md:text-xl font-semibold text-gray-800">{{ $locationName }}</h3>
                 <div class="flex items-center space-x-2">
                     <span class="text-xs md:text-sm text-gray-500">
-                        {{ $maintenances->where('lab_number', $labNumber)->count() }} tasks
+                        {{ $locationMaintenance->count() }} tasks
                     </span>
-                    <svg class="w-5 h-5 transform transition-transform duration-200" id="chevron-{{ $labNumber }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 transform transition-transform duration-200" id="chevron-{{ $locationId }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </div>
             </div>
 
-            <div id="lab-{{ $labNumber }}" class="hidden p-4 md:p-6 border-t border-gray-100">
+            <div id="location-{{ $locationId }}" class="hidden p-4 md:p-6 border-t border-gray-100">
                 @php
-                $labMaintenance = $maintenances->where('lab_number', $labNumber);
+                $labMaintenance = $locationMaintenance;
                 @endphp
 
                 @if($labMaintenance->isEmpty())
@@ -55,7 +77,7 @@
 
                     @foreach($groupedMaintenance as $date => $maintenanceItems)
                     <div class="border rounded-lg overflow-hidden">
-                        <div class="bg-gray-50 px-3 py-2 md:px-4 md:py-3 border-b cursor-pointer" onclick="toggleDate('date-{{ str_replace('-', '', $date) }}-{{ $labNumber }}')">
+                        <div class="bg-gray-50 px-3 py-2 md:px-4 md:py-3 border-b cursor-pointer" onclick="toggleDate('date-{{ str_replace('-', '', $date) }}-{{ $locationId }}')">
                             <div class="flex flex-col md:flex-row md:justify-between md:items-center">
                                 <div class="mb-2 md:mb-0">
                                     <h4 class="font-medium text-gray-800">
@@ -67,21 +89,21 @@
                                 </div>
                                 <div class="flex items-center justify-between md:justify-end md:space-x-2">
                                     <div class="flex space-x-1 md:space-x-2">
-                                        <button onclick="completeAllTasks('{{ $labNumber }}', '{{ $date }}'); event.stopPropagation();" 
+                                        <button onclick="completeAllTasks('{{ $locationId}}', '{{ $date }}'); event.stopPropagation();" 
                                             class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 flex items-center">
                                             <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                             </svg>
                                             <span class="ml-1">All</span>
                                         </button>
-                                        <button onclick="cancelAllTasks('{{ $labNumber }}', '{{ $date }}'); event.stopPropagation();" 
+                                        <button onclick="cancelAllTasks('{{ $locationId}}', '{{ $date }}'); event.stopPropagation();" 
                                             class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 flex items-center">
                                             <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                             </svg>
                                             <span class="ml-1">All</span>
                                         </button>
-                                        <a href="{{ route('maintenance.editByDate', ['lab' => $labNumber, 'date' => $date]) }}" 
+                                        <a href="{{ route('maintenance.editByDate', ['locationId' => $locationId, 'date' => $date]) }}" 
                                             onclick="event.stopPropagation();"
                                             class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-red-800 text-white rounded-md hover:bg-red-700 transition-colors duration-200 flex items-center">
                                             <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,14 +111,14 @@
                                             </svg>
                                         </a>
                                     </div>
-                                    <svg class="w-4 h-4 md:w-5 md:h-5 transform transition-transform duration-200 ml-2" id="chevron-date-{{ str_replace('-', '', $date) }}-{{ $labNumber }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 md:w-5 md:h-5 transform transition-transform duration-200 ml-2" id="chevron-date-{{ str_replace('-', '', $date) }}-{{ $locationId}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="date-{{ str_replace('-', '', $date) }}-{{ $labNumber }}" class="hidden">
+                        <div id="date-{{ str_replace('-', '', $date) }}-{{ $locationId}}" class="hidden">
                             <!-- Rest of your date content -->
                             <div class="divide-y divide-gray-100">
                                 @php
@@ -134,7 +156,7 @@
                                                 {{ ucfirst($maintenance->status) }}
                                             </span>
                                             <div class="flex space-x-2 mt-0 md:mt-2">
-                                                <button onclick="markAsComplete('{{ $maintenance->id }}', '{{ $labNumber }}')" 
+                                                <button onclick="markAsComplete('{{ $maintenance->id }}', '{{ $locationId}}')" 
                                                     class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200">
                                                     <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -161,6 +183,7 @@
         </div>
         @endforeach
     </div>
+    @endif
 </div>
 
 <!-- Move this modal inside the form where the cancel buttons are -->
@@ -204,17 +227,17 @@
 
     function toggleLab(labId) {
         const content = document.getElementById(labId);
-        const labNumber = labId.split('-')[1];
-        const chevron = document.getElementById(`chevron-${labNumber}`);
+        const locationId= labId.split('-')[1];
+        const chevron = document.getElementById(`chevron-${locationId}`);
 
         content.classList.toggle('hidden');
         chevron.classList.toggle('rotate-180');
     }
 
-    function completeAllTasks(labNumber, date) {
+    function completeAllTasks(locationId, date) {
         const form = document.getElementById('completeForm');
-        form.action = `{{ url('maintenance') }}/${labNumber}/date/${date}/complete-all`;
-        form.setAttribute('data-lab', labNumber); // Add this line to set the lab number
+        form.action = `{{ url('maintenance') }}/${locationId}/date/${date}/complete-all`;
+        form.setAttribute('data-location', locationId); // Add this line to set the location ID
         document.getElementById('completionModal').classList.remove('hidden');
     }
 
@@ -222,10 +245,10 @@
         document.getElementById(modalId).classList.add('hidden');
     }
 
-    function markAsComplete(maintenanceId, labNumber) {
+    function markAsComplete(maintenanceId, locationId) {
         const form = document.getElementById('completeForm');
         form.action = `{{ url('maintenance') }}/${maintenanceId}/complete`;
-        form.setAttribute('data-lab', labNumber);
+        form.setAttribute('data-location', locationId);
 
         // Reset form and hide issue details
         form.reset();
@@ -245,9 +268,9 @@
         document.getElementById('cancellationModal').classList.remove('hidden');
     }
 
-    function cancelAllTasks(labNumber, date) {
+    function cancelAllTasks(locationId, date) {
         const form = document.getElementById('cancelForm');
-        form.action = `{{ url('maintenance') }}/${labNumber}/date/${date}/cancel-all`;
+        form.action = `{{ url('maintenance') }}/${locationId}/date/${date}/cancel-all`;
         document.getElementById('cancellationModal').classList.remove('hidden');
     } 
 </script>

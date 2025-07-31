@@ -49,6 +49,7 @@
             <!-- Divider Line -->
             <div class="border-b-2 border-red-800 mb-4 md:mb-6"></div>
 
+
             <!-- Mobile View Cards -->
             <div class="md:hidden space-y-4 mb-4">
                 @foreach($assets as $asset)
@@ -110,7 +111,7 @@
                         </div>
                         <div>
                             <p class="text-gray-500">Location:</p>
-                            <p class="font-medium">{{ $asset->location ?? '' }}</p>
+                            <p class="font-medium">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</p>
                         </div>
                     </div>
                     
@@ -207,7 +208,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ?? '' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex space-x-2">
                                     <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
@@ -426,7 +427,7 @@
                         <td class="px-6 py-4 whitespace-nowrap font-bold">{{ $asset->serial_number ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->category->name ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->location ?? '' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px]
                                     @switch($asset->status)

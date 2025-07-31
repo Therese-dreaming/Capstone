@@ -287,7 +287,7 @@ class DashboardController extends Controller
                 ->whereNotNull('completed_at')
                 ->orderBy('completed_at', 'desc')
                 ->get(),
-            'completed_maintenance_history' => Maintenance::with(['laboratory', 'maintenanceAssets'])
+            'completed_maintenance_history' => Maintenance::with(['location', 'technician'])
                 ->where('technician_id', $user->id)
                 ->where('status', 'completed')
                 ->whereNotNull('completed_at')
@@ -368,7 +368,7 @@ class DashboardController extends Controller
                     ->orderBy('completed_at', 'desc')
                     ->limit(5)
                     ->get())
-                ->concat(Maintenance::with(['laboratory', 'maintenanceAssets'])
+                ->concat(Maintenance::with(['location', 'technician'])
                     ->where('technician_id', $user->id)
                     ->where('status', 'completed')
                     ->whereNotNull('completed_at')
@@ -403,7 +403,7 @@ class DashboardController extends Controller
                 ->whereNotNull('completed_at')
                 ->orderBy('completed_at', 'desc')
                 ->get(),
-            'completed_maintenance_history' => Maintenance::with(['laboratory', 'maintenanceAssets'])
+            'completed_maintenance_history' => Maintenance::with(['location', 'technician'])
                 ->where('technician_id', $user->id)
                 ->where('status', 'completed')
                 ->whereNotNull('completed_at')
@@ -450,7 +450,7 @@ class DashboardController extends Controller
                 ->select('*', DB::raw("'repair' as action_source"))
                 ->orderBy('completed_at', 'desc')
                 ->get())
-            ->concat(Maintenance::with(['laboratory', 'maintenanceAssets'])
+            ->concat(Maintenance::with(['location', 'technician'])
                 ->where('technician_id', $user->id)
                 ->where('status', 'completed')
                 ->whereNotNull('completed_at')
@@ -488,7 +488,7 @@ class DashboardController extends Controller
     public function allMaintenanceHistory(Request $request)
     {
         $user = auth()->user();
-        $query = \App\Models\Maintenance::with(['laboratory', 'maintenanceAssets'])
+        $query = \App\Models\Maintenance::with(['location', 'technician'])
             ->where('technician_id', $user->id)
             ->where('status', 'completed')
             ->whereNotNull('completed_at');

@@ -18,6 +18,9 @@
     </div>
     @endif
 
+    <!-- Notification div for JavaScript -->
+    <div id="notification" class="mb-4 p-4 rounded hidden"></div>
+
     <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
         <h2 class="text-2xl font-bold mb-6">SCHEDULE LAB MAINTENANCE</h2>
         <div class="border-b-2 border-red-800 mb-6"></div>
@@ -27,14 +30,14 @@
                 <!-- Left Column -->
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Select Computer Laboratory</label>
-                        <select name="lab_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50">
-                            <option value="">Select a laboratory...</option>
-                            @foreach($labs as $number => $name)
-                            <option value="{{ $number }}">{{ $name }}</option>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Select Location</label>
+                        <select name="location_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50">
+                            <option value="">Select a location...</option>
+                            @foreach($locations as $id => $name)
+                            <option value="{{ $id }}">{{ $name }}</option>
                             @endforeach
                         </select>
-                        @error('lab_number')
+                        @error('location_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -144,12 +147,62 @@
         </div>
     </div>
 
+<!-- Validation Modal -->
+<div id="validationModal"
+     class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center">
+    
+    <div class="p-5 border max-w-sm w-full sm:w-auto shadow-lg rounded-md bg-white">
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Validation Error</h3>
+            <div class="mt-2 px-4 py-2">
+                <p id="validationMessage" class="text-sm text-gray-500"></p>
+            </div>
+            <div class="px-4 pt-2 pb-3">
+                <button onclick="hideValidationModal()"
+                        class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-[400px] shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Success</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p id="successMessage" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button onclick="hideSuccessModal()" class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.querySelector('select[name="lab_number"]').addEventListener('change', function() {
-            const labNumber = this.value;
+        document.querySelector('select[name="location_id"]').addEventListener('change', function() {
+            const locationId = this.value;
             const assetSelect = document.getElementById('assetSelect');
 
-            if (!labNumber) {
+            if (!locationId) {
                 assetSelect.innerHTML = '<option value="">Select an asset...</option>';
                 return;
             }
@@ -157,8 +210,8 @@
             // Show loading state
             assetSelect.innerHTML = '<option value="">Loading assets...</option>';
 
-            // Fetch assets for the selected laboratory
-            fetch(`{{ url('maintenance/get-lab-assets') }}/${labNumber}`, {
+            // Fetch assets for the selected location
+            fetch(`{{ url('maintenance/get-location-assets') }}/${locationId}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -179,7 +232,7 @@
 
                 assetSelect.innerHTML = '<option value="">Select an asset...</option>' + 
                     assets.map(asset => `
-                        <option value="${asset.serial_number}" data-name="${asset.name}">
+                        <option value="${asset.id}" data-name="${asset.name}" data-serial="${asset.serial_number}">
                             ${asset.name} (SN: ${asset.serial_number})
                         </option>
                     `).join('');
@@ -200,7 +253,7 @@
             }
 
             const selectedAssetsList = document.getElementById('selectedAssetsList');
-            const existingAsset = selectedAssetsList.querySelector(`[data-serial="${select.value}"]`);
+            const existingAsset = selectedAssetsList.querySelector(`[data-asset-id="${select.value}"]`);
 
             if (existingAsset) {
                 showNotification('This asset is already excluded', 'error');
@@ -209,7 +262,7 @@
 
             const assetElement = document.createElement('div');
             assetElement.className = 'flex items-center justify-between bg-white p-2 rounded-md';
-            assetElement.dataset.serial = select.value;
+            assetElement.dataset.assetId = select.value;
             assetElement.innerHTML = `
                 <span class="text-sm text-gray-700">${selectedOption.text}</span>
                 <button type="button" onclick="removeExcludedAsset(this)" 
@@ -232,7 +285,7 @@
 
         function updateExcludedAssetsInput() {
             const selectedAssets = Array.from(document.getElementById('selectedAssetsList').children)
-                .map(div => div.dataset.serial);
+                .map(div => div.dataset.assetId);
             document.getElementById('excludedAssetsInput').value = JSON.stringify(selectedAssets);
         }
 
@@ -242,7 +295,7 @@
             const excludedAssets = Array.from(document.getElementById('selectedAssetsList').children)
                 .map(div => div.querySelector('span').textContent.trim());
             
-            const lab = form.lab_number.options[form.lab_number.selectedIndex]?.text || 'Not selected';
+            const location = form.location_id.options[form.location_id.selectedIndex]?.text || 'Not selected';
             const selectedTasks = Array.from(form.querySelectorAll('input[name="maintenance_tasks[]"]:checked'))
                 .map(checkbox => checkbox.value);
             const date = form.scheduled_date.value ? new Date(form.scheduled_date.value).toLocaleDateString('en-US', {
@@ -253,16 +306,16 @@
             }) : 'Not selected';
             const technician = form.technician_id.options[form.technician_id.selectedIndex]?.text || 'Not selected';
 
-            if (!form.lab_number.value || selectedTasks.length === 0 || !form.scheduled_date.value || !form.technician_id.value) {
-                alert('Please fill in all required fields');
+            if (!form.location_id.value || selectedTasks.length === 0 || !form.scheduled_date.value || !form.technician_id.value) {
+                showValidationModal('Please fill in all required fields');
                 return;
             }
 
             document.getElementById('scheduleDetails').innerHTML = `
                 <div class="space-y-4">
                     <div>
-                        <p class="text-gray-600 font-medium mb-1">Laboratory:</p>
-                        <p class="text-gray-800">${lab}</p>
+                        <p class="text-gray-600 font-medium mb-1">Location:</p>
+                        <p class="text-gray-800">${location}</p>
                     </div>
                     <div>
                         <p class="text-gray-600 font-medium mb-1">Scheduled Date:</p>
@@ -301,7 +354,7 @@
             
             // Get excluded assets from the selectedAssetsList
             const excludedAssets = Array.from(document.getElementById('selectedAssetsList').children)
-                .map(div => div.dataset.serial);
+                .map(div => div.dataset.assetId);
             
             // Update the hidden input value
             document.getElementById('excludedAssetsInput').value = JSON.stringify(excludedAssets);
@@ -392,6 +445,26 @@
             setTimeout(() => {
                 notification.classList.add('hidden');
             }, 3000);
+        }
+
+        // Validation Modal Functions
+        function showValidationModal(message) {
+            document.getElementById('validationMessage').textContent = message;
+            document.getElementById('validationModal').classList.remove('hidden');
+        }
+
+        function hideValidationModal() {
+            document.getElementById('validationModal').classList.add('hidden');
+        }
+
+        // Success Modal Functions  
+        function showSuccessModal(message) {
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        function hideSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
         }
 
     </script>

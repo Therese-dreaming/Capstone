@@ -85,16 +85,28 @@
                         }
                         
                         // Add location changes
-                        if(isset($history['LOCATION'])) {
-                            foreach($history['LOCATION'] as $record) {
+                        if(isset($history['LOCATION_ID'])) {
+                            // Get all location IDs from location changes for batch loading
+                            $locationIds = collect($history['LOCATION_ID'])->flatMap(function($record) {
+                                return [$record->old_value, $record->new_value];
+                            })->filter()->unique();
+                            
+                            // Load location details
+                            $locations = \App\Models\Location::whereIn('id', $locationIds)->get()->keyBy('id');
+                            
+                            foreach($history['LOCATION_ID'] as $record) {
+                                // Get location names
+                                $fromLocation = $locations->has($record->old_value) ? $locations[$record->old_value]->full_location : 'Location #' . $record->old_value;
+                                $toLocation = $locations->has($record->new_value) ? $locations[$record->new_value]->full_location : 'Location #' . $record->new_value;
+                                
                                 $allEvents->push([
                                     'date' => $record->created_at,
                                     'type' => 'location',
                                     'icon' => 'location-icon',
                                     'color' => 'green',
                                     'title' => 'Location Changed',
-                                    'from' => $record->old_value,
-                                    'to' => $record->new_value,
+                                    'from' => $fromLocation,
+                                    'to' => $toLocation,
                                     'user' => $record->user->name,
                                     'remarks' => $record->remarks
                                 ]);
@@ -155,7 +167,7 @@
                                     'icon' => 'maintenance-icon',
                                     'color' => 'purple',
                                     'title' => 'Maintenance Performed',
-                                    'lab' => 'Laboratory ' . $maintenance->lab_number,
+                                    'location' => $maintenance->location ? $maintenance->location->building . ' - Floor ' . $maintenance->location->floor . ' - Room ' . $maintenance->location->room_number : 'Unknown Location',
                                     'tasks' => $taskList,
                                     'technician' => $maintenance->technician->name,
                                     'status' => $maintenance->status
@@ -324,8 +336,8 @@
                                                             
                                                         @case('maintenance')
                                                             <div class="mb-1">
-                                                                <span class="font-medium">Laboratory:</span>
-                                                                <span class="text-gray-700">{{ $event['lab'] }}</span>
+                                                                <span class="font-medium">Location:</span>
+                                                                <span class="text-gray-700">{{ $event['location'] }}</span>
                                                             </div>
                                                             <div class="mb-1">
                                                                 <span class="font-medium">Tasks:</span>

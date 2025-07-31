@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Asset;
 use App\Models\Category;
+use App\Models\Location;
 use App\Models\AssetHistory;
 use Illuminate\Http\Request;
 use Endroid\QrCode\QrCode;
@@ -16,7 +17,7 @@ class AssetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Asset::query();
+        $query = Asset::with(['category', 'location', 'vendor']);
 
         // Apply filters if they exist
         if ($request->has('search')) {
@@ -33,7 +34,7 @@ class AssetController extends Controller
         }
 
         if ($request->has('location')) {
-            $query->where('location', $request->location);
+            $query->where('location_id', $request->location);
         }
 
         // Get the assets with pagination
@@ -136,20 +137,19 @@ class AssetController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'category_id' => 'required|exists:categories,id',
-                'location' => 'required|string|max:255',
-                'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
-                'model' => 'required|string|max:255',
-                'serial_number' => 'required|string|max:255|unique:assets,serial_number',
-                'specification' => 'required|string',
-                'vendor_id' => 'required|exists:vendors,id',
-                'purchase_date' => 'required|date',
-                'warranty_period' => 'required|date|after_or_equal:purchase_date',
-                'purchase_price' => 'required|numeric|min:0',
-                'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ]);
+                    $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'location_id' => 'required|exists:locations,id',
+            'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
+            'model' => 'required|string|max:255',
+            'specification' => 'required|string',
+            'vendor_id' => 'required|exists:vendors,id',
+            'purchase_date' => 'required|date',
+            'warranty_period' => 'required|date|after_or_equal:purchase_date',
+            'purchase_price' => 'required|numeric|min:0',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
             // Ensure the category exists
             $category = Category::findOrFail($validated['category_id']);
@@ -222,7 +222,8 @@ class AssetController extends Controller
     {
         $categories = \App\Models\Category::all();
         $vendors = \App\Models\Vendor::orderBy('name')->get();
-        return view('add-asset', compact('categories', 'vendors'));
+        $locations = \App\Models\Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
+        return view('add-asset', compact('categories', 'vendors', 'locations'));
     }
 
     public function qrList()
@@ -335,7 +336,8 @@ class AssetController extends Controller
     {
         $categories = Category::all();
         $vendors = \App\Models\Vendor::orderBy('name')->get();
-        return view('assets.edit', compact('asset', 'categories', 'vendors'));
+        $locations = \App\Models\Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
+        return view('assets.edit', compact('asset', 'categories', 'vendors', 'locations'));
     }
 
     public function update(Request $request, Asset $asset)
@@ -343,8 +345,8 @@ class AssetController extends Controller
         // Only validate fields that are actually present and different
         $validationRules = [
             'name' => 'required',
-            'serial_number' => 'required',
             'category_id' => 'required|exists:categories,id',
+            'location_id' => 'required|exists:locations,id',
             'purchase_price' => 'required|numeric',
             'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
             'model' => 'required',
@@ -366,32 +368,13 @@ class AssetController extends Controller
 
         $validated = $request->validate($fieldsToValidate);
 
-        // Handle location field if it's present and different
-        if ($request->has('location_select') && $request->location_select != $asset->location) {
-            if ($request->location_select === 'others') {
-                $validated['location'] = $request->location;
-            } else {
-                $validated['location'] = $request->location_select;
-            }
-            $fieldsToUpdate[] = 'location';
-        }
-
         // Handle acquisition document update
         if ($request->hasFile('acquisition_document')) {
             $acquisitionPath = $request->file('acquisition_document')->store('assets/acquisition_docs', 'public');
             $asset->acquisition_document = $acquisitionPath;
         }
 
-        // Check for duplicate serial number only if it's being updated
-        if (isset($validated['serial_number']) && 
-            Asset::where('serial_number', $validated['serial_number'])
-                ->where('id', '!=', $asset->id)
-                ->exists()
-        ) {
-            return back()
-                ->withInput()
-                ->withErrors(['serial_number' => 'This Serial Number is already registered in the system.']);
-        }
+
 
         $oldValues = $asset->getAttributes();
 
@@ -478,9 +461,11 @@ class AssetController extends Controller
             
             $asset = Asset::where('serial_number', $serialNumber)
                 ->when($lab, function($query) use ($lab) {
-                    return $query->where('location', $lab);
+                    return $query->whereHas('location', function($locationQuery) use ($lab) {
+                        $locationQuery->where('room_number', $lab);
+                    });
                 })
-                ->with('category')
+                ->with(['category', 'location'])
                 ->first();
             
             // Log the query that was executed
@@ -517,7 +502,8 @@ class AssetController extends Controller
             return response()->json([
                 'id' => $asset->id,
                 'name' => $asset->name,
-                'location' => $asset->location,
+                'location' => $asset->location ? $asset->location->full_location : 'N/A',
+                'location_id' => $asset->location_id,
                 'category_id' => $asset->category_id,
                 'category' => $asset->category,
                 'serial_number' => $asset->serial_number,

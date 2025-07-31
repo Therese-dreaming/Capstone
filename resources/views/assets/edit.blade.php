@@ -73,21 +73,21 @@
 
                             <!-- Location field -->
                             <div class="mb-4">
-                                <label class="block text-gray-700 text-sm font-bold mb-2" for="location">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="location_id">
                                     Location
                                 </label>
-                                <select name="location_select" id="locationSelect" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors mb-2">
+                                <select name="location_id" id="location_id" class="w-full p-2.5 border @error('location_id') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
                                     <option value="">Select Location</option>
-                                    @foreach(['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406'] as $lab)
-                                    <option value="{{ $lab }}" {{ $asset->location == $lab ? 'selected' : '' }}>
-                                        {{ $lab }}
+                                    @foreach($locations as $location)
+                                    <option value="{{ $location->id }}" {{ $asset->location_id == $location->id ? 'selected' : '' }}>
+                                        {{ $location->full_location }}
                                     </option>
                                     @endforeach
-                                    <option value="others" {{ !in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? 'selected' : '' }}>
-                                        Others (Specify)
-                                    </option>
                                 </select>
-                                <input type="text" name="location" id="otherLocation" value="{{ !in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? $asset->location : '' }}" placeholder="Please specify location" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors mt-2 {{ in_array($asset->location, ['Computer Lab 401', 'Computer Lab 402', 'Computer Lab 403', 'Computer Lab 404', 'Computer Lab 405', 'Computer Lab 406']) ? 'hidden' : '' }}">
+                                @error('location_id')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1 text-xs text-gray-500">If your location is not listed, please contact the administrator to add it.</p>
                             </div>
 
                             <!-- Status field -->
@@ -174,17 +174,15 @@
                         <div class="bg-gray-50 p-6 rounded-lg">
                             <h3 class="text-lg font-semibold text-gray-700 mb-4">Technical Details</h3>
 
-                            <!-- Serial Number field -->
+                            <!-- Serial Number field (Read-only) -->
                             <div class="mb-4">
                                 <label class="block text-gray-700 text-sm font-bold mb-2" for="serial_number">
                                     Serial Number
                                 </label>
-                                <input type="text" name="serial_number" id="serial_number" 
-                                    value="{{ old('serial_number', $asset->serial_number) }}" 
-                                    class="w-full p-2.5 border @error('serial_number') border-red-500 @enderror border-gray-300 rounded-lg focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-colors">
-                                @error('serial_number')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+                                <div class="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
+                                    {{ $asset->serial_number }}
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Serial numbers are automatically generated and cannot be modified</p>
                             </div>
 
                             <!-- Model field -->

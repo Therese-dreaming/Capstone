@@ -43,7 +43,7 @@ class ReportController extends Controller
 
     public function locationReport()
     {
-        $assets = Asset::where('status', '!=', 'DISPOSED')->get();
+        $assets = Asset::where('status', '!=', 'DISPOSED')->with('location')->get();
         
         // Calculate total summary
         $totalSummary = [
@@ -52,10 +52,11 @@ class ReportController extends Controller
         ];
 
         // Group assets by location
-        $locationStats = $assets->groupBy('location')
+        $locationStats = $assets->groupBy('location_id')
             ->map(function ($locationAssets) {
+                $location = $locationAssets->first()->location;
                 return [
-                    'location' => $locationAssets->first()->location,
+                    'location' => $location ? $location->full_location : 'N/A',
                     'count' => $locationAssets->count(),
                     'total_value' => $locationAssets->sum('purchase_price')
                 ];
@@ -66,7 +67,7 @@ class ReportController extends Controller
 
     public function locationDetails($location)
     {
-        $assets = Asset::where('location', $location)->with('category')->get();
+        $assets = Asset::where('location_id', $location)->with(['category', 'location'])->get();
         return view('reports.location-details', compact('location', 'assets'));
     }
 
@@ -102,15 +103,21 @@ class ReportController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get maintenance history - use the correct model namespace
-        $assetMaintenances = \App\Models\Maintenance::where('lab_number', substr($asset->location, -3))
-            ->where('status', 'completed')
-            ->where(function($query) use ($asset) {
-                $query->whereNull('excluded_assets')
-                    ->orWhereRaw('NOT JSON_CONTAINS(excluded_assets, ?)', ['"' . $asset->id . '"']);
-            })
-            ->orderBy('scheduled_date', 'desc')
-            ->get();
+        // Get maintenance history - use the asset's location_id
+        $locationId = $asset->location_id;
+        $assetMaintenances = collect();
+        
+        if ($locationId) {
+            $assetMaintenances = \App\Models\Maintenance::where('location_id', $locationId)
+                ->where('status', 'completed')
+                ->where(function($query) use ($asset) {
+                    $query->whereNull('excluded_assets')
+                        ->orWhereRaw('NOT JSON_CONTAINS(excluded_assets, ?)', ['"' . $asset->id . '"']);
+                })
+                ->with(['location', 'technician'])
+                ->orderBy('scheduled_date', 'desc')
+                ->get();
+        }
 
         // Debug the history records
         \Log::info('History records:', [

@@ -197,6 +197,17 @@
                     </a>
                     @endif
 
+                    <!-- Locations - Hide from secretary -->
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    <a href="{{ route('locations.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('locations.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Locations</span>
+                    </a>
+                    @endif
+
                     <!-- Vendors - Hide from secretary -->
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
                     <a href="{{ route('vendors.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('vendors.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">

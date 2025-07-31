@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Maintenance extends Model
 {
     protected $fillable = [
-        'lab_number',
+        'location_id',
         'maintenance_task',
         'technician_id',
         'scheduled_date',
@@ -22,7 +22,6 @@ class Maintenance extends Model
     protected $casts = [
         'excluded_assets' => 'array',
         'scheduled_date' => 'datetime',
-        'maintenance_task' => 'array',
         'asset_issues' => 'array',
         'completed_at' => 'datetime'
     ];
@@ -37,29 +36,26 @@ class Maintenance extends Model
         return $this->belongsTo(User::class, 'technician_id');
     }
 
-    public function assets()
+    public function location()
     {
-        return Asset::where('location', 'LIKE', '%' . $this->lab_number)
-            ->where('status', '!=', 'DISPOSED')
-            ->where(function($query) {
-                $query->whereNull('excluded_assets')
-                    ->orWhereRaw('NOT JSON_CONTAINS(COALESCE(?, "[]"), CAST(id AS CHAR))', [$this->excluded_assets]);
-            });
+        return $this->belongsTo(Location::class);
     }
 
-    public function laboratory()
+    public function assets()
     {
-        return $this->belongsTo(Asset::class, 'lab_number', 'location');
+        return $this->hasManyThrough(Asset::class, Location::class, 'id', 'location_id', 'location_id', 'id')
+            ->where('assets.status', '!=', 'DISPOSED');
     }
     
     public function maintenanceAssets()
     {
-        return $this->hasMany(Asset::class, 'location', 'lab_number')
-            ->where('status', '!=', 'DISPOSED')
-            ->whereNotIn('id', function($query) {
-                $query->select('id')
-                    ->from('assets')
-                    ->whereIn('id', $this->excluded_assets ?? []);
-            });
+        return $this->hasManyThrough(Asset::class, Location::class, 'id', 'location_id', 'location_id', 'id')
+            ->where('assets.status', '!=', 'DISPOSED');
+    }
+    
+    // Keep laboratory() for backward compatibility, but make it point to location
+    public function laboratory()
+    {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 }

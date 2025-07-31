@@ -22,7 +22,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Laboratory</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Location</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Task</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Technician</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
@@ -35,7 +35,7 @@
                         {{ \Carbon\Carbon::parse($maintenance->scheduled_date)->format('M d, Y') }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        Laboratory {{ $maintenance->lab_number }}
+                        {{ $maintenance->location ? $maintenance->location->building . ' - Floor ' . $maintenance->location->floor . ' - Room ' . $maintenance->location->room_number : 'Unknown Location' }}
                     </td>
                     <td class="px-6 py-4 text-sm">
                         @php
@@ -102,7 +102,7 @@
                         <div class="bg-white rounded-lg shadow p-4">
                             <div class="text-sm text-gray-500 mb-2">{{ \Carbon\Carbon::parse($record->scheduled_date)->format('M d, Y - h:i A') }}</div>
                             <div class="mb-2">
-                                <span class="font-medium text-gray-700">Laboratory:</span> {{ $record->lab_number }}
+                                <span class="font-medium text-gray-700">Location:</span> {{ $record->location ? $record->location->building . ' - Floor ' . $record->location->floor . ' - Room ' . $record->location->room_number : 'Unknown Location' }}
                             </div>
                             <div class="mb-2">
                                 <span class="font-medium text-gray-700">Task:</span>

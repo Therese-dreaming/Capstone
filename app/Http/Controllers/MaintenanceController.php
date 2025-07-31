@@ -46,14 +46,10 @@ class MaintenanceController extends Controller
             $query->whereNotIn('name', ['Users']);
         })->get();
 
-        $labs = [
-            '401' => 'Computer Laboratory 401',
-            '402' => 'Computer Laboratory 402',
-            '403' => 'Computer Laboratory 403',
-            '404' => 'Computer Laboratory 404',
-            '405' => 'Computer Laboratory 405',
-            '406' => 'Computer Laboratory 406'
-        ];
+        // Get all available locations
+        $locations = \App\Models\Location::all()->mapWithKeys(function ($location) {
+            return [$location->id => $location->building . ' - Floor ' . $location->floor . ' - Room ' . $location->room_number];
+        });
 
         // Fetch tasks from the database
         $maintenanceTasks = DB::table('maintenance_tasks')
@@ -61,12 +57,12 @@ class MaintenanceController extends Controller
             ->pluck('name')
             ->toArray();
 
-        return view('maintenance-schedule', compact('technicians', 'labs', 'maintenanceTasks'));
+        return view('maintenance-schedule', compact('technicians', 'locations', 'maintenanceTasks'));
     }
     public function store(Request $request)
     {
         $request->validate([
-            'lab_number' => 'required',
+            'location_id' => 'required|exists:locations,id',
             'maintenance_tasks' => 'required|array|min:1',
             'technician_id' => 'required',
             'scheduled_date' => 'required|date|after_or_equal:today',
@@ -74,13 +70,17 @@ class MaintenanceController extends Controller
         ]);
 
         try {
+            // Get location for notification message
+            $location = \App\Models\Location::findOrFail($request->location_id);
+            $locationName = $location->building . ' - Floor ' . $location->floor . ' - Room ' . $location->room_number;
+            
             // Decode the excluded assets JSON string
             $excludedAssets = $request->excluded_assets ? json_decode($request->excluded_assets, true) : [];
 
             // Create separate maintenance records for each task
             foreach ($request->maintenance_tasks as $task) {
                 $maintenance = Maintenance::create([
-                    'lab_number' => $request->lab_number,
+                    'location_id' => $request->location_id,
                     'maintenance_task' => $task,
                     'technician_id' => $request->technician_id,
                     'scheduled_date' => $request->scheduled_date,
@@ -92,7 +92,7 @@ class MaintenanceController extends Controller
                 Notification::create([
                     'user_id' => $request->technician_id,
                     'type' => 'maintenance_assigned',
-                    'message' => "You have been assigned maintenance task: {$task} in Lab {$request->lab_number}",
+                    'message' => "You have been assigned maintenance task: {$task} in {$locationName}",
                     'is_read' => false,
                     'link' => '/maintenance/upcoming'
                 ]);
@@ -115,7 +115,8 @@ class MaintenanceController extends Controller
             $query->where('technician_id', auth()->id());
         }
 
-        $maintenances = $query->orderBy('lab_number')
+        $maintenances = $query->with('location')
+            ->orderBy('location_id')
             ->orderBy('scheduled_date')
             ->get();
 
@@ -300,9 +301,9 @@ class MaintenanceController extends Controller
         return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance updated successfully');
     }
 
-    public function editByDate($lab, $date)
+    public function editByDate($locationId, $date)
     {
-        $maintenances = Maintenance::where('lab_number', $lab)
+        $maintenances = Maintenance::where('location_id', $locationId)
             ->whereDate('scheduled_date', $date)
             ->get();
 
@@ -325,7 +326,7 @@ class MaintenanceController extends Controller
         ];
 
         return view('maintenance-edit-lab', [
-            'labNumber' => $lab,
+            'locationId' => $locationId,
             'date' => $date,
             'maintenances' => $maintenances,
             'technicians' => $technicians,
@@ -333,7 +334,7 @@ class MaintenanceController extends Controller
         ]);
     }
 
-    public function updateByDate(Request $request, $lab, $date)
+    public function updateByDate(Request $request, $locationId, $date)
     {
         foreach ($request->maintenances as $maintenanceData) {
             Maintenance::find($maintenanceData['id'])->update([
@@ -394,10 +395,10 @@ class MaintenanceController extends Controller
         return redirect()->route('maintenance.upcoming')->with('success', 'Laboratory maintenance schedule updated successfully');
     }
 
-    public function addTask(Request $request, $lab, $date)
+    public function addTask(Request $request, $locationId, $date)
     {
         $maintenance = new Maintenance([
-            'lab_number' => $lab,
+            'location_id' => $locationId,
             'scheduled_date' => $date,
             'maintenance_task' => $request->maintenance_task,
             'technician_id' => $request->technician_id,
@@ -415,10 +416,10 @@ class MaintenanceController extends Controller
         return redirect()->back()->with('success', 'Maintenance task deleted successfully');
     }
 
-    public function completeAllByDate($lab, $date)
+    public function completeAllByDate($locationId, $date)
     {
         try {
-            $maintenances = Maintenance::where('lab_number', $lab)
+            $maintenances = Maintenance::where('location_id', $locationId)
                 ->whereDate('scheduled_date', $date)
                 ->where('status', 'scheduled')
                 ->get();
@@ -475,10 +476,10 @@ class MaintenanceController extends Controller
         }
     }
 
-    public function cancelAllByDate($lab, $date)
+    public function cancelAllByDate($locationId, $date)
     {
         try {
-            $maintenances = Maintenance::where('lab_number', $lab)
+            $maintenances = Maintenance::where('location_id', $locationId)
                 ->whereDate('scheduled_date', $date)
                 ->where('status', 'scheduled')
                 ->get();
@@ -568,12 +569,24 @@ class MaintenanceController extends Controller
 
     public function getLabAssets($lab)
     {
-        // Convert lab number to full laboratory name
-        $labName = 'Computer Lab ' . $lab;
+        // Get assets by room_number from the location relationship
+        $assets = Asset::whereHas('location', function($query) use ($lab) {
+                $query->where('room_number', $lab);
+            })
+            ->where('status', '!=', 'DISPOSED')
+            ->with('location')
+            ->get(['id', 'serial_number', 'name', 'location_id']);
 
-        $assets = Asset::where('location', $labName)
-            ->where('status', '!=', 'DISPOSED')  // Changed from 'active' to match your asset status format
-            ->get(['id', 'serial_number', 'name']);
+        return response()->json($assets);
+    }
+    
+    public function getLocationAssets($locationId)
+    {
+        // Get assets by location_id
+        $assets = Asset::where('location_id', $locationId)
+            ->where('status', '!=', 'DISPOSED')
+            ->with('location')
+            ->get(['id', 'serial_number', 'name', 'location_id']);
 
         return response()->json($assets);
     }
@@ -582,11 +595,13 @@ class MaintenanceController extends Controller
     {
         $asset = Asset::findOrFail($assetId);
 
-        // Get all maintenances from the asset's laboratory that weren't excluded
-        $maintenances = Maintenance::where('lab_number', $asset->laboratory)
+        // Get all maintenances from the asset's location that weren't excluded
+        $maintenances = Maintenance::where('location_id', $asset->location_id)
             ->where(function ($query) use ($asset) {
                 $query->whereNull('excluded_assets')
-                    ->orWhereRaw('NOT JSON_CONTAINS(excluded_assets, ?)', ['"' . $asset->id . '"']);
+                    ->orWhere(function($q) use ($asset) {
+                        $q->whereJsonDoesntContain('excluded_assets', $asset->id);
+                    });
             })
             ->where('status', 'completed')
             ->orderBy('scheduled_date', 'desc')

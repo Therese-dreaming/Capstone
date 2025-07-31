@@ -1,7 +1,7 @@
 <div class="mb-8">
     @php
         // Get location changes and apply pagination
-        $locationChanges = collect($history['LOCATION'] ?? []);
+        $locationChanges = collect($history['LOCATION_ID'] ?? []);
         $perPage = 10;
         $currentPage = request()->get('location_page', 1);
         $totalRecords = $locationChanges->count();
@@ -10,6 +10,23 @@
         // Get records for current page
         $offset = ($currentPage - 1) * $perPage;
         $currentPageRecords = $locationChanges->slice($offset, $perPage);
+        
+        // Get all unique location IDs from the records
+        $locationIds = $currentPageRecords->flatMap(function($record) {
+            return [$record->old_value, $record->new_value];
+        })->filter()->unique();
+        
+        // Fetch location details
+        $locations = \App\Models\Location::whereIn('id', $locationIds)->get()->keyBy('id');
+        
+        // Helper function to get location display
+        $getLocationDisplay = function($locationId) use ($locations) {
+            if (!$locationId || $locationId === 'N/A') {
+                return 'Not Assigned';
+            }
+            $location = $locations->get($locationId);
+            return $location ? $location->full_location : 'Location #' . $locationId;
+        };
     @endphp
 
     <div class="overflow-x-auto shadow-md rounded-lg hidden md:block">
@@ -29,12 +46,12 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $record->created_at->format('M d, Y') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px] bg-gray-100 text-gray-800">
-                            {{ $record->old_value }}
+                            {{ $getLocationDisplay($record->old_value) }}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px] bg-gray-100 text-gray-800">
-                            {{ $record->new_value }}
+                        <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px] bg-green-100 text-green-800">
+                            {{ $getLocationDisplay($record->new_value) }}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $record->user->name }}</td>
@@ -97,13 +114,13 @@
                             <div class="mb-2">
                                 <span class="font-medium text-gray-700">From:</span>
                                 <span class="px-2 py-1 text-xs font-medium rounded-full inline-flex items-center justify-center bg-gray-100 text-gray-800">
-                                    {{ $record->old_value }}
+                                    {{ $getLocationDisplay($record->old_value) }}
                                 </span>
                             </div>
                             <div class="mb-3">
                                 <span class="font-medium text-gray-700">To:</span>
-                                <span class="px-2 py-1 text-xs font-medium rounded-full inline-flex items-center justify-center bg-gray-100 text-gray-800">
-                                    {{ $record->new_value }}
+                                <span class="px-2 py-1 text-xs font-medium rounded-full inline-flex items-center justify-center bg-green-100 text-green-800">
+                                    {{ $getLocationDisplay($record->new_value) }}
                                 </span>
                             </div>
                             <div class="text-sm text-gray-600 mb-2">
