@@ -369,6 +369,11 @@ class RepairRequestController extends Controller
                 $updateData['photo'] = $this->savePhoto($request->photo);
             }
 
+            // If urgency_level is explicitly provided, mark as manually overridden
+            if ($request->filled('urgency_level')) {
+                $updateData['urgency_overridden'] = true;
+            }
+
             // Handle time_started for in_progress status
             if ($request->status === 'in_progress' && $request->time_started) {
                 $updateData['time_started'] = $request->time_started;
@@ -762,6 +767,10 @@ class RepairRequestController extends Controller
         $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->get();
         
         foreach ($pendingRequests as $request) {
+            // Skip if urgency was manually overridden
+            if ($request->urgency_overridden) {
+                continue;
+            }
             $urgencyLevel = $this->calculateUrgencyLevel($request);
             
             if ($request->urgency_level !== $urgencyLevel) {
@@ -805,6 +814,10 @@ class RepairRequestController extends Controller
         $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->get();
         
         foreach ($pendingRequests as $request) {
+            // Skip if urgency was manually overridden
+            if ($request->urgency_overridden) {
+                continue;
+            }
             $urgencyLevel = $this->calculateUrgencyLevel($request);
             
             if ($request->urgency_level !== $urgencyLevel) {

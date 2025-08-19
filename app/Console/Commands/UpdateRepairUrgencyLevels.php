@@ -33,6 +33,10 @@ class UpdateRepairUrgencyLevels extends Command
         $updatedCount = 0;
         
         foreach ($pendingRequests as $request) {
+            // Skip if urgency was manually overridden
+            if ($request->urgency_overridden) {
+                continue;
+            }
             $oldUrgencyLevel = $request->urgency_level;
             $newUrgencyLevel = $this->calculateUrgencyLevel($request);
             

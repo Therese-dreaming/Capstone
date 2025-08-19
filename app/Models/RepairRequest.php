@@ -33,13 +33,15 @@ class RepairRequest extends Model
         'technician_signature',
         'caller_signature',
         'created_by',
+        'urgency_overridden',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
         'time_started' => 'datetime',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
+        'urgency_overridden' => 'boolean',
     ];
 
     public function asset()
