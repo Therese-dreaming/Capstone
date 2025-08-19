@@ -24,7 +24,8 @@ class DashboardController extends Controller
         // Add repair request statistics
         $totalOpen = RepairRequest::whereIn('status', ['pending', 'urgent', 'in_progress'])->count();
         $completedThisMonth = RepairRequest::where('status', 'completed')
-            ->whereMonth('created_at', now()->month)
+            ->whereMonth('completed_at', now()->month)
+            ->whereYear('completed_at', now()->year)
             ->count();
         
         // Add pulled out assets statistics
@@ -312,15 +313,35 @@ class DashboardController extends Controller
                 ->get(),
             'assigned_tasks' => RepairRequest::where('technician_id', $user->id)
                 ->whereIn('status', ['pending', 'urgent', 'in_progress'])
-                ->count() + Maintenance::where('technician_id', $user->id)
-                ->where('status', '!=', 'completed')
                 ->count(),
-            'avg_response_time' => RepairRequest::where('technician_id', $user->id)
-                ->where('status', 'completed')
-                ->whereNotNull('time_started')
-                ->whereNotNull('completed_at')
-                ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, time_started, completed_at)), 1) as avg_hours'))
-                ->value('avg_hours') ?? 'N/A',
+            'avg_response_time' => (function() use ($user) {
+                $repairs = RepairRequest::where('technician_id', $user->id)
+                    ->where('status', 'completed')
+                    ->whereNotNull('time_started')
+                    ->whereNotNull('completed_at')
+                    ->where('time_started', '!=', '0000-00-00 00:00:00')
+                    ->where('completed_at', '!=', '0000-00-00 00:00:00')
+                    ->get();
+                
+                if ($repairs->count() > 0) {
+                    $totalMinutes = 0;
+                    foreach ($repairs as $repair) {
+                        $start = \Carbon\Carbon::parse($repair->time_started);
+                        $end = \Carbon\Carbon::parse($repair->completed_at);
+                        $totalMinutes += $start->diffInMinutes($end);
+                    }
+                    $avgMinutes = $totalMinutes / $repairs->count();
+                    
+                    if ($avgMinutes >= 60) {
+                        $hours = floor($avgMinutes / 60);
+                        $remainingMinutes = round($avgMinutes % 60, 1);
+                        return $hours . ($remainingMinutes > 0 ? 'hrs ' . $remainingMinutes . ' mins' : 'hrs');
+                    } else {
+                        return round($avgMinutes, 1) . ' mins';
+                    }
+                }
+                return 'N/A';
+            })(),
             'completion_rate' => $completionRate,
             'feedback_score' => $feedbackScore
         ];
@@ -443,12 +464,34 @@ class DashboardController extends Controller
                 ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)), 1) as avg_hours'))
                 ->value('avg_hours') ?? 0,
             // New: Average response time using only repairs (time_started to completed_at)
-            'avg_response_time' => RepairRequest::where('technician_id', $user->id)
-                ->where('status', 'completed')
-                ->whereNotNull('time_started')
-                ->whereNotNull('completed_at')
-                ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, time_started, completed_at)), 1) as avg_hours'))
-                ->value('avg_hours') ?? 0,
+            'avg_response_time' => (function() use ($user) {
+                $repairs = RepairRequest::where('technician_id', $user->id)
+                    ->where('status', 'completed')
+                    ->whereNotNull('time_started')
+                    ->whereNotNull('completed_at')
+                    ->where('time_started', '!=', '0000-00-00 00:00:00')
+                    ->where('completed_at', '!=', '0000-00-00 00:00:00')
+                    ->get();
+                
+                if ($repairs->count() > 0) {
+                    $totalMinutes = 0;
+                    foreach ($repairs as $repair) {
+                        $start = \Carbon\Carbon::parse($repair->time_started);
+                        $end = \Carbon\Carbon::parse($repair->completed_at);
+                        $totalMinutes += $start->diffInMinutes($end);
+                    }
+                    $avgMinutes = $totalMinutes / $repairs->count();
+                    
+                    if ($avgMinutes >= 60) {
+                        $hours = floor($avgMinutes / 60);
+                        $remainingMinutes = round($avgMinutes % 60, 1);
+                        return $hours . ($remainingMinutes > 0 ? 'hrs ' . $remainingMinutes . ' mins' : 'hrs');
+                    } else {
+                        return round($avgMinutes, 1) . ' mins';
+                    }
+                }
+                return 'N/A';
+            })(),
             'completed_repairs_history' => RepairRequest::with(['asset', 'category'])
                 ->where('technician_id', $user->id)
                 ->where('status', 'completed')
@@ -460,7 +503,11 @@ class DashboardController extends Controller
                 ->where('status', 'completed')
                 ->whereNotNull('completed_at')
                 ->orderBy('completed_at', 'desc')
-                ->get()
+                ->get(),
+            'avg_rating' => DB::table('technician_evaluations')
+                ->where('technician_id', $user->id)
+                ->whereNotNull('rating')
+                ->avg('rating') ?? 0
         ];
 
         // Calculate completion rate

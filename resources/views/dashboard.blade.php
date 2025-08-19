@@ -458,7 +458,7 @@
                         <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Date</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     </tr>
@@ -467,11 +467,7 @@
                                     @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            @if($maintenance->serial_number)
-                                                <a href="{{ route('assets.index', ['search' => $maintenance->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $maintenance->serial_number }}</a>
-                                            @else
-                                                <span class="text-gray-500">{{ $maintenance->maintenance_task ?? 'Unknown Task' }}</span>
-                                            @endif
+                                            {{ $maintenance->maintenance_task ?? 'Unknown Task' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($maintenance->completed_at)->format('M j, Y') }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -488,11 +484,7 @@
                             @foreach($personalStats['completed_maintenance_history']->take(5) as $maintenance)
                             <div class="bg-gray-50 rounded-lg p-3 md:p-4 hover:bg-gray-100 transition-colors duration-200">
                                 <div class="flex justify-between items-start mb-2">
-                                    @if($maintenance->serial_number)
-                                        <a href="{{ route('assets.index', ['search' => $maintenance->serial_number]) }}" class="font-bold text-red-600 hover:underline truncate">{{ $maintenance->serial_number }}</a>
-                                    @else
-                                        <span class="text-gray-500 truncate">{{ $maintenance->maintenance_task ?? 'Unknown Task' }}</span>
-                                    @endif
+                                    <span class="text-gray-900 truncate">{{ $maintenance->maintenance_task ?? 'Unknown Task' }}</span>
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 flex-shrink-0">Completed</span>
                                 </div>
 
@@ -528,7 +520,7 @@
                         Your Performance Metrics
                     </h2>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                         <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 md:p-6 rounded-xl border border-blue-200">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -549,7 +541,7 @@
                                 <div>
                                     <h3 class="text-xs md:text-sm font-medium text-green-700 mb-1">Completion Rate</h3>
                                     <p class="text-xl md:text-2xl font-bold text-green-900">{{ $personalStats['completion_rate'] ?? 'N/A' }}%</p>
-                                    <p class="text-xs text-green-600 mt-1">Tasks completed on time</p>
+                                    <p class="text-xs text-green-600 mt-1">Tasks completed at the time</p>
                                 </div>
                                 <div class="bg-green-200 p-2 md:p-3 rounded-full">
                                     <svg class="w-5 h-5 md:w-6 md:h-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -559,35 +551,9 @@
                             </div>
                         </div>
                         
-                        <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 p-4 md:p-6 rounded-xl border border-yellow-200">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h3 class="text-xs md:text-sm font-medium text-yellow-700 mb-1">Assigned Tasks</h3>
-                                    <p class="text-xl md:text-2xl font-bold text-yellow-900">{{ $personalStats['assigned_tasks'] ?? 0 }}</p>
-                                    <p class="text-xs text-yellow-600 mt-1">Currently assigned to you</p>
-                                </div>
-                                <div class="bg-yellow-200 p-2 md:p-3 rounded-full">
-                                    <svg class="w-5 h-5 md:w-6 md:h-6 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+
                         
-                        <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-4 md:p-6 rounded-xl border border-purple-200">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h3 class="text-xs md:text-sm font-medium text-purple-700 mb-1">Feedback Score</h3>
-                                    <p class="text-xl md:text-2xl font-bold text-purple-900">{{ $personalStats['feedback_score'] ?? 'N/A' }}/5</p>
-                                    <p class="text-xs text-purple-600 mt-1">Average user rating</p>
-                                </div>
-                                <div class="bg-purple-200 p-2 md:p-3 rounded-full">
-                                    <svg class="w-5 h-5 md:w-6 md:h-6 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>

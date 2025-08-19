@@ -20,7 +20,7 @@
     </div>
 
     <!-- Personal Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-blue-500 hover:shadow-lg transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
@@ -70,7 +70,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Avg. Response Time</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $personalStats['avg_response_time'] ?? 0 }} <span class="text-sm font-normal">hours</span></p>
+                    <p class="text-2xl font-bold text-gray-900">{{ $personalStats['avg_response_time'] ?? 'N/A' }}</p>
                 </div>
                 <div class="bg-yellow-100 p-3 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,8 +79,8 @@
                 </div>
             </div>
             <div class="mt-2">
-                <span class="text-xs {{ ($personalStats['avg_response_time'] ?? 0) < 24 ? 'text-green-600' : 'text-red-600' }} font-medium flex items-center">
-                    @if(($personalStats['avg_response_time'] ?? 0) < 24)
+                <span class="text-xs {{ (is_numeric($personalStats['avg_response_time'] ?? 0) && ($personalStats['avg_response_time'] ?? 0) < 24) || (is_string($personalStats['avg_response_time'] ?? '') && str_contains($personalStats['avg_response_time'], 'mins')) ? 'text-green-600' : 'text-red-600' }} font-medium flex items-center">
+                    @if((is_numeric($personalStats['avg_response_time'] ?? 0) && ($personalStats['avg_response_time'] ?? 0) < 24) || (is_string($personalStats['avg_response_time'] ?? '') && str_contains($personalStats['avg_response_time'], 'mins')))
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
@@ -110,6 +110,29 @@
             <div class="mt-2">
                 <div class="w-full bg-gray-200 rounded-full h-1.5">
                     <div class="bg-red-800 h-1.5 rounded-full" style="width: {{ $personalStats['completion_rate'] ?? 0 }}%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-purple-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Average Rating</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ number_format($personalStats['avg_rating'] ?? 0, 1) }}/5</p>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-2">
+                <div class="flex items-center">
+                    @for($i = 1; $i <= 5; $i++)
+                        <svg class="w-4 h-4 {{ $i <= ($personalStats['avg_rating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.175 0l-3.385 2.46c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118l-3.385-2.46c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.967z"/>
+                        </svg>
+                    @endfor
                 </div>
             </div>
         </div>

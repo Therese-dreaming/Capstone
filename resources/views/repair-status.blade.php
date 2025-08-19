@@ -456,8 +456,9 @@
     </div>
 
     <!-- Add Assign Technician Modal -->
-    <div id="assignTechnicianModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50" style="z-index: 60;">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div id="assignTechnicianModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center"
+    style="z-index: 60;">
+        <div class="p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <!-- Header -->
                 <div class="bg-blue-800 text-white p-4 rounded-t-lg -mt-3 -mx-3 mb-4">

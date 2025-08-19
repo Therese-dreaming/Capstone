@@ -28,7 +28,7 @@
             @method('PUT')
             <input type="hidden" name="status" value="completed">
             <input type="hidden" name="completed_at" id="completedAt">
-            <input type="hidden" name="serial_number" id="serialNumber">
+            <input type="hidden" name="serial_number" id="serialNumber" value="{{ $repairRequest->serial_number }}">
 
             <!-- Asset Information Display -->
             <div class="space-y-2">

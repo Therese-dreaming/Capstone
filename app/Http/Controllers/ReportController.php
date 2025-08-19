@@ -772,26 +772,24 @@ class ReportController extends Controller
 
             $maintenanceTasks = $maintenanceQuery->count();
             
-            // Calculate average response time (time between request and start of work)
-            $repairResponseTime = $repairsQuery->get()->avg(function ($repair) {
-                return Carbon::parse($repair->created_at)->diffInHours($repair->time_started);
-            });
-            $maintenanceResponseTime = $maintenanceQuery->get()->avg(function ($maintenance) {
-                return Carbon::parse($maintenance->created_at)->diffInHours($maintenance->scheduled_date);
-            });
+            // Calculate average response time (only for repairs, using time_started to completed_at)
+            $repairsWithTimeData = $repairsQuery->whereNotNull('time_started')
+                ->whereNotNull('completed_at')
+                ->where('time_started', '!=', '0000-00-00 00:00:00')
+                ->where('completed_at', '!=', '0000-00-00 00:00:00')
+                ->get();
             
-            // Calculate overall average response time
             $avgResponseTime = 0;
-            $responseTimeCount = 0;
-            if ($repairResponseTime) {
-                $avgResponseTime += $repairResponseTime;
-                $responseTimeCount++;
+            if ($repairsWithTimeData->count() > 0) {
+                $totalMinutes = 0;
+                foreach ($repairsWithTimeData as $repair) {
+                    $start = Carbon::parse($repair->time_started);
+                    $end = Carbon::parse($repair->completed_at);
+                    $totalMinutes += $start->diffInMinutes($end);
+                }
+                $avgMinutes = $totalMinutes / $repairsWithTimeData->count();
+                $avgResponseTime = round($avgMinutes / 60, 1); // Convert to hours
             }
-            if ($maintenanceResponseTime) {
-                $avgResponseTime += $maintenanceResponseTime;
-                $responseTimeCount++;
-            }
-            $avgResponseTime = $responseTimeCount > 0 ? $avgResponseTime / $responseTimeCount : 0;
 
             // Calculate completion rate
             $totalAssignedTasks = $repairsQuery->count() + $maintenanceQuery->count();
@@ -825,7 +823,11 @@ class ReportController extends Controller
 
             $repairScore = $maxRepairs > 0 ? ($employeeRepairs / $maxRepairs) * 100 : 0;
             $maintenanceScore = $maxMaintenance > 0 ? ($maintenanceTasks / $maxMaintenance) * 100 : 0;
-            $responseTimeScore = $avgResponseTime > 0 ? (1 / $avgResponseTime) * 100 : 0;
+            // For response time score, lower time is better, so we invert the calculation
+            // Cap at 24 hours (1440 minutes) as the worst case
+            $maxResponseTime = 24; // hours
+            $responseTimeScore = $avgResponseTime > 0 ? 
+                max(0, (($maxResponseTime - $avgResponseTime) / $maxResponseTime) * 100) : 0;
             $responseTimeScore = min($responseTimeScore, 100); // Cap at 100
 
             $performanceScore = 

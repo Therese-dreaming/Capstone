@@ -8,42 +8,13 @@
             <div class="text-center">
                 <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">Employee Performance Analysis</h1>
                 <p class="text-red-100 text-sm md:text-base">
-                    Period: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') : 'All Time' }} 
-                    to {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') : 'Present' }}
+                    Overall performance metrics for all employees
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- Date Filter Section -->
-    <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 md:mb-8">
-        <div class="text-center mb-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-2">Filter by Date Range</h2>
-            <p class="text-sm text-gray-600">Select a specific period to analyze employee performance</p>
-        </div>
-        <form action="{{ route('employee-performance') }}" method="GET" class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4" id="dateFilterForm">
-            <div class="flex items-center space-x-2">
-                <label for="start_date" class="text-sm font-medium text-gray-700">From:</label>
-                <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" 
-                    onchange="this.form.submit()"
-                    class="form-input h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
-            </div>
-            <div class="flex items-center space-x-2">
-                <label for="end_date" class="text-sm font-medium text-gray-700">To:</label>
-                <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-                    onchange="this.form.submit()"
-                    class="form-input h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
-            </div>
-            @if(request('start_date') || request('end_date'))
-                <a href="{{ route('employee-performance') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Reset Filters
-                </a>
-            @endif
-        </form>
-    </div>
+
 
     <!-- Overall Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
@@ -304,25 +275,5 @@
     </div>
 </div>
 
-<script>
-    // Auto-submit form when dates change
-    document.addEventListener('DOMContentLoaded', function() {
-        const startDate = document.getElementById('start_date');
-        const endDate = document.getElementById('end_date');
-        
-        if (startDate && endDate) {
-            startDate.addEventListener('change', function() {
-                if (endDate.value && this.value > endDate.value) {
-                    endDate.value = this.value;
-                }
-            });
-            
-            endDate.addEventListener('change', function() {
-                if (startDate.value && this.value < startDate.value) {
-                    startDate.value = this.value;
-                }
-            });
-        }
-    });
-</script>
+
 @endsection
