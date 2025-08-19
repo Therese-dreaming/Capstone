@@ -30,6 +30,7 @@
                             </svg>
                             <label class="text-sm font-medium text-gray-700">Did you notice any issues with assets?</label>
                         </div>
+                        <p class="text-xs text-gray-500 mb-3">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues. Assets that are "PULLED OUT" or "DISPOSED" are not eligible.</p>
                         <div class="flex items-center space-x-6 ml-7">
                             <label class="inline-flex items-center hover:cursor-pointer">
                                 <input type="radio" name="has_issues" value="0" class="form-radio text-red-800 focus:ring-red-800" checked onclick="toggleIssueDetails(false)">
@@ -51,6 +52,7 @@
                                 </svg>
                                 <label class="text-sm font-medium text-gray-700">Search Asset</label>
                             </div>
+                            <p class="text-xs text-gray-500 mb-2">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues.</p>
                             <div class="flex space-x-2">
                                 <div class="flex-1">
                                     <input type="text" id="serial_number" name="serial_number" placeholder="Enter serial number" class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 h-12 px-4">                                </div>
@@ -155,7 +157,7 @@ function toggleIssueDetails(show) {
 
 async function searchAsset() {
     const serialNumber = document.getElementById('serial_number').value;
-    const labNumber = document.getElementById('completeForm').getAttribute('data-lab');
+    const locationId = document.getElementById('completeForm').getAttribute('data-location');
     const messageDiv = document.getElementById('assetMessage');
     const messageTitle = messageDiv.querySelector('.message-title');
     const messageContent = messageDiv.querySelector('.message-content');
@@ -171,15 +173,25 @@ async function searchAsset() {
     try {
         const response = await fetch(`/assets/fetch/${serialNumber}`);
         const data = await response.json();
+        console.log('Asset data received:', data);
+        console.log('Location ID from form:', locationId);
+        console.log('Asset status:', data.status);
+        console.log('Asset status:', data.status);
 
         if (!response.ok) {
             throw new Error('Asset not found');
         }
 
-        // Validate that the asset belongs to the correct lab
-        const expectedLocation = `Computer Lab ${labNumber}`;
-        if (data.location !== expectedLocation) {
-            throw new Error(`This asset does not belong to ${expectedLocation}`);
+        // Validate that the asset belongs to the correct location
+        // Convert both to strings for comparison to handle type differences
+        if (String(data.location_id) !== String(locationId)) {
+            throw new Error(`This asset does not belong to the location being maintained`);
+        }
+
+        // Check if the asset is available for maintenance (not pulled out or disposed)
+        if (data.status === 'PULLED OUT' || data.status === 'DISPOSED') {
+            console.log(`Asset ${data.serial_number} rejected: Status is ${data.status}`);
+            throw new Error(`This asset is ${data.status.toLowerCase()} and cannot be included in maintenance issues. Only assets with status "IN USE" or "UNDER REPAIR" are allowed.`);
         }
 
         // Auto-fill all asset details
@@ -192,7 +204,7 @@ async function searchAsset() {
         // Show success message
         messageDiv.className = 'mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded';
         messageTitle.textContent = 'Success!';
-        messageContent.textContent = 'Asset found and details loaded';
+        messageContent.textContent = `Asset found and details loaded. Status: ${data.status}`;
         messageDiv.classList.remove('hidden');
     } catch (error) {
         messageDiv.className = 'mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
@@ -211,12 +223,13 @@ function addAnotherIssue() {
     issueDiv.innerHTML = `
         <!-- Asset Search Section with Icon -->
         <div class="bg-gray-50 p-3 md:p-4 rounded-lg space-y-2 md:space-y-3">
-            <div class="flex items-center space-x-2 mb-1 md:mb-2">
-                <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <label class="text-xs md:text-sm font-medium text-gray-700">Search Additional Asset</label>
-            </div>
+                                        <div class="flex items-center space-x-2 mb-1 md:mb-2">
+                                <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <label class="text-xs md:text-sm font-medium text-gray-700">Search Additional Asset</label>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-1 md:mb-2">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues.</p>
             <div class="flex space-x-2">
                 <div class="flex-1">
                     <input type="text" class="serial_number w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 h-10 md:h-12 px-3 md:px-4 text-xs md:text-sm" 
@@ -311,7 +324,7 @@ async function searchAdditionalAsset(button) {
     const messageDiv = issueDiv.querySelector('.assetMessage');
     const messageTitle = messageDiv.querySelector('.message-title');
     const messageContent = messageDiv.querySelector('.message-content');
-    const labNumber = document.getElementById('completeForm').getAttribute('data-lab');
+    const locationId = document.getElementById('completeForm').getAttribute('data-location');
 
     if (!serialInput.value) {
         messageDiv.className = 'assetMessage mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
@@ -324,15 +337,24 @@ async function searchAdditionalAsset(button) {
     try {
         const response = await fetch(`/assets/fetch/${originalSerialNumber}`);
         const data = await response.json();
+        console.log('Additional asset data received:', data);
+        console.log('Location ID from form:', locationId);
+        console.log('Additional asset status:', data.status);
 
         if (!response.ok) {
             throw new Error('Asset not found');
         }
 
-        // Validate that the asset belongs to the correct lab
-        const expectedLocation = `Computer Lab ${labNumber}`;
-        if (data.location !== expectedLocation) {
-            throw new Error(`This asset does not belong to ${expectedLocation}`);
+        // Validate that the asset belongs to the correct location
+        // Convert both to strings for comparison to handle type differences
+        if (String(data.location_id) !== String(locationId)) {
+            throw new Error(`This asset does not belong to the location being maintained`);
+        }
+
+        // Check if the asset is available for maintenance (not pulled out or disposed)
+        if (data.status === 'PULLED OUT' || data.status === 'DISPOSED') {
+            console.log(`Additional asset ${data.serial_number} rejected: Status is ${data.status}`);
+            throw new Error(`This asset is ${data.status.toLowerCase()} and cannot be included in maintenance issues. Only assets with status "IN USE" or "UNDER REPAIR" are allowed.`);
         }
 
         // Auto-fill all asset details
@@ -346,7 +368,7 @@ async function searchAdditionalAsset(button) {
         // Show success message
         messageDiv.className = 'assetMessage mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded';
         messageTitle.textContent = 'Success!';
-        messageContent.textContent = 'Asset found and details loaded';
+        messageContent.textContent = `Asset found and details loaded. Status: ${data.status}`;
         messageDiv.classList.remove('hidden');
     } catch (error) {
         messageDiv.className = 'assetMessage mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded';
@@ -367,11 +389,12 @@ function hideModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
 
-function markAsComplete(maintenanceId, labNumber) {
+function markAsComplete(maintenanceId, locationId) {
+    console.log('markAsComplete called with:', { maintenanceId, locationId });
     const modal = document.getElementById('completionModal');
     const form = document.getElementById('completeForm');
     form.setAttribute('action', `/maintenance/${maintenanceId}/complete`);
-    form.setAttribute('data-lab', labNumber);
+    form.setAttribute('data-location', locationId);
 
     // Reset form and hide issue details
     form.reset();

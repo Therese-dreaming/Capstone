@@ -1,135 +1,261 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-4 md:p-6mx-auto max-w-6xl md:max-w-full">
-    <div class="max-w-6xl mx-auto">
+<div class="flex-1 p-4 md:p-8 transition-all duration-300" id="mainContent">
+    <div class="max-w-7xl mx-auto">
         <!-- Main Container -->
-        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
             <!-- Header Section -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 print-only-hide">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold">Procurement History</h1>
-                    <p class="text-gray-600 text-sm">Total Assets Procured: {{ $assets->count() }}</p>
+            <div class="mb-8">
+                <div class="flex items-center mb-6">
+                    <div class="bg-red-100 p-3 rounded-full mr-4">
+                        <svg class="w-8 h-8 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Procurement History Report</h1>
+                        <p class="text-gray-600 text-sm md:text-base">Total Assets Procured: {{ $assets->count() }}</p>
+                    </div>
                 </div>
+
+                <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto items-start sm:items-center">
-                    <!-- Date Filter Form -->
-                    <form action="{{ route('reports.procurement-history') }}" method="GET" class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto" id="dateFilterForm">
-                        <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <label for="start_date" class="text-sm font-medium text-gray-600 flex-shrink-0">From:</label>
-                            <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" onchange="this.form.submit()" class="form-input h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        </div>
-                        <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <label for="end_date" class="text-sm font-medium text-gray-600 flex-shrink-0">To:</label>
-                            <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}" onchange="this.form.submit()" class="form-input h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        </div>
-                        @if(request('start_date') || request('end_date'))
-                        <a href="{{ route('reports.procurement-history') }}" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center justify-center w-full sm:w-auto text-sm">
-                            Reset
-                        </a>
-                        @endif
-                    </form>
-                    <button onclick="printReport()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    <button onclick="printReport()" class="bg-red-800 text-white px-6 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
                         Print Report
+                    </button>
+                    <button onclick="exportPaascu()" class="bg-green-800 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Generate PAASCU Report
                     </button>
                 </div>
             </div>
 
-            <!-- Date Range Info (if filtered) -->
-            @if(request('start_date') || request('end_date'))
-            <div class="mb-4 text-sm text-gray-600 text-center sm:text-left">
-                Showing results from
-                {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') : 'the beginning' }}
-                to
-                {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') : 'present' }}
+            <!-- Filters -->
+            <form action="{{ route('reports.procurement-history') }}" method="GET" class="mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <div class="flex space-x-2">
+                            <input type="date" name="start_date" value="{{ request('start_date') }}" class="h-10 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                            <input type="date" name="end_date" value="{{ request('end_date') }}" class="h-10 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                        </div>
+                    </div>
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select name="category_id" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select name="status" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                            <option value="">All Status</option>
+                            <option value="IN USE" {{ request('status') == 'IN USE' ? 'selected' : '' }}>IN USE</option>
+                            <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
+                            <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
+                            <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
+                        </select>
+                    </div>
+                    <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vendor</label>
+                        <select name="vendor_id" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                            <option value="">All Vendors</option>
+                            @foreach($vendors as $vendor)
+                                <option value="{{ $vendor->id }}" {{ request('vendor_id') == $vendor->id ? 'selected' : '' }}>
+                                    {{ $vendor->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="transform transition-all duration-300 hover:scale-[1.02] flex items-end">
+                        <button type="submit" class="w-full h-10 bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Reset Filters -->
+            @if(request('start_date') || request('end_date') || request('category_id') || request('status') || request('vendor_id'))
+            <div class="mb-6 flex justify-center">
+                <a href="{{ route('reports.procurement-history') }}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 flex items-center text-sm transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset All Filters
+                </a>
             </div>
             @endif
 
+            <!-- Date Range Info (if filtered) -->
+            @if(request('start_date') || request('end_date'))
+            <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium">
+                        Showing results from
+                        {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') : 'the beginning' }}
+                        to
+                        {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') : 'present' }}
+                    </span>
+                </div>
+            </div>
+            @endif
+
+            <!-- Summary Card -->
+            <div class="mb-8">
+                <div class="bg-red-800 text-white rounded-xl shadow-lg p-6 md:p-8">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-white/20 p-3 rounded-full mr-4 backdrop-blur-sm">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl md:text-2xl font-bold">Procurement Summary</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm">
+                            <div class="text-3xl md:text-4xl font-bold mb-2">{{ $assets->count() }}</div>
+                            <p class="text-red-100 text-sm md:text-base font-medium">Total Assets Procured</p>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm sm:text-right">
+                            <div class="text-3xl md:text-4xl font-bold mb-2">₱{{ number_format($assets->sum('purchase_price'), 2) }}</div>
+                            <p class="text-red-100 text-sm md:text-base font-medium">Total Investment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Assets Table (Desktop View) -->
             <div class="overflow-x-auto hidden md:block">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Serial Number</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Purchase Date</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Purchase Price</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($assets as $asset)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{{ $asset->name }}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                                <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ $asset->category->name }}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price, 2) }}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ $asset->vendor }}</td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    @if($asset->status == 'IN USE') bg-green-100 text-green-800
-                                    @elseif($asset->status == 'UNDER REPAIR') bg-yellow-100 text-yellow-800
-                                    @else bg-red-100 text-red-800
-                                    @endif">
-                                    {{ $asset->status }}
-                                </span>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="bg-gray-50">
-                        <tr>
-                            <td colspan="4" class="px-4 py-2 text-sm font-medium text-gray-900">Total Procurement Value</td>
-                            <td class="px-4 py-2 text-sm font-medium text-gray-900">₱{{ number_format($assets->sum('purchase_price'), 2) }}</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2-2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Procurement Details
+                    </h3>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white rounded-lg">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Price</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($assets as $asset)
+                            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $asset->name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $asset->category->name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">₱{{ number_format($asset->purchase_price, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $asset->vendor->name ?? $asset->vendor }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        @if($asset->status == 'IN USE') bg-green-100 text-green-800
+                                        @elseif($asset->status == 'UNDER REPAIR') bg-yellow-100 text-yellow-800
+                                        @else bg-red-100 text-red-800
+                                        @endif">
+                                        {{ $asset->status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination for Desktop -->
-            <div class="mt-4 hidden md:block">
+            <div class="mt-6 hidden md:block">
                 {{ $assets->appends(request()->query())->links() }}
             </div>
 
             <!-- Assets List (Mobile View) -->
-            <div class="grid grid-cols-1 gap-4 md:hidden print-only-hide">
+            <div class="grid grid-cols-1 gap-4 md:hidden">
                 @foreach($assets as $asset)
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-800">
-                    <div class="font-bold text-gray-900 mb-2">{{ $asset->name }}</div>
-                     <div class="text-sm text-gray-900 mb-1"><strong>Serial Number:</strong> <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a></div>
-                    <div class="text-sm text-gray-600 mb-1"><strong>Category:</strong> {{ $asset->category->name }}</div>
-                    <div class="text-sm text-gray-600 mb-1"><strong>Purchase Date:</strong> {{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}</div>
-                    <div class="text-sm text-gray-900 mb-1"><strong>Purchase Price:</strong> ₱{{ number_format($asset->purchase_price, 2) }}</div>
-                    <div class="text-sm text-gray-600 mb-2"><strong>Vendor:</strong> {{ $asset->vendor }}</div>
-                    <div class="text-sm">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            @if($asset->status == 'IN USE') bg-green-100 text-green-800
-                            @elseif($asset->status == 'UNDER REPAIR') bg-yellow-100 text-yellow-800
-                            @else bg-red-100 text-red-800
-                            @endif">
-                            {{ $asset->status }}
-                        </span>
+                <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-800 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="font-bold text-lg text-gray-900">{{ $asset->name }}</div>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold text-gray-900">₱{{ number_format($asset->purchase_price, 2) }}</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <span class="text-gray-600"><strong>Category:</strong> {{ $asset->category->name }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <span class="text-gray-600"><strong>Serial Number:</strong> <a href="{{ route('assets.index', ['search' => $asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $asset->serial_number }}</a></span>
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-gray-600"><strong>Purchase Date:</strong> {{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <span class="text-gray-600"><strong>Vendor:</strong> {{ $asset->vendor->name ?? $asset->vendor }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-gray-600"><strong>Status:</strong></span>
+                            <span class="px-2 py-1 ml-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                @if($asset->status == 'IN USE') bg-green-100 text-green-800
+                                @elseif($asset->status == 'UNDER REPAIR') bg-yellow-100 text-yellow-800
+                                @else bg-red-100 text-red-800
+                                @endif">
+                                {{ $asset->status }}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 @endforeach
 
                 <!-- Total Purchase Price Summary for Mobile -->
-                 <div class="bg-gray-50 rounded-lg shadow p-4 flex justify-between items-center mt-2 print-only-hide">
-                    <div class="text-sm font-medium text-gray-900">Total Procurement Value</div>
-                    <div class="text-sm font-medium text-gray-900">₱{{ number_format($assets->sum('purchase_price'), 2) }}</div>
+                <div class="bg-gray-50 rounded-xl shadow-lg p-6 flex justify-between items-center mt-2">
+                    <div class="text-lg font-bold text-gray-900">Total Procurement Value</div>
+                    <div class="text-lg font-bold text-red-800">₱{{ number_format($assets->sum('purchase_price'), 2) }}</div>
                 </div>
             </div>
 
             <!-- Pagination for Mobile -->
-            <div class="mt-4 md:hidden">
+            <div class="mt-6 md:hidden">
                 {{ $assets->appends(request()->query())->links() }}
             </div>
         </div>
@@ -141,6 +267,26 @@
         window.print();
     }
 
+    function exportPaascu() {
+        // Get current filter values
+        const startDate = document.querySelector('input[name="start_date"]').value;
+        const endDate = document.querySelector('input[name="end_date"]').value;
+        const categoryId = document.querySelector('select[name="category_id"]').value;
+        const status = document.querySelector('select[name="status"]').value;
+        const vendorId = document.querySelector('select[name="vendor_id"]').value;
+
+        // Build query string
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (categoryId) params.append('category_id', categoryId);
+        if (status) params.append('status', status);
+        if (vendorId) params.append('vendor_id', vendorId);
+
+        // Redirect to PAASCU export route
+        const url = `{{ route('reports.procurement-history.paascu-export') }}?${params.toString()}`;
+        window.open(url, '_blank');
+    }
 </script>
 
 <style>
@@ -155,10 +301,15 @@
         [x-data],
         button,
         .print-hide,
-        .flex.flex-col.sm\:flex-row.space-y-3.sm\:space-y-0.sm\:space-x-4.w-full.sm\:w-auto.items-start.sm\:items-center, /* Hide button group container */
-        .flex.flex-col.sm\:flex-row.justify-between.items-start.sm\:items-center.mb-6.gap-4, /* Hide header section */
+        .flex.flex-col.md\:flex-row.justify-between.items-start.md\:items-center.mb-8.gap-4.md\:gap-0 > div:last-child, /* Hide button group container */
+        .flex.flex-col.md\:flex-row.justify-between.items-start.md\:items-center.mb-8.gap-4.md\:gap-0, /* Hide header section */
         .grid.grid-cols-1.gap-4.md\:hidden, /* Hide mobile cards */
         form { /* Hide filter form */
+            display: none !important;
+        }
+
+        /* Hide summary card */
+        .mb-8:has(.bg-red-800) {
             display: none !important;
         }
 
@@ -168,13 +319,13 @@
              padding: 0 !important;
         }
 
-       /* Remove left margin from main content added for sidebar */
-       .md\:ml-80 {
+        /* Remove left margin from main content added for sidebar */
+        .md\:ml-80 {
             margin-left: 0 !important;
         }
 
         /* Ensure container is visible and uses full width */
-        .max-w-6xl, .max-w-full {
+        .max-w-7xl, .max-w-full {
             max-width: 100% !important;
             width: 100% !important;
         }
@@ -196,25 +347,34 @@
             display: block !important;
         }
 
-         /* Show total assets count in print */
-        .text-gray-600.text-sm {
+        /* Show total assets count in print */
+        .text-gray-600.text-sm.md\:text-base {
             text-align: center !important;
             margin-bottom: 20px;
             font-size: 10pt;
             display: block !important;
         }
 
-         /* Show date range in print if filtered */
-        .mb-4.text-sm.text-gray-600.text-center.sm\:text-left {
+        /* Show date range in print if filtered */
+        .mb-6.p-4.bg-blue-50.border.border-blue-200.rounded-xl.text-blue-800.text-center.md\:text-left {
             display: block !important;
             text-align: center !important;
             margin-bottom: 15px;
+            background-color: white !important;
+            border: 1px solid #000 !important;
+            color: black !important;
         }
 
         /* Ensure the table is visible and styled for print */
         .overflow-x-auto.hidden.md\:block {
             display: block !important;
             overflow-x: visible !important; /* Ensure table is not scrollable in print */
+        }
+
+        .bg-gray-50.rounded-xl.p-6.mb-6 {
+            background-color: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
 
         table {
@@ -226,7 +386,7 @@
 
         th {
             background-color: #f3f4f6;
-            color: #6b7280;\
+            color: #6b7280;
             font-size: 9pt !important;
             font-weight: 600;
             text-transform: uppercase;
@@ -251,22 +411,17 @@
             page-break-inside: avoid;
         }
 
-        tfoot {
-            display: table-row-group !important;
-        }
-
-         /* Remove color-adjust for backgrounds/colors */
+        /* Remove color-adjust for backgrounds/colors */
         thead th {
             -webkit-print-color-adjust: unset !important;
             print-color-adjust: unset !important;
         }
 
         /* Remove status colors in print */
-        .px-2.inline-flex {
+        .px-3.inline-flex {
             background-color: transparent !important;
             color: black !important;
         }
     }
-
 </style>
 @endsection

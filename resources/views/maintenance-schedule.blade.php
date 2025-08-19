@@ -1,37 +1,67 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-4 md:p-8">
-    @if(session('success'))
-    <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-        {{ session('success') }}
+<div class="flex-1 p-4 md:p-8 bg-gray-50">
+    <!-- Page Header with Background Design -->
+    <div class="mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4">
+                        <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Schedule Lab Maintenance</h1>
+                        <p class="text-red-100 text-sm md:text-lg">Plan and schedule maintenance activities for laboratory equipment</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center">
+            <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm md:text-base">{{ session('success') }}</span>
+        </div>
     @endif
 
     @if($errors->any())
-    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-        <ul class="list-disc list-inside">
-            @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+            <div class="flex items-center mb-2">
+                <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-sm md:text-base font-medium">Please correct the following errors:</span>
+            </div>
+            <ul class="ml-4 list-disc list-inside text-sm md:text-base space-y-1">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
 
     <!-- Notification div for JavaScript -->
-    <div id="notification" class="mb-4 p-4 rounded hidden"></div>
+    <div id="notification" class="mb-4 md:mb-6 p-3 md:p-4 rounded-xl hidden"></div>
 
-    <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
-        <h2 class="text-2xl font-bold mb-6">SCHEDULE LAB MAINTENANCE</h2>
-        <div class="border-b-2 border-red-800 mb-6"></div>
+    <!-- Main Content Card -->
+    <div class="bg-white rounded-xl shadow-md p-4 md:p-6">
         <form id="maintenanceForm" action="{{ route('maintenance.store') }}" method="POST" class="space-y-6">
             @csrf
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 <!-- Left Column -->
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Select Location</label>
-                        <select name="location_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Location</label>
+                        <select name="location_id" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
                             <option value="">Select a location...</option>
                             @foreach($locations as $id => $name)
                             <option value="{{ $id }}">{{ $name }}</option>
@@ -43,16 +73,19 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Schedule Date</label>
-                        <input type="date" name="scheduled_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50" min="{{ date('Y-m-d') }}">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Date</label>
+                        <input type="date" name="scheduled_date" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
+                               min="{{ date('Y-m-d') }}">
                         @error('scheduled_date')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Assign Technician</label>
-                        <select name="technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-gray-50">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Technician</label>
+                        <select name="technician_id" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
                             <option value="">Select a technician...</option>
                             @foreach($technicians as $technician)
                             <option value="{{ $technician->id }}">{{ $technician->name }}</option>
@@ -64,14 +97,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Exclude Assets (Optional)</label>
-                        <div class="border border-gray-300 rounded-md bg-gray-50 p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Exclude Assets (Optional)</label>
+                        <div class="border border-gray-300 rounded-lg bg-gray-50 p-4">
                             <div class="flex space-x-2 mb-3">
-                                <select id="assetSelect" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white">
+                                <select id="assetSelect" 
+                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
                                     <option value="">Select an asset...</option>
                                 </select>
-                                <button type="button" onclick="addExcludedAsset()" class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 
-                                    focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+                                <button type="button" onclick="addExcludedAsset()" 
+                                        class="px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-md">
                                     Add
                                 </button>
                             </div>
@@ -85,19 +119,21 @@
 
                 <!-- Right Column -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Maintenance Tasks</label>
-                    <div class="border border-gray-300 rounded-md bg-gray-50 p-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Maintenance Tasks</label>
+                    <div class="border border-gray-300 rounded-lg bg-gray-50 p-4">
                         <!-- Add New Task Input -->
                         <div class="mb-4 flex space-x-2">
-                            <input type="text" id="newTask" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 bg-white" placeholder="Enter new maintenance task">
-                            <button type="button" onclick="return addNewTask(event)" class="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 
-                                focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+                            <input type="text" id="newTask" 
+                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
+                                   placeholder="Enter new maintenance task">
+                            <button type="button" onclick="return addNewTask(event)" 
+                                    class="px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-md">
                                 Add Task
                             </button>
                         </div>
                         <div class="task-container space-y-3 max-h-[300px] overflow-y-auto pr-2">
                             @foreach($maintenanceTasks as $task)
-                            <div class="flex items-center bg-white p-3 rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="toggleCheckbox(this)">
+                            <div class="flex items-center bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="toggleCheckbox(this)">
                                 <input type="checkbox" name="maintenance_tasks[]" value="{{ $task }}" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
                                 <label class="ml-3 text-sm text-gray-700 font-medium flex-1 cursor-pointer">{{ $task }}</label>
                             </div>
@@ -110,10 +146,13 @@
                 </div>
             </div>
 
-            <div class="pt-4 border-t border-gray-200">
-                <button type="button" onclick="showConfirmationModal()" class="w-full bg-red-800 text-white py-3 px-4 rounded-md hover:bg-red-700 
-                    focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
-                    font-medium transition-colors duration-200">
+            <!-- Submit Button Section -->
+            <div class="pt-6 border-t border-gray-200">
+                <button type="button" onclick="showConfirmationModal()" 
+                        class="w-full bg-red-600 text-white py-4 px-6 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium transition-colors duration-200 shadow-md flex items-center justify-center">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                     Schedule Maintenance
                 </button>
             </div>
@@ -122,24 +161,22 @@
 
     <!-- Confirmation Modal -->
     <div id="confirmationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-3 md:p-5 border w-full max-w-[95%] md:max-w-[500px] shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-3 md:p-5 border w-full max-w-[95%] md:max-w-[500px] shadow-lg rounded-xl bg-white">
             <div class="mt-3">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Confirm Maintenance Schedule</h3>
                 <div class="mt-2 px-7 py-3">
                     <p class="text-sm text-gray-500 text-center mb-4">Please review the maintenance schedule details below:</p>
-                    <div id="scheduleDetails" class="bg-gray-50 p-4 rounded-md text-sm space-y-3">
+                    <div id="scheduleDetails" class="bg-gray-50 p-4 rounded-lg text-sm space-y-3">
                         <!-- Details will be filled by JavaScript -->
                     </div>
                 </div>
                 <div class="flex justify-center space-x-3 mt-6">
-                    <button id="confirmButton" class="px-6 py-2 bg-red-800 text-white text-base font-medium rounded-md 
-                        hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 
-                        transition-colors duration-200">
+                    <button id="confirmButton" 
+                            class="px-6 py-3 bg-red-600 text-white text-base font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-md">
                         Confirm Schedule
                     </button>
-                    <button onclick="hideConfirmationModal()" class="px-6 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md 
-                        hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 
-                        transition-colors duration-200">
+                    <button onclick="hideConfirmationModal()" 
+                            class="px-6 py-3 bg-gray-100 text-gray-700 text-base font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
                         Cancel
                     </button>
                 </div>
@@ -147,37 +184,35 @@
         </div>
     </div>
 
-<!-- Validation Modal -->
-<div id="validationModal"
-     class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center">
-    
-    <div class="p-5 border max-w-sm w-full sm:w-auto shadow-lg rounded-md bg-white">
-        <div class="text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-            </div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Validation Error</h3>
-            <div class="mt-2 px-4 py-2">
-                <p id="validationMessage" class="text-sm text-gray-500"></p>
-            </div>
-            <div class="px-4 pt-2 pb-3">
-                <button onclick="hideValidationModal()"
-                        class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                    OK
-                </button>
+    <!-- Validation Modal -->
+    <div id="validationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="p-5 border max-w-sm w-full sm:w-auto shadow-lg rounded-xl bg-white">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Validation Error</h3>
+                <div class="mt-2 px-4 py-2">
+                    <p id="validationMessage" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="px-4 pt-2 pb-3">
+                    <button onclick="hideValidationModal()"
+                            class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
+                        OK
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 
 
     <!-- Success Modal -->
     <div id="successModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-[400px] shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-[400px] shadow-lg rounded-xl bg-white">
             <div class="mt-3 text-center">
                 <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
                     <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,7 +224,8 @@
                     <p id="successMessage" class="text-sm text-gray-500"></p>
                 </div>
                 <div class="items-center px-4 py-3">
-                    <button onclick="hideSuccessModal()" class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <button onclick="hideSuccessModal()" 
+                            class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-lg w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200">
                         OK
                     </button>
                 </div>
@@ -233,7 +269,7 @@
                 assetSelect.innerHTML = '<option value="">Select an asset...</option>' + 
                     assets.map(asset => `
                         <option value="${asset.id}" data-name="${asset.name}" data-serial="${asset.serial_number}">
-                            ${asset.name} (SN: ${asset.serial_number})
+                            ${asset.name} (SN: ${asset.serial_number}) - ${asset.status}
                         </option>
                     `).join('');
             })

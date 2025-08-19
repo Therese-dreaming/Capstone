@@ -30,81 +30,39 @@
             <input type="hidden" name="completed_at" id="completedAt">
             <input type="hidden" name="serial_number" id="serialNumber">
 
-            <!-- QR Code Scanner Section -->
+            <!-- Asset Information Display -->
             <div class="space-y-2">
                 <label class="block text-gray-700 text-sm font-semibold">
-                    Scan Asset QR Code
+                    Asset Information
                 </label>
-                <div class="border border-gray-300 rounded-md p-4">
-                    <div class="space-y-4">
-                        <!-- Camera Scanner -->
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">Camera Scanner</h4>
-                            <div id="reader" class="w-full"></div>
-                            <div id="scanResult" class="mt-2 text-sm text-gray-600"></div>
+                <div class="border border-gray-300 rounded-md p-4 bg-gray-50">
+                    @if($repairRequest->serial_number)
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-900">Serial Number: {{ $repairRequest->serial_number }}</span>
                         </div>
-                        
-                        <!-- OR Divider -->
-                        <div class="relative">
-                            <div class="absolute inset-0 flex items-center">
-                                <div class="w-full border-t border-gray-300"></div>
+                        @if($repairRequest->asset)
+                            <div class="mt-2 text-sm text-gray-600">
+                                Asset Name: {{ $repairRequest->asset->name }}
                             </div>
-                            <div class="relative flex justify-center text-sm">
-                                <span class="px-2 bg-white text-gray-500">OR</span>
-                            </div>
+                        @endif
+                    @else
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600">No asset linked to this repair request</span>
                         </div>
-                        
-                        <!-- File Upload for QR Code -->
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                Upload QR Code Image
-                            </h4>
-                            
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                                <div class="flex flex-col items-center justify-center text-center">
-                                    <div class="mb-4">
-                                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                        </svg>
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <p class="text-sm font-medium text-gray-700 mb-1">
-                                            Click to upload or drag and drop
-                                        </p>
-                                        <p class="text-xs text-gray-500">
-                                            PNG, JPG, GIF, BMP up to 5MB
-                                        </p>
-                                    </div>
-                                    
-                                    <label for="qrCodeFile" class="cursor-pointer">
-                                        <div class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
-                                            Choose File
-                                        </div>
-                                        <input type="file" id="qrCodeFile" name="qr_code_file" 
-                                            accept=".jpg,.jpeg,.png,.gif,.bmp"
-                                            class="hidden"
-                                            onchange="handleQRCodeFileUpload(this)">
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <!-- File Info Display -->
-                            <div id="fileInfo" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="text-sm text-green-800 font-medium" id="fileName"></span>
-                                </div>
-                            </div>
+                        <div class="mt-2">
+                            <a href="{{ route('repair.identify-asset', $repairRequest->id) }}" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                                Click here to identify the asset first
+                            </a>
                         </div>
-                    </div>
+                    @endif
                 </div>
-                <p class="text-sm text-gray-500">Scan the QR code on the asset or upload a QR code image to automatically fill in the serial number.</p>
+                <p class="text-sm text-gray-500">Asset information is displayed based on the identification done in the previous step.</p>
             </div>
 
             <!-- Caller's Name -->
@@ -164,7 +122,7 @@
                 </div>
 
                 <!-- Caller's Signature -->
-                @if(!in_array($repairRequest->creator->group_id ?? null, [1, 2]))
+                @if($repairRequest->creator_id != auth()->id())
                 <div class="space-y-2">
                     <label class="block text-gray-700 text-sm font-semibold">
                         Caller's Signature <span class="text-red-600">*</span>
@@ -221,8 +179,6 @@
 
 <!-- Add SignaturePad library -->
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-<!-- Add HTML5-QRCode library -->
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
     let technicianPad, callerPad;
@@ -262,19 +218,7 @@
             });
         }
 
-        // Initialize QR Code Scanner
-        html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanFailure
-        ).catch((err) => {
-            console.error("Error starting QR scanner:", err);
-            showMessage("Failed to start QR scanner. Please check camera permissions.", "error");
-        });
+
 
         // Set current timestamp
         document.getElementById('completedAt').value = new Date().toISOString();
@@ -304,7 +248,7 @@
                 return;
             }
 
-            @if(!in_array($repairRequest->creator->group_id ?? null, [1, 2]))
+            @if($repairRequest->creator_id != auth()->id())
             if (!callerPad || callerPad.isEmpty()) {
                 showMessage('Please provide caller signature', 'error');
                 return;
@@ -313,7 +257,7 @@
 
             // Set signature data to hidden inputs
             document.getElementById('technicianSignatureInput').value = technicianSignature;
-            @if(!in_array($repairRequest->creator->group_id ?? null, [1, 2]))
+            @if($repairRequest->creator_id != auth()->id())
             document.getElementById('callerSignatureInput').value = callerSignature;
             @endif
 
@@ -359,190 +303,9 @@
             // Clear signatures
             technicianPad.clear();
         });
-
-        // Add drag and drop functionality
-        const dropZone = document.querySelector('.border-dashed');
-        const fileInput = document.getElementById('qrCodeFile');
-
-        if (dropZone && fileInput) {
-            // Prevent default drag behaviors
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-                document.body.addEventListener(eventName, preventDefaults, false);
-            });
-
-            // Highlight drop zone when item is dragged over it
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
-
-            // Handle dropped files
-            dropZone.addEventListener('drop', handleDrop, false);
-
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            function highlight(e) {
-                dropZone.classList.add('border-red-400', 'bg-red-50');
-            }
-
-            function unhighlight(e) {
-                dropZone.classList.remove('border-red-400', 'bg-red-50');
-            }
-
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-
-                if (files.length > 0) {
-                    fileInput.files = files;
-                    handleQRCodeFileUpload(fileInput);
-                }
-            }
-        }
     });
 
-    // QR Code Scanner Functions
-    function onScanSuccess(decodedText, decodedResult) {
-        try {
-            console.log('Camera scanned QR text:', decodedText); // Debug log
-            
-            // Try to parse as JSON first
-            try {
-                const qrData = JSON.parse(decodedText);
-                console.log('Parsed QR data from camera:', qrData); // Debug log
-                
-                // Validate the data structure
-                if (!qrData.serial_number) {
-                    throw new Error('Invalid QR code format: serial number not found');
-                }
 
-                // Stop scanning after successful scan
-                html5QrCode.stop().then(() => {
-                    // Set the serial number from the parsed data
-                    document.getElementById('serialNumber').value = qrData.serial_number;
-                    document.getElementById('scanResult').innerHTML = `Scanned Serial Number: ${qrData.serial_number}`;
-                    showMessage('QR code scanned successfully!', 'success');
-                }).catch(err => {
-                    console.error("Error stopping scanner:", err);
-                });
-            } catch (jsonError) {
-                // If JSON parsing fails, try to extract serial number from plain text
-                console.log("JSON parsing failed, trying plain text:", decodedText); // Debug log
-                
-                if (typeof decodedText === 'string' && decodedText.trim()) {
-                    const trimmedText = decodedText.trim();
-                    if (/^[A-Z0-9-]+$/i.test(trimmedText)) {
-                        // It looks like a serial number
-                        html5QrCode.stop().then(() => {
-                            document.getElementById('serialNumber').value = trimmedText;
-                            document.getElementById('scanResult').innerHTML = `Scanned Serial Number: ${trimmedText}`;
-                            showMessage('QR code scanned successfully!', 'success');
-                        }).catch(err => {
-                            console.error("Error stopping scanner:", err);
-                        });
-                        return;
-                    }
-                }
-                
-                // If neither JSON nor plain text works, throw the original error
-                throw jsonError;
-            }
-        } catch (error) {
-            console.error("Error parsing QR code data:", error);
-            showMessage('Invalid QR code format. Please scan a valid asset QR code.', 'error');
-        }
-    }
-
-    function onScanFailure(error) {
-        // Handle scan failure silently
-        console.warn(`QR Code scan failed: ${error}`);
-    }
-
-    // QR Code File Upload Function
-    function handleQRCodeFileUpload(input) {
-        const file = input.files[0];
-        if (!file) return;
-
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
-        if (!allowedTypes.includes(file.type)) {
-            showMessage('Please upload a valid image file (JPG, PNG, GIF, BMP)', 'error');
-            input.value = '';
-            return;
-        }
-
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-            showMessage('File size too large. Maximum size is 5MB.', 'error');
-            input.value = '';
-            return;
-        }
-
-        // Show file info
-        const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-        fileName.textContent = file.name;
-        fileInfo.classList.remove('hidden');
-
-        // Use the correct scanFile method like in scanner.blade.php
-        html5QrCode.scanFile(file, true)
-            .then(decodedText => {
-                console.log('Decoded QR text:', decodedText); // Debug log
-                
-                // Process the decoded text
-                try {
-                    const qrData = JSON.parse(decodedText);
-                    console.log('Parsed QR data:', qrData); // Debug log
-                    
-                    if (!qrData.serial_number) {
-                        throw new Error('Invalid QR code format: serial number not found');
-                    }
-
-                    // Set the serial number from the parsed data
-                    document.getElementById('serialNumber').value = qrData.serial_number;
-                    document.getElementById('scanResult').innerHTML = `Uploaded QR Code - Serial Number: ${qrData.serial_number}`;
-                    showMessage('QR code uploaded and decoded successfully!', 'success');
-                    
-                    // Clear the file input
-                    input.value = '';
-                } catch (error) {
-                    console.error("Error parsing QR code data:", error);
-                    console.log("Raw decoded text:", decodedText); // Debug log
-                    
-                    // Try to extract serial number from plain text if JSON parsing fails
-                    if (typeof decodedText === 'string' && decodedText.trim()) {
-                        // Check if it's just a serial number
-                        const trimmedText = decodedText.trim();
-                        if (/^[A-Z0-9-]+$/i.test(trimmedText)) {
-                            // It looks like a serial number
-                            document.getElementById('serialNumber').value = trimmedText;
-                            document.getElementById('scanResult').innerHTML = `Uploaded QR Code - Serial Number: ${trimmedText}`;
-                            showMessage('QR code uploaded and decoded successfully!', 'success');
-                            input.value = '';
-                            return;
-                        }
-                    }
-                    
-                    showMessage('Invalid QR code format. Please upload a valid asset QR code image.', 'error');
-                    input.value = '';
-                    document.getElementById('fileInfo').classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                console.error("Error decoding QR code:", error);
-                showMessage('Could not decode QR code from the uploaded image. Please check if the image contains a valid QR code.', 'error');
-                input.value = '';
-                document.getElementById('fileInfo').classList.add('hidden');
-            });
-    }
 
     function clearTechnicianSignature() {
         if (technicianPad) {
@@ -605,7 +368,7 @@
             return;
         }
 
-        @if(!in_array($repairRequest->creator->group_id ?? null, [1, 2]))
+        @if($repairRequest->creator_id != auth()->id())
         if (!callerPad || callerPad.isEmpty()) {
             showMessage('Please provide caller signature', 'error');
             return;
@@ -686,15 +449,6 @@
         touch-action: none;
     }
 
-    #reader {
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-    }
 
-    #reader video {
-        width: 100%;
-        border-radius: 0.375rem;
-    }
 </style>
 @endsection 

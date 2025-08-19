@@ -112,4 +112,12 @@ class Asset extends Model
     {
         return $this->location ? $this->location->room_number : null;
     }
+
+    /**
+     * Get the non-registered asset that was linked to this asset
+     */
+    public function nonRegisteredAsset()
+    {
+        return $this->hasOne(NonRegisteredAsset::class, 'linked_asset_id');
+    }
 }

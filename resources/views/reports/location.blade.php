@@ -1,27 +1,44 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-4 md:p-6 mx-auto max-w-6xlmd:max-w-full">
+<div class="flex-1 p-4 md:p-8 transition-all duration-300" id="mainContent">
     <div class="max-w-6xl mx-auto">
         <!-- Success and Error Messages -->
         @if(session('success'))
-        <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
+        <div class="mb-6 p-4 bg-green-100 border border-green-200 rounded-xl text-green-800 flex items-center">
+            <svg class="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {{ session('success') }}
         </div>
         @endif
 
         @if(session('error'))
-        <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+        <div class="mb-6 p-4 bg-red-100 border border-red-200 rounded-xl text-red-800 flex items-center">
+            <svg class="w-5 h-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {{ session('error') }}
         </div>
         @endif
 
         <!-- Main Container -->
-        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
             <!-- Header Section -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
-                <h1 class="text-xl sm:text-2xl font-bold">Asset Location Report</h1>
-                <button onclick="printReport()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
+                <div class="flex items-center">
+                    <div class="bg-red-100 p-3 rounded-full mr-4">
+                        <svg class="w-8 h-8 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Asset Location Report</h1>
+                        <p class="text-gray-600 text-sm md:text-base">Comprehensive overview of assets by location</p>
+                    </div>
+                </div>
+                <button onclick="printReport()" class="inline-flex items-center px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
@@ -30,33 +47,59 @@
             </div>
 
             <!-- Total Summary Card -->
-            <div class="mb-6">
-                <div class="bg-red-800 text-white rounded-lg shadow p-4">
-                    <h3 class="text-lg sm:text-xl font-semibold">Total Assets Summary</h3>
-                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <span class="text-2xl sm:text-3xl font-bold">{{ $totalSummary['total_assets'] }}</span>
-                            <p class="text-sm opacity-80">Total Assets</p>
+            <div class="mb-8">
+                <div class="bg-red-800 text-white rounded-xl shadow-lg p-6 md:p-8">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-white/20 p-3 rounded-full mr-4 backdrop-blur-sm">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
                         </div>
-                        <div class="text-right">
-                            <span class="text-2xl sm:text-3xl font-bold">₱{{ number_format($totalSummary['total_value'], 2) }}</span>
-                            <p class="text-sm opacity-80">Total Value</p>
+                        <h3 class="text-xl md:text-2xl font-bold">Total Assets Summary</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm">
+                            <div class="text-3xl md:text-4xl font-bold mb-2">{{ $totalSummary['total_assets'] }}</div>
+                            <p class="text-red-100 text-sm md:text-base font-medium">Total Assets</p>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm sm:text-right">
+                            <div class="text-3xl md:text-4xl font-bold mb-2">₱{{ number_format($totalSummary['total_value'], 2) }}</div>
+                            <p class="text-red-100 text-sm md:text-base font-medium">Total Value</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Location Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+            <!-- Location Summary Cards (Mobile Only) -->
+            <div class="grid grid-cols-1 gap-4 mb-8 md:hidden">
                 @foreach($locationStats as $stat)
-                <a href="{{ route('reports.location.details', $stat['location']) }}" class="block bg-white rounded-lg shadow p-4 border-l-4 border-red-800 hover:shadow-md transition-shadow duration-200 no-underline text-gray-800">
-                    <h3 class="text-lg font-semibold text-gray-800">{{ $stat['location'] }}</h3>
-                    <div class="mt-2 flex justify-between items-center">
-                        <span class="text-2xl font-bold text-red-800">{{ $stat['count'] }}</span>
-                        <div class="flex flex-col text-right">
-                            <span class="text-sm text-gray-500">Total Assets</span>
-                            <span class="text-xs text-gray-400">Value: ₱{{ number_format($stat['total_value'], 2) }}</span>
+                <a href="{{ route('reports.location.details', $stat['location']) }}" class="group block bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg hover:border-red-300 transition-all duration-300 no-underline text-gray-800 transform hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-red-100 p-2 rounded-lg mr-3 group-hover:bg-red-200 transition-colors">
+                            <svg class="w-5 h-5 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
                         </div>
+                        <h3 class="text-lg font-bold text-gray-800 group-hover:text-red-800 transition-colors">{{ $stat['location'] }}</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-3xl font-bold text-red-800">{{ $stat['count'] }}</span>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500 font-medium">Total Assets</div>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-gray-100">
+                            <div class="text-sm text-gray-600">Total Value</div>
+                            <div class="text-lg font-semibold text-gray-900">₱{{ number_format($stat['total_value'], 2) }}</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center text-red-600 text-sm font-medium group-hover:text-red-700 transition-colors">
+                        <span>View Details</span>
+                        <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
                     </div>
                 </a>
                 @endforeach
@@ -64,36 +107,72 @@
 
             <!-- Location Details Table (Desktop View) -->
             <div class="overflow-x-auto hidden md:block">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Assets</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Value</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($locationStats as $stat)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $stat['location'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $stat['count'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($stat['total_value'], 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-red-800">
-                                <a href="{{ route('reports.location.details', $stat['location']) }}" class="hover:text-red-600">View Details</a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="bg-gray-50">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $totalSummary['total_assets'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($totalSummary['total_value'], 2) }}</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2-2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Detailed Location Breakdown
+                    </h3>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white rounded-lg">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Assets</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($locationStats as $stat)
+                            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="bg-red-100 p-2 rounded-lg mr-3">
+                                            <svg class="w-4 h-4 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">{{ $stat['location'] }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                        {{ $stat['count'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">₱{{ number_format($stat['total_value'], 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-800">
+                                    <a href="{{ route('reports.location.details', $stat['location']) }}" class="inline-flex items-center px-3 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors font-medium">
+                                        <span>View Details</span>
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </a>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot class="bg-gray-100 rounded-lg">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">Total</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-800">
+                                        {{ $totalSummary['total_assets'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">₱{{ number_format($totalSummary['total_value'], 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-8">
+                {{ $locationStats->links() }}
             </div>
         </div>
     </div>
@@ -122,7 +201,12 @@
         }
 
         /* Hide location summary cards */
-        .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-4 {
+        .grid.grid-cols-1.gap-4.mb-8.md\:hidden {
+            display: none !important;
+        }
+
+        /* Hide pagination */
+        .mt-8:has(.pagination) {
             display: none !important;
         }
 
@@ -160,8 +244,16 @@
             display: block !important;
         }
 
+        /* Style the subtitle */
+        .text-gray-600.text-sm.md\:text-base {
+            text-align: center !important;
+            margin-bottom: 20px;
+            font-size: 10pt;
+            display: block !important;
+        }
+
         /* Ensure total summary card is visible and styled */
-        .mb-6:has(.bg-red-800) { /* Target the parent div of the total summary card */
+        .mb-8:has(.bg-red-800) { /* Target the parent div of the total summary card */
              display: block !important;
              margin-bottom: 20px !important;
         }
@@ -183,6 +275,12 @@
             overflow-x: visible !important; /* Ensure table is not scrollable in print */
         }
 
+        .bg-gray-50.rounded-xl.p-6.mb-6 {
+            background-color: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
         table {
             width: 100% !important;
             border-collapse: collapse;
@@ -192,7 +290,7 @@
 
         th {
             background-color: #f3f4f6;
-            color: #6b7280;\
+            color: #6b7280;
             font-size: 9pt !important;
             font-weight: 600;
             text-transform: uppercase;
@@ -234,4 +332,5 @@
         }
     }
 </style>
+
 @endsection

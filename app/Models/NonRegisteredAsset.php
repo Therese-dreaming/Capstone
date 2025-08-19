@@ -21,13 +21,16 @@ class NonRegisteredAsset extends Model
         'disposed_by',
         'returned_at',
         'returned_by',
-        'return_remarks'
+        'return_remarks',
+        'linked_asset_id',
+        'linked_at'
     ];
 
     protected $casts = [
         'pulled_out_at' => 'datetime',
         'disposed_at' => 'datetime',
-        'returned_at' => 'datetime'
+        'returned_at' => 'datetime',
+        'linked_at' => 'datetime'
     ];
 
     public function repairRequest()

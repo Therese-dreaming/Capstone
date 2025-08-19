@@ -1,5 +1,12 @@
 <div class="mb-8">
     @php
+        // Debug: Log what we're receiving
+        \Log::info('Repairs partial received data:', [
+            'history_keys' => is_array($history) ? array_keys($history) : $history->keys()->toArray(),
+            'repair_records_count' => isset($history['REPAIR']) ? count($history['REPAIR']) : 0,
+            'full_history' => is_array($history) ? $history : $history->toArray()
+        ]);
+
         // Get repair records and apply pagination
         $repairRecords = collect($history['REPAIR'] ?? []);
         $perPage = 10;
@@ -43,13 +50,22 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             @php
-                                if (preg_match('/Ticket: (REQ-\d{8}-\d{4})/', $record->remarks, $matches)) {
-                                    $ticketNo = $matches[1];
-                                } else {
-                                    $ticketNo = 'N/A';
+                                // Extract ticket number from remarks (for existing records) or use old_value (for new records)
+                                $ticketNo = 'N/A';
+                                if ($record->change_type === 'REPAIR') {
+                                    // Try to extract from remarks first (existing records)
+                                    if (preg_match('/Ticket: (REQ-\d{8}-\d{4})/s', $record->remarks, $matches)) {
+                                        $ticketNo = $matches[1];
+                                    } else {
+                                        // For new records, old_value should contain ticket number
+                                        $ticketNo = $record->old_value;
+                                    }
                                 }
+                                
+                                // Get repair request for linking
+                                $repairRequest = $ticketNo && $ticketNo !== 'N/A' ? \App\Models\RepairRequest::where('ticket_number', $ticketNo)->first() : null;
                             @endphp
-                            @if($ticketNo !== 'N/A')
+                            @if($ticketNo && $ticketNo !== 'N/A')
                                 <a href="{{ route('repair.details', ['id' => $repairRequest->id ?? 'unknown']) }}" 
                                    class="text-red-600 hover:text-red-800 hover:underline font-medium">
                                     {{ $ticketNo }}
@@ -60,10 +76,20 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
                             @php
-                                if (preg_match('/Issue: (.+?)\n/', $record->remarks . "\n", $matches)) {
-                                    $issue = $matches[1];
-                                } else {
+                                // Get issue from repair request if available, otherwise from old_value
+                                $issue = 'N/A';
+                                if ($repairRequest) {
+                                    $issue = $repairRequest->issue ?? 'N/A';
+                                } elseif ($record->change_type !== 'REPAIR') {
+                                    // For non-repair records, use old_value
                                     $issue = $record->old_value ?? 'N/A';
+                                } else {
+                                    // For repair records without repair request, try to extract from remarks
+                                    if (preg_match('/Issue: (.+?)\n/', $record->remarks . "\n", $matches)) {
+                                        $issue = $matches[1];
+                                    } else {
+                                        $issue = $record->old_value ?? 'N/A';
+                                    }
                                 }
                             @endphp
                             {{ $issue }}
@@ -94,13 +120,22 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
                             @php
-                                if (preg_match('/Remarks: (.+)$/', $record->remarks, $matches)) {
-                                    $remarks = $matches[1];
-                                } else {
-                                    $remarks = $record->remarks ?? 'N/A';
-                                }
+                                // Check if this was a previously non-registered asset
+                                $wasNonRegistered = strpos($record->remarks, 'Asset was previously non-registered') !== false;
                             @endphp
-                            {{ $remarks }}
+                            <div>
+                                {{ $record->remarks ?? 'N/A' }}
+                                @if($wasNonRegistered)
+                                    <div class="mt-1">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Previously Non-Registered
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -142,20 +177,40 @@
                 <div class="grid grid-cols-1 gap-4">
                     @foreach($records as $record)
                         @php
-                            // Extract ticket number
-                            preg_match('/Ticket: (REQ-\d{8}-\d{4})/', $record->remarks, $matches);
-                            $ticketNo = $matches[1] ?? null;
-
-                            // Extract issue from remarks or use old_value
-                            preg_match('/Issue: (.+?)\n/', $record->remarks . "\n", $matches); // Ensure newline for regex
-                            $issue = $matches[1] ?? $record->old_value ?? 'N/A';
+                            // Extract ticket number from remarks (for existing records) or use old_value (for new records)
+                            $ticketNo = 'N/A';
+                            if ($record->change_type === 'REPAIR') {
+                                // Try to extract from remarks first (existing records)
+                                if (preg_match('/Ticket: (REQ-\d{8}-\d{4})/s', $record->remarks, $matches)) {
+                                    $ticketNo = $matches[1];
+                                } else {
+                                    // For new records, old_value should contain ticket number
+                                    $ticketNo = $record->old_value;
+                                }
+                            }
+                            
+                            // Get issue from repair request if available
+                            $issue = 'N/A';
+                            if ($ticketNo && $ticketNo !== 'N/A') {
+                                $repairRequest = \App\Models\RepairRequest::where('ticket_number', $ticketNo)->first();
+                                if ($repairRequest) {
+                                    $issue = $repairRequest->issue ?? 'N/A';
+                                }
+                            } else {
+                                // For repair records without repair request, try to extract from remarks
+                                if (preg_match('/Issue: (.+?)\n/', $record->remarks . "\n", $matches)) {
+                                    $issue = $matches[1];
+                                } else {
+                                    $issue = $record->old_value ?? 'N/A';
+                                }
+                            }
                         @endphp
                         <div class="bg-white rounded-lg shadow p-4">
                             <div class="text-sm text-gray-500 mb-2">{{ $record->created_at->format('M d, Y - h:i A') }}</div>
-                            <div class="mb-2">
+                                                        <div class="mb-2">
                                 <span class="font-medium text-gray-700">Type:</span> Repair Request
                             </div>
-                            @if($ticketNo)
+                            @if($ticketNo && $ticketNo !== 'N/A')
                             <div class="mb-2">
                                 <span class="font-medium text-gray-700">Ticket:</span>
                                 <a href="{{ route('repair.details', ['id' => $repairRequest->id ?? 'unknown']) }}" 
@@ -174,6 +229,20 @@
                             @if($record->remarks)
                             <div class="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-200">
                                 <span class="font-medium">Remarks:</span> {{ $record->remarks }}
+                                @php
+                                    // Check if this was a previously non-registered asset
+                                    $wasNonRegistered = strpos($record->remarks, 'Asset was previously non-registered') !== false;
+                                @endphp
+                                @if($wasNonRegistered)
+                                    <div class="mt-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Previously Non-Registered
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
                             @endif
                         </div>

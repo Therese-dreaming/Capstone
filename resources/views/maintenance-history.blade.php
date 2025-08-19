@@ -14,15 +14,29 @@
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 md:gap-0">
-            <h1 class="text-2xl font-bold">Maintenance History</h1>
-            <div class="space-x-3 flex flex-row md:flex-row">
-                <button onclick="exportToPDF()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-full md:w-auto">
+    <!-- Page Header with Background Design -->
+    <div class="mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4">
+                        <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Maintenance History</h1>
+                        <p class="text-red-100 text-sm md:text-lg">View maintenance records</p>
+                    </div>
+                </div>
+                <button onclick="exportToPDF()" class="inline-flex items-center px-4 py-2 bg-white/20 text-white font-medium rounded-lg hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 transition-colors duration-200">
                     Export to PDF
                 </button>
             </div>
         </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
 
         <div class="mb-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -273,17 +287,28 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-4 md:p-8 max-w-xs sm:max-w-md mx-auto w-full">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Confirm Deletion</h3>
-            <p class="text-sm text-gray-500 mb-6">Are you sure you want to delete the selected maintenance(s)? This action cannot be undone.</p>
-            <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-4">
-                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 w-full md:w-auto">
-                    Cancel
-                </button>
-                <button onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-full md:w-auto">
-                    Delete
-                </button>
+    <div id="deleteModal" 
+     class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center"
+     style="z-index: 60;">
+    <div class="p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Maintenance</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">Are you sure you want to delete the selected maintenance(s)? This action cannot be undone.</p>
+                </div>
+                <div class="flex justify-center gap-4 mt-4">
+                    <button onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        Delete
+                    </button>
+                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -312,6 +337,7 @@
             </div>
         </div>
     </div>
+
     <!-- Asset Issues Modal -->
     <div id="assetIssuesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg max-w-2xl mx-auto w-full shadow-xl transform transition-all">

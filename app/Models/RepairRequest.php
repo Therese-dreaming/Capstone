@@ -22,6 +22,8 @@ class RepairRequest extends Model
         'issue',
         'photo',
         'status',
+        'urgency_level',
+        'ongoing_activity',
         'technician_id',
         'time_started',
         'completed_at',
@@ -64,5 +66,10 @@ class RepairRequest extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function nonRegisteredAssets()
+    {
+        return $this->hasMany(NonRegisteredAsset::class, 'ticket_number', 'ticket_number');
     }
 }

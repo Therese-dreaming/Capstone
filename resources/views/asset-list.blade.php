@@ -1,7 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1">
+<div class="flex-1 p-4 md:p-8 bg-gray-50">
+
+    <!-- Page Header with Background Design -->
+    <div class="mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4">
+                        <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Asset Management</h1>
+                        <p class="text-red-100 text-sm md:text-lg">Manage and track all institutional assets</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="p-4 md:p-6">
         <!-- Add success message section here -->
         @if(session('success'))

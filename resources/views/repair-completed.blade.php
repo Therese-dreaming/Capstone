@@ -3,22 +3,50 @@
 @section('content')
 <div class="flex-1 p-4 md:p-8 transition-all duration-300" id="mainContent">
     @if(session('success'))
-    <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
-        {{ session('success') }}
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center" role="alert">
+        <svg class="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+            <div class="font-semibold">Success!</div>
+            <div>{{ session('success') }}</div>
+        </div>
     </div>
     @endif
 
     @if(session('error'))
-    <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-        {{ session('error') }}
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center" role="alert">
+        <svg class="w-5 h-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div>
+            <div class="font-semibold">Error!</div>
+            <div>{{ session('error') }}</div>
+        </div>
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+    <div class="mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex items-center">
+                <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4">
+                    <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Repair Requests History</h1>
+                    <p class="text-red-100 text-sm md:text-lg">View, filter, and manage completed and cancelled repairs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 md:gap-0">
             <h1 class="text-2xl font-bold">Repair Requests History</h1>
             <div class="space-x-3">
-                <button onclick="exportToPDF()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                <button onclick="exportToPDF()" class="text-sm px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                     Export to PDF
                 </button>
             </div>
@@ -55,12 +83,30 @@
                     </select>
                     <select id="locationFilter" onchange="filterHistory()" class="h-9 w-full md:w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
                         <option value="">All Locations</option>
-                        @foreach($completedRequests->pluck('building', 'floor', 'room')->unique() as $request)
-                        @if($request->building && $request->floor && $request->room)
-                        <option value="{{ $request->building }}-{{ $request->floor }}-{{ $request->room }}">
-                            {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+                        @php
+                            $requestsCollection = ($completedRequests instanceof \Illuminate\Pagination\AbstractPaginator)
+                                ? collect($completedRequests->items())
+                                : collect($completedRequests);
+                            $uniqueLocations = $requestsCollection
+                                ->map(function($r) {
+                                    return [
+                                        'building' => $r->building ?? null,
+                                        'floor' => $r->floor ?? null,
+                                        'room' => $r->room ?? null,
+                                    ];
+                                })
+                                ->filter(function($loc) {
+                                    return !empty($loc['building']) && !empty($loc['floor']) && !empty($loc['room']);
+                                })
+                                ->unique(function($loc) {
+                                    return $loc['building'].'|'.$loc['floor'].'|'.$loc['room'];
+                                })
+                                ->values();
+                        @endphp
+                        @foreach($uniqueLocations as $loc)
+                        <option value="{{ $loc['building'] }}-{{ $loc['floor'] }}-{{ $loc['room'] }}">
+                            {{ $loc['building'] }} - {{ $loc['floor'] }} - {{ $loc['room'] }}
                         </option>
-                        @endif
                         @endforeach
                     </select>
                 </div>
@@ -95,7 +141,14 @@
                     </span>
                 </div>
                 <div class="text-sm text-gray-700"><span class="font-semibold">Completion Date:</span> {{ \Carbon\Carbon::parse($request->completed_at)->format('M j, Y (g:i A)') }}</div>
-                <div class="text-sm"><span class="font-semibold">Item:</span> <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a></div>
+                <div class="text-sm">
+                    <span class="font-semibold">Item:</span>
+                    @if($request->asset)
+                        <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                    @else
+                        <span class="font-bold text-gray-900">{{ $request->equipment }}</span>
+                    @endif
+                </div>
                 <div class="text-sm"><span class="font-semibold">Ticket No.:</span> {{ $request->ticket_number }}</div>
                 <div class="text-sm"><span class="font-semibold">Location:</span> 
                     {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
@@ -107,7 +160,7 @@
                 <div class="text-sm"><span class="font-semibold">Findings:</span> {{ $request->findings }}</div>
                 <div class="text-sm"><span class="font-semibold">Remarks:</span> {{ $request->remarks }}</div>
                 <div class="flex gap-2 mt-2">
-                    <button onclick="event.stopPropagation(); window.location.href={{ route('repair.details', ['id' => $request->id]) }}" class="text-blue-600 hover:text-blue-800">
+                    <button onclick="event.stopPropagation(); window.location.href='{{ route('repair.details', ['id' => $request->id]) }}'" class="text-blue-600 hover:text-blue-800">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -128,7 +181,7 @@
         <!-- Table for desktop -->
         <div class="overflow-x-auto hidden md:block">
             <table id="repairTable" class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-[#960106]">
+                <thead class="bg-red-800">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
@@ -147,7 +200,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     @forelse($completedRequests as $request)
-                    <tr data-location="{{ $request->location }}" class="{{ strlen($request->remarks) > 50 ? 'hover:bg-gray-50 cursor-pointer' : '' }}" {{ strlen($request->remarks) > 50 ? 'onclick=toggleRemarks('.$request->id.')' : '' }}>
+                    <tr data-location="{{ $request->building }} - {{ $request->floor }} - {{ $request->room }}" class="{{ strlen($request->remarks) > 50 ? 'hover:bg-gray-50 cursor-pointer' : '' }}" {{ strlen($request->remarks) > 50 ? 'onclick=toggleRemarks('.$request->id.')' : '' }}>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 whitespace-nowrap">
                             <input type="checkbox" name="selected[]" value="{{ $request->id }}" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
                         </td>
@@ -203,10 +256,14 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                            @if($request->asset)
+                                <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                            @else
+                                <span class="font-bold text-gray-900">{{ $request->equipment }}</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->ticket_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->location }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->building }} - {{ $request->floor }} - {{ $request->room }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div class="flex space-x-2">
@@ -285,6 +342,25 @@
             </svg>
         </button>
     </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div id="pdfPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+	<div class="relative top-20 mx-auto p-3 md:p-5 border w-full max-w-[98vw] md:max-w-[75vw] shadow-lg rounded-md bg-white">
+		<div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-2 md:gap-0">
+			<h3 class="text-lg font-medium">Repair History Preview</h3>
+			<button onclick="closePdfPreview()" class="text-gray-500 hover:text-gray-700">
+				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+		</div>
+		<div class="preview-content" style="max-height: 70vh; overflow-y: auto;"></div>
+		<div class="mt-4 flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
+			<button onclick="closePdfPreview()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 w-full md:w-auto">Cancel</button>
+			<button onclick="downloadPDF()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-full md:w-auto">Download PDF</button>
+		</div>
+	</div>
 </div>
 
 <script>

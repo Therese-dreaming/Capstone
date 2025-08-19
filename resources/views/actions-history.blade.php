@@ -2,13 +2,20 @@
 
 @section('content')
 <div class="flex-1 p-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Actions History</h1>
-        <a href="{{ route('secretary-dashboard') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150 ease-in-out flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>Back to Dashboard
-        </a>
+    <div class="mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center">
+                <div class="bg-white/20 p-4 rounded-full backdrop-blur-sm mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">Actions History</h1>
+                    <p class="text-red-100 text-lg">Track and review all your activities and changes</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Filter Form --}}
@@ -284,7 +291,7 @@
                 </svg>
                 @if (request('filter') || request('start_date') || request('end_date'))
                     <p class="text-xl">No actions found matching the applied filters.</p>
-                    <p class="text-sm mt-2"><a href="{{ route('user.actions.history') }}" class="text-blue-600 hover:underline">Clear filters</a> to see all actions.</p>
+                    <p class="text-sm mt-2"><a href="{{ route('user.actions.history') }}" class="text-white font-bold">Clear filters</a> to see all actions.</p>
                 @else
                     <p class="text-xl">No actions found</p>
                     <p class="text-sm mt-2">Actions will appear here as you make changes to assets, complete repairs, or perform maintenance.</p>

@@ -1,146 +1,303 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-4 md:p-6 max-w-6xl md:max-w-full">
-    <div class="max-w-6xl mx-auto">
-        <!-- Main Container -->
-        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
-            <!-- Header Section -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold">Employee Performance Analysis</h1>
-                    <p class="text-gray-600 text-sm">Period: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') : 'All Time' }} to {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') : 'Present' }}</p>
+<div class="flex-1 p-4 md:p-8 bg-gray-50">
+    <!-- Page Header -->
+    <div class="mb-6 md:mb-8">
+        <div class="bg-gradient-to-r from-red-800 to-red-700 rounded-xl shadow-lg p-6 md:p-8 text-white">
+            <div class="text-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">Employee Performance Analysis</h1>
+                <p class="text-red-100 text-sm md:text-base">
+                    Period: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') : 'All Time' }} 
+                    to {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') : 'Present' }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter Section -->
+    <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 md:mb-8">
+        <div class="text-center mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Filter by Date Range</h2>
+            <p class="text-sm text-gray-600">Select a specific period to analyze employee performance</p>
+        </div>
+        <form action="{{ route('employee-performance') }}" method="GET" class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4" id="dateFilterForm">
+            <div class="flex items-center space-x-2">
+                <label for="start_date" class="text-sm font-medium text-gray-700">From:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" 
+                    onchange="this.form.submit()"
+                    class="form-input h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="end_date" class="text-sm font-medium text-gray-700">To:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
+                    onchange="this.form.submit()"
+                    class="form-input h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+            </div>
+            @if(request('start_date') || request('end_date'))
+                <a href="{{ route('employee-performance') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset Filters
+                </a>
+            @endif
+        </form>
+    </div>
+
+    <!-- Overall Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
-                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto items-start sm:items-center">
-                    <!-- Date Filter Form -->
-                    <form action="{{ route('employee-performance') }}" method="GET" class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto" id="dateFilterForm">
-                        <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <label for="start_date" class="text-sm font-medium text-gray-600 flex-shrink-0">From:</label>
-                            <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}" 
-                                onchange="this.form.submit()"
-                                class="form-input h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        </div>
-                        <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <label for="end_date" class="text-sm font-medium text-gray-600 flex-shrink-0">To:</label>
-                            <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-                                onchange="this.form.submit()"
-                                class="form-input h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        </div>
-                        @if(request('start_date') || request('end_date'))
-                            <a href="{{ route('reports.employee-performance') }}" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center justify-center w-full sm:w-auto text-sm">
-                                Reset
-                            </a>
-                        @endif
-                    </form>
-                    <button onclick="printReport()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Print Report
-                    </button>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Total Repairs</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ $overallStats['total_repairs'] ?? 0 }}</p>
+                    <p class="text-sm text-gray-600">Avg: {{ number_format($overallStats['avg_repairs_per_employee'] ?? 0, 1) }} per employee</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Overall Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                    <h3 class="text-sm font-medium text-gray-500">Total Repairs Completed</h3>
-                    <p class="text-2xl font-bold text-gray-900">{{ $overallStats['total_repairs'] }}</p>
-                    <p class="text-sm text-gray-600">Average: {{ number_format($overallStats['avg_repairs_per_employee'], 1) }} per employee</p>
+        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
                 </div>
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
-                    <h3 class="text-sm font-medium text-gray-500">Total Maintenance Tasks</h3>
-                    <p class="text-2xl font-bold text-gray-900">{{ $overallStats['total_maintenance'] }}</p>
-                    <p class="text-sm text-gray-600">Average: {{ number_format($overallStats['avg_maintenance_per_employee'], 1) }} per employee</p>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Maintenance Tasks</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ $overallStats['total_maintenance'] ?? 0 }}</p>
+                    <p class="text-sm text-gray-600">Avg: {{ number_format($overallStats['avg_maintenance_per_employee'] ?? 0, 1) }} per employee</p>
                 </div>
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
-                    <h3 class="text-sm font-medium text-gray-500">Average Response Time</h3>
-                    <p class="text-2xl font-bold text-gray-900">{{ $overallStats['avg_response_time'] }} hours</p>
-                    <p class="text-sm text-gray-600">Best: {{ $overallStats['best_response_time'] }} hours</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-yellow-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-yellow-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-500">Response Time</h3>
+                    <p class="text-2xl font-bold text-gray-900">{{ $overallStats['avg_response_time'] ?? 0 }}h</p>
+                    <p class="text-sm text-gray-600">Best: {{ $overallStats['best_response_time'] ?? 0 }}h</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
                     <h3 class="text-sm font-medium text-gray-500">Completion Rate</h3>
-                    <p class="text-2xl font-bold text-gray-900">{{ number_format($overallStats['completion_rate'], 1) }}%</p>
-                    <p class="text-sm text-gray-600">Total Tasks: {{ $overallStats['total_tasks'] }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ number_format($overallStats['completion_rate'] ?? 0, 1) }}%</p>
+                    <p class="text-sm text-gray-600">{{ $overallStats['total_tasks'] ?? 0 }} total tasks</p>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Employee Performance Table -->
-            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Individual Performance Metrics</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repairs Completed</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Maintenance Tasks</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Response Time</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance Score</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($employeeStats as $employee)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ $employee->name }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $employee->role }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $employee->repairs_completed }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $employee->maintenance_tasks }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $employee->avg_response_time }} hours
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ number_format($employee->completion_rate, 1) }}%
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-24 bg-gray-200 rounded-full h-2.5">
-                                            <div class="bg-red-600 h-2.5 rounded-full" style="width: {{ $employee->performance_score }}%"></div>
-                                        </div>
-                                        <span class="ml-2 text-sm text-gray-600">{{ number_format($employee->performance_score, 1) }}%</span>
+    <!-- Employee Performance Section -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Individual Employee Performance</h2>
+            <p class="text-sm text-gray-600 mt-1">Detailed metrics for each employee during the selected period</p>
+        </div>
+        
+        @if(isset($employeeStats) && count($employeeStats) > 0)
+            <!-- Desktop Table View (hidden on mobile) -->
+            <div class="hidden md:block overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repairs</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Maintenance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($employeeStats as $employee)
+                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="bg-red-100 p-2 rounded-full">
+                                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
                                     </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">{{ $employee->name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ $employee->role }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex items-center">
+                                    <span class="font-medium">{{ $employee->repairs_completed }}</span>
+                                    <span class="text-gray-500 ml-1">completed</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex items-center">
+                                    <span class="font-medium">{{ $employee->maintenance_tasks }}</span>
+                                    <span class="text-gray-500 ml-1">tasks</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex items-center">
+                                    <span class="font-medium">{{ $employee->avg_response_time }}</span>
+                                    <span class="text-gray-500 ml-1">hours</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-3">
+                                        @php
+                                            $color = $employee->completion_rate >= 90 ? 'bg-green-500' : 
+                                                    ($employee->completion_rate >= 75 ? 'bg-yellow-500' : 'bg-red-500');
+                                        @endphp
+                                        <div class="{{ $color }} h-2 rounded-full" style="width: {{ $employee->completion_rate }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-900">{{ number_format($employee->completion_rate, 1) }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
 
-            <!-- Performance Analysis -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Performance Analysis</h2>
-                
-                <!-- Key Findings -->
-                <div class="mb-6">
-                    <h3 class="text-md font-medium text-gray-700 mb-2">Key Findings</h3>
-                    <ul class="list-disc list-inside space-y-2 text-gray-600">
-                        @foreach($analysis['key_findings'] as $finding)
-                            <li>{{ $finding }}</li>
-                        @endforeach
-                    </ul>
-                </div>
+            <!-- Mobile Card View (visible only on mobile) -->
+            <div class="md:hidden p-4 md:p-6">
+                <div class="space-y-4">
+                    @foreach($employeeStats as $employee)
+                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                        <!-- Employee Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="bg-red-100 p-2 rounded-full">
+                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">{{ $employee->name }}</div>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $employee->role }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- Recommendations -->
-                <div>
-                    <h3 class="text-md font-medium text-gray-700 mb-2">Recommendations</h3>
-                    <ul class="list-disc list-inside space-y-2 text-gray-600">
-                        @foreach($analysis['recommendations'] as $recommendation)
-                            <li>{{ $recommendation }}</li>
-                        @endforeach
-                    </ul>
+                        <!-- Performance Metrics Grid -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="text-lg font-bold text-blue-600">{{ $employee->repairs_completed }}</div>
+                                <div class="text-xs text-gray-500">Repairs</div>
+                            </div>
+                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="text-lg font-bold text-green-600">{{ $employee->maintenance_tasks }}</div>
+                                <div class="text-xs text-gray-500">Maintenance</div>
+                            </div>
+                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="text-lg font-bold text-yellow-600">{{ $employee->avg_response_time }}</div>
+                                <div class="text-xs text-gray-500">Hours</div>
+                            </div>
+                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="text-lg font-bold text-purple-600">{{ number_format($employee->completion_rate, 1) }}%</div>
+                                <div class="text-xs text-gray-500">Completion</div>
+                            </div>
+                        </div>
+
+                        <!-- Completion Rate Bar -->
+                        <div class="mt-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-gray-700">Completion Rate</span>
+                                <span class="text-sm text-gray-500">{{ number_format($employee->completion_rate, 1) }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                @php
+                                    $color = $employee->completion_rate >= 90 ? 'bg-green-500' : 
+                                            ($employee->completion_rate >= 75 ? 'bg-yellow-500' : 'bg-red-500');
+                                @endphp
+                                <div class="{{ $color }} h-2 rounded-full transition-all duration-300" style="width: {{ $employee->completion_rate }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        @else
+            <div class="text-center py-12">
+                <div class="bg-gray-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Performance Data Available</h3>
+                <p class="text-gray-500 mb-4">No employee performance data found for the selected period.</p>
+                <div class="text-sm text-gray-400">
+                    <p>• Try adjusting the date range</p>
+                    <p>• Ensure employees have completed tasks during this period</p>
+                </div>
+            </div>
+        @endif
+    </div>
+
+    <!-- Summary Section -->
+    <div class="mt-6 md:mt-8 bg-white rounded-xl shadow-md p-6 md:p-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-md font-medium text-gray-700 mb-3">Period Overview</h3>
+                <div class="space-y-2 text-sm text-gray-600">
+                    <div class="flex justify-between">
+                        <span>Total Employees:</span>
+                        <span class="font-medium">{{ count($employeeStats ?? []) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Total Tasks:</span>
+                        <span class="font-medium">{{ ($overallStats['total_repairs'] ?? 0) + ($overallStats['total_maintenance'] ?? 0) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Average Response Time:</span>
+                        <span class="font-medium">{{ $overallStats['avg_response_time'] ?? 0 }} hours</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-md font-medium text-gray-700 mb-3">Performance Insights</h3>
+                <div class="space-y-2 text-sm text-gray-600">
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        <span>High performers: {{ $overallStats['completion_rate'] >= 90 ? 'Excellent' : ($overallStats['completion_rate'] >= 75 ? 'Good' : 'Needs improvement') }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                        <span>Team efficiency: {{ number_format($overallStats['avg_repairs_per_employee'] ?? 0, 1) }} repairs per person</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                        <span>Maintenance coverage: {{ number_format($overallStats['avg_maintenance_per_employee'] ?? 0, 1) }} tasks per person</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -148,113 +305,24 @@
 </div>
 
 <script>
-    function printReport() {
-        window.print();
-    }
+    // Auto-submit form when dates change
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDate = document.getElementById('start_date');
+        const endDate = document.getElementById('end_date');
+        
+        if (startDate && endDate) {
+            startDate.addEventListener('change', function() {
+                if (endDate.value && this.value > endDate.value) {
+                    endDate.value = this.value;
+                }
+            });
+            
+            endDate.addEventListener('change', function() {
+                if (startDate.value && this.value < startDate.value) {
+                    startDate.value = this.value;
+                }
+            });
+        }
+    });
 </script>
-
-<style>
-    @media print {
-        /* Hide navigation elements and buttons */
-        aside.fixed,
-        nav.bg-white,
-        .sidebar-nav,
-        header,
-        .header,
-        #header,
-        [x-data],
-        button,
-        .print-hide,
-        form { /* Hide filter form */
-            display: none !important;
-        }
-
-        /* Ensure main content area is visible and uses full width */
-        .flex-1.p-4,
-        .flex-1.p-8 {
-             padding: 0 !important;
-        }
-
-        /* Remove left margin from main content added for sidebar */
-        .md\:ml-80 {
-            margin-left: 0 !important;
-        }
-
-        /* Ensure container is visible and uses full width */
-        .max-w-6xl, .max-w-full {
-            max-width: 100% !important;
-            width: 100% !important;
-        }
-
-        /* Reset layout */
-        body, html {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            background: white !important;
-        }
-
-        /* Style the title */
-        h1 {
-            text-align: center !important;
-            margin-bottom: 20px;
-            font-size: 18pt;
-            width: 100% !important;
-            display: block !important;
-        }
-
-        /* Show period in print */
-        .text-gray-600.text-sm {
-            text-align: center !important;
-            margin-bottom: 20px;
-            font-size: 10pt;
-            display: block !important;
-        }
-
-        /* Ensure tables are visible and styled for print */
-        table {
-            width: 100% !important;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th {
-            background-color: #f3f4f6 !important;
-            color: #6b7280 !important;
-            font-size: 9pt !important;
-            font-weight: 600;
-            text-transform: uppercase;
-            padding: 8px !important;
-            text-align: left;
-        }
-
-        td {
-            padding: 8px !important;
-            font-size: 9pt !important;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        /* Ensure proper page breaks */
-        thead {
-            display: table-header-group;
-        }
-
-        tr {
-            page-break-inside: avoid;
-        }
-
-        /* Print colors */
-        .bg-red-600 {
-            background-color: #dc2626 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-
-        .bg-gray-50 {
-            background-color: #f9fafb !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-    }
-</style>
-@endsection 
+@endsection

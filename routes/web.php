@@ -88,6 +88,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/location/{location}/details', [ReportController::class, 'locationDetails'])->name('reports.location.details');
             Route::get('/asset-history/{asset}', [ReportController::class, 'assetHistory'])->name('reports.asset-history');
             Route::get('/procurement-history', [ReportController::class, 'procurementHistory'])->name('reports.procurement-history');
+            Route::get('/procurement-history/paascu-export', [ReportController::class, 'exportPaascuFromProcurement'])->name('reports.procurement-history.paascu-export');
             Route::get('/disposal-history', [ReportController::class, 'disposalHistory'])->name('reports.disposal-history');
             Route::get('/vendor-analysis', [ReportController::class, 'vendorAnalysis'])->name('reports.vendor-analysis');
             Route::get('/vendor-details/{vendor}', [ReportController::class, 'vendorDetails'])->name('reports.vendor-details');
@@ -95,6 +96,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])->name('reports.asset-repair-history');
             Route::get('/lab-usage', [ReportController::class, 'labUsage'])->name('reports.lab-usage');
             Route::get('/lab-usage/export', [ReportController::class, 'exportLabUsageToPdf'])->name('reports.lab-usage.export');
+            Route::get('/lab-usage/paascu-export', [ReportController::class, 'exportLabUsageToPaascu'])->name('reports.lab-usage.paascu-export');
+
             Route::get('/reports/vendor-details/{vendorId}', [\App\Http\Controllers\VendorController::class, 'vendorDetails']);
         });
     });
@@ -151,6 +154,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/repair-completed/{id}', [RepairRequestController::class, 'destroy'])->name('repair-requests.destroy');
         Route::put('/repair-requests/{id}', [RepairRequestController::class, 'update'])->name('repair-requests.update');
         Route::resource('repair-requests', App\Http\Controllers\RepairRequestController::class)->only(['update', 'destroy']);
+        Route::post('/repair-requests/update-urgency-levels', [RepairRequestController::class, 'updateUrgencyLevels'])->name('repair-requests.update-urgency-levels');
+        Route::post('/repair-requests/reset-urgency-session', [RepairRequestController::class, 'resetUrgencySession'])->name('repair-requests.reset-urgency-session');
         Route::get('/repair-requests/delete/{id}', [App\Http\Controllers\RepairRequestController::class, 'destroy'])
             ->name('repair-requests.delete')
             ->where('id', '[0-9]+');
@@ -193,4 +198,5 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/non-registered-assets', [NonRegisteredAssetController::class, 'index'])->name('non-registered-assets.index');
     Route::post('/non-registered-assets', [NonRegisteredAssetController::class, 'store'])->name('non-registered-assets.store');
     Route::put('/non-registered-assets/{id}', [NonRegisteredAssetController::class, 'update'])->name('non-registered-assets.update');
+    Route::post('/non-registered-assets/{id}/link-repair', [NonRegisteredAssetController::class, 'linkToRepair'])->name('non-registered-assets.link-repair');
 });

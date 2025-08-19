@@ -274,6 +274,23 @@ class DashboardController extends Controller
 
         // Add this before the return statement
         $user = auth()->user();
+        
+        // Calculate completion rate
+        $totalTasks = RepairRequest::where('technician_id', $user->id)
+            ->whereIn('status', ['pending', 'urgent', 'in_progress', 'completed'])
+            ->count();
+        $completedTasks = RepairRequest::where('technician_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+        $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
+        
+        // Calculate feedback score
+        $avgRating = DB::table('technician_evaluations')
+            ->where('technician_id', $user->id)
+            ->whereNotNull('rating')
+            ->avg('rating');
+        $feedbackScore = $avgRating ? round($avgRating, 1) : 'N/A';
+        
         $personalStats = [
             'completed_repairs' => RepairRequest::where('technician_id', $user->id)
                 ->where('status', 'completed')
@@ -292,8 +309,34 @@ class DashboardController extends Controller
                 ->where('status', 'completed')
                 ->whereNotNull('completed_at')
                 ->orderBy('completed_at', 'desc')
-                ->get()
+                ->get(),
+            'assigned_tasks' => RepairRequest::where('technician_id', $user->id)
+                ->whereIn('status', ['pending', 'urgent', 'in_progress'])
+                ->count() + Maintenance::where('technician_id', $user->id)
+                ->where('status', '!=', 'completed')
+                ->count(),
+            'avg_response_time' => RepairRequest::where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('time_started')
+                ->whereNotNull('completed_at')
+                ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, time_started, completed_at)), 1) as avg_hours'))
+                ->value('avg_hours') ?? 'N/A',
+            'completion_rate' => $completionRate,
+            'feedback_score' => $feedbackScore
         ];
+
+        // Prepare chart data
+        $procurementChartData = [
+            'labels' => collect($monthlyData)->pluck('month')->toArray(),
+            'values' => collect($monthlyData)->pluck('procurement_value')->toArray()
+        ];
+
+        $assetCountChartData = [
+            'labels' => collect($monthlyData)->pluck('month')->toArray(),
+            'values' => collect($monthlyData)->pluck('procurement_count')->toArray()
+        ];
+
+
 
         return view('dashboard', compact(
             'totalAssetValue',
@@ -315,7 +358,9 @@ class DashboardController extends Controller
             'personalStats',
             'pulledOutThisMonth',
             'avgPulledOutTime',
-            'avgPulledOutDays'
+            'avgPulledOutDays',
+            'procurementChartData',
+            'assetCountChartData'
         ));
     }
 
@@ -397,6 +442,13 @@ class DashboardController extends Controller
                 ->whereNotNull('completed_at')
                 ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, created_at, completed_at)), 1) as avg_hours'))
                 ->value('avg_hours') ?? 0,
+            // New: Average response time using only repairs (time_started to completed_at)
+            'avg_response_time' => RepairRequest::where('technician_id', $user->id)
+                ->where('status', 'completed')
+                ->whereNotNull('time_started')
+                ->whereNotNull('completed_at')
+                ->select(DB::raw('ROUND(AVG(TIMESTAMPDIFF(HOUR, time_started, completed_at)), 1) as avg_hours'))
+                ->value('avg_hours') ?? 0,
             'completed_repairs_history' => RepairRequest::with(['asset', 'category'])
                 ->where('technician_id', $user->id)
                 ->where('status', 'completed')
@@ -410,10 +462,10 @@ class DashboardController extends Controller
                 ->orderBy('completed_at', 'desc')
                 ->get()
         ];
-    
+
         // Calculate completion rate
         $personalStats['completion_rate'] = $personalStats['completion_rate']();
-    
+
         return view('secretary-dashboard', compact('personalStats'));
     }
 
@@ -473,11 +525,11 @@ class DashboardController extends Controller
             ->whereNotNull('completed_at');
             
         // Apply date range filters if provided
-        if ($request->has('start_date')) {
+        if ($request->has('start_date') && $request->start_date) {
             $query->whereDate('completed_at', '>=', $request->start_date);
         }
         
-        if ($request->has('end_date')) {
+        if ($request->has('end_date') && $request->end_date) {
             $query->whereDate('completed_at', '<=', $request->end_date);
         }
         

@@ -44,6 +44,8 @@ class RepairRequestController extends Controller
             'serial_number' => 'nullable|string',
             'issue' => 'required|string',
             'status' => 'required|in:pending,urgent',
+            'urgency_level' => 'nullable|integer|min:1|max:3',
+            'ongoing_activity' => 'nullable|in:yes,no',
             'technician_id' => 'nullable|exists:users,id',
             'photo' => 'nullable|string|max:5242880' // 5MB base64 string
         ]);
@@ -52,6 +54,29 @@ class RepairRequestController extends Controller
         if (auth()->user()->group_id === 2) {
             $request->merge(['technician_id' => auth()->id()]);
         }
+
+        // Determine urgency level automatically if not provided
+        $urgencyLevel = $request->urgency_level;
+        if (!$urgencyLevel) {
+            // Check if there's an ongoing class/event (urgency level 1 - highest)
+            if ($request->ongoing_activity === 'yes') {
+                $urgencyLevel = 1;
+            } else {
+                // Check if request is over a week old (urgency level 2)
+                $requestDate = \Carbon\Carbon::parse($request->date_called);
+                $oneWeekAgo = \Carbon\Carbon::now()->subWeek();
+                
+                if ($requestDate->lt($oneWeekAgo)) {
+                    $urgencyLevel = 2;
+                } else {
+                    // New request within the week (urgency level 3 - lowest)
+                    $urgencyLevel = 3;
+                }
+            }
+        }
+
+        // Set ongoing_activity if not provided
+        $ongoingActivity = $request->ongoing_activity ?? 'no';
 
         // If serial_number is empty string or null, set it to null
         $serialNumber = $request->serial_number ? trim($request->serial_number) : null;
@@ -148,6 +173,8 @@ class RepairRequestController extends Controller
             'issue' => $request->issue,
             'photo' => $photoPath,
             'status' => $request->status,
+            'urgency_level' => $urgencyLevel,
+            'ongoing_activity' => $ongoingActivity,
             'technician_id' => $request->technician_id,
             'created_by' => auth()->id(),
             'created_at' => $created_at,
@@ -240,6 +267,12 @@ class RepairRequestController extends Controller
             ->latest()
             ->get();
 
+        // Auto-update urgency levels for admins (once per session)
+        if (auth()->user()->group_id == 1 && !session('urgency_levels_updated')) {
+            $this->updateUrgencyLevelsSilently();
+            session(['urgency_levels_updated' => true]);
+        }
+
         // Build the query with search functionality
         $query = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out']);
 
@@ -321,7 +354,9 @@ class RepairRequestController extends Controller
                 'findings',
                 'technician_signature',
                 'caller_signature',
-                'serial_number'
+                'serial_number',
+                'urgency_level',
+                'ongoing_activity'
             ]);
             \Log::info('Initial update data', ['update_data' => $updateData]);
 
@@ -388,9 +423,9 @@ class RepairRequestController extends Controller
                         AssetHistory::create([
                             'asset_id' => $asset->id,
                             'change_type' => 'REPAIR',
-                            'old_value' => $repairRequest->issue ?? 'Not specified',
+                            'old_value' => $repairRequest->ticket_number, // Store ticket number for easy access
                             'new_value' => 'completed',
-                            'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'remarks' => $request->remarks ?? 'Repair completed',
                             'changed_by' => auth()->id()
                         ]);
 
@@ -400,7 +435,7 @@ class RepairRequestController extends Controller
                             'change_type' => 'STATUS',
                             'old_value' => 'UNDER REPAIR',
                             'new_value' => 'IN USE',
-                            'remarks' => "Asset repair completed. Findings: {$request->findings}",
+                            'remarks' => "Asset repair completed",
                             'changed_by' => auth()->id()
                         ]);
                     }
@@ -422,7 +457,7 @@ class RepairRequestController extends Controller
                         'change_type' => 'STATUS',
                         'old_value' => 'UNDER REPAIR',
                         'new_value' => 'IN USE',
-                        'remarks' => "Repair request cancelled. Ticket: {$repairRequest->ticket_number}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                        'remarks' => "Repair request cancelled",
                         'changed_by' => auth()->id()
                     ]);
                 }
@@ -450,7 +485,7 @@ class RepairRequestController extends Controller
                             'change_type' => 'STATUS',
                             'old_value' => $oldStatus,
                             'new_value' => 'PULLED OUT',
-                            'remarks' => "Asset pulled out. Ticket: {$repairRequest->ticket_number}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'remarks' => "Asset pulled out for repair",
                             'changed_by' => auth()->id()
                         ]);
 
@@ -458,9 +493,9 @@ class RepairRequestController extends Controller
                         AssetHistory::create([
                             'asset_id' => $asset->id,
                             'change_type' => 'REPAIR',
-                            'old_value' => $repairRequest->issue ?? 'Not specified',
+                            'old_value' => $repairRequest->ticket_number, // Store ticket number for easy access
                             'new_value' => 'pulled_out',
-                            'remarks' => "Ticket: {$repairRequest->ticket_number}\nIssue: {$repairRequest->issue}\nFindings: {$request->findings}\nRemarks: " . ($request->remarks ?? 'No remarks provided'),
+                            'remarks' => $request->remarks ?? 'Asset pulled out for repair',
                             'changed_by' => auth()->id()
                         ]);
                     }
@@ -628,7 +663,17 @@ class RepairRequestController extends Controller
             $query->where('status', $request->status);
         }
         if ($request->location) {
-            $query->where('location', $request->location);
+            // Parse location string (format: "Building-Floor-Room")
+            $locationParts = explode('-', $request->location, 3);
+            if (count($locationParts) === 3) {
+                $building = trim($locationParts[0]);
+                $floor = trim($locationParts[1]);
+                $room = trim($locationParts[2]);
+                
+                $query->where('building', $building)
+                      ->where('floor', $floor)
+                      ->where('room', $room);
+            }
         }
 
         // Request date filters
@@ -708,6 +753,75 @@ class RepairRequestController extends Controller
         ]);
     }
 
+    /**
+     * Update urgency levels for all pending repair requests
+     * This method can be called via cron job or manually
+     */
+    public function updateUrgencyLevels()
+    {
+        $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->get();
+        
+        foreach ($pendingRequests as $request) {
+            $urgencyLevel = $this->calculateUrgencyLevel($request);
+            
+            if ($request->urgency_level !== $urgencyLevel) {
+                $request->update(['urgency_level' => $urgencyLevel]);
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Urgency levels updated successfully'
+        ]);
+    }
+
+    /**
+     * Calculate urgency level for a repair request
+     */
+    private function calculateUrgencyLevel($request)
+    {
+        // Check if there's an ongoing class/event (urgency level 1 - highest)
+        if ($request->ongoing_activity === 'yes') {
+            return 1;
+        }
+        
+        // Check if request is over a week old (urgency level 2)
+        $requestDate = \Carbon\Carbon::parse($request->date_called);
+        $oneWeekAgo = \Carbon\Carbon::now()->subWeek();
+        
+        if ($requestDate->lt($oneWeekAgo)) {
+            return 2;
+        }
+        
+        // New request within the week (urgency level 3 - lowest)
+        return 3;
+    }
+
+    /**
+     * Silently update urgency levels without user notification
+     */
+    private function updateUrgencyLevelsSilently()
+    {
+        $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->get();
+        
+        foreach ($pendingRequests as $request) {
+            $urgencyLevel = $this->calculateUrgencyLevel($request);
+            
+            if ($request->urgency_level !== $urgencyLevel) {
+                $request->update(['urgency_level' => $urgencyLevel]);
+            }
+        }
+    }
+
+    /**
+     * Reset the urgency levels session flag to allow re-updating
+     */
+    public function resetUrgencySession()
+    {
+        session()->forget('urgency_levels_updated');
+        return response()->json(['success' => true, 'message' => 'Session reset successfully']);
+    }
+
     public function previewPDF(Request $request)
     {
         $query = RepairRequest::where('status', 'completed')
@@ -715,7 +829,17 @@ class RepairRequestController extends Controller
 
         // Apply filters
         if ($request->location) {
-            $query->where('location', $request->location);
+            // Parse location string (format: "Building-Floor-Room")
+            $locationParts = explode('-', $request->location, 3);
+            if (count($locationParts) === 3) {
+                $building = trim($locationParts[0]);
+                $floor = trim($locationParts[1]);
+                $room = trim($locationParts[2]);
+                
+                $query->where('building', $building)
+                      ->where('floor', $floor)
+                      ->where('room', $room);
+            }
         }
         if ($request->start_date) {
             $query->whereDate('created_at', '>=', $request->start_date);
@@ -744,7 +868,17 @@ class RepairRequestController extends Controller
 
         // Apply same filters as preview
         if ($request->location) {
-            $query->where('location', $request->location);
+            // Parse location string (format: "Building-Floor-Room")
+            $locationParts = explode('-', $request->location, 3);
+            if (count($locationParts) === 3) {
+                $building = trim($locationParts[0]);
+                $floor = trim($locationParts[1]);
+                $room = trim($locationParts[2]);
+                
+                $query->where('building', $building)
+                      ->where('floor', $floor)
+                      ->where('room', $room);
+            }
         }
         if ($request->start_date) {
             $query->whereDate('created_at', '>=', $request->start_date);
@@ -936,7 +1070,7 @@ class RepairRequestController extends Controller
     {
         $repairRequest = RepairRequest::findOrFail($id);
         if ($repairRequest->serial_number) {
-            return redirect('/repair-status');
+            return redirect('/repair-status')->with('error', 'Asset has already been identified for this repair request. Serial Number: ' . $repairRequest->serial_number);
         }
         $serialNumber = $repairRequest->serial_number;
         return view('repair-identify', compact('repairRequest', 'serialNumber'));

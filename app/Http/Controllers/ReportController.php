@@ -14,6 +14,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\User;
 use App\Models\MaintenanceRequest;
 use Carbon\Carbon;
+use App\Models\Location; // Added this import for the new methods
+use Maatwebsite\Excel\Facades\Excel; // Added this import for the new methods
+use App\Exports\PaascuInventoryExport;
+use App\Exports\PaascuUtilizationExport;
 
 class ReportController extends Controller
 {
@@ -62,13 +66,46 @@ class ReportController extends Controller
                 ];
             })->values();
 
+        // Convert to collection and add pagination using LengthAwarePaginator
+        $perPage = 15;
+        $currentPage = request()->get('page', 1);
+        $total = $locationStats->count();
+        $items = $locationStats->forPage($currentPage, $perPage);
+        
+        $locationStats = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
         return view('reports.location', compact('locationStats', 'totalSummary'));
     }
 
     public function locationDetails($location)
     {
-        $assets = Asset::where('location_id', $location)->with(['category', 'location'])->get();
-        return view('reports.location-details', compact('location', 'assets'));
+        // Parse the location string (format: "Building - Floor X - Room Y")
+        $parts = explode(' - ', $location);
+        if (count($parts) === 3) {
+            $building = $parts[0];
+            $floor = str_replace('Floor ', '', $parts[1]);
+            $room_number = str_replace('Room ', '', $parts[2]);
+            
+            // Find the location by building, floor, and room_number
+            $locationModel = Location::where([
+                'building' => $building,
+                'floor' => $floor,
+                'room_number' => $room_number
+            ])->first();
+            
+            if ($locationModel) {
+                return redirect()->route('locations.show', $locationModel->id);
+            }
+        }
+        
+        // If location not found, redirect back with error
+        return redirect()->route('reports.location')->with('error', 'Location not found.');
     }
 
     public function assetCategoryReport()
@@ -126,6 +163,21 @@ class ReportController extends Controller
             'all_change_types' => $history->pluck('change_type')->unique()->toArray()
         ]);
 
+        // Debug specific repair records
+        $repairRecords = $history->where('change_type', 'REPAIR');
+        \Log::info('Repair records details:', [
+            'count' => $repairRecords->count(),
+            'records' => $repairRecords->map(function($record) {
+                return [
+                    'id' => $record->id,
+                    'asset_id' => $record->asset_id,
+                    'change_type' => $record->change_type,
+                    'remarks' => $record->remarks,
+                    'created_at' => $record->created_at
+                ];
+            })->toArray()
+        ]);
+
         $history = $history->groupBy('change_type');
 
         return view('reports.asset-history', compact('asset', 'history', 'assetMaintenances'));
@@ -133,8 +185,9 @@ class ReportController extends Controller
 
     public function procurementHistory(Request $request)
     {
-        $query = Asset::with('category')->orderBy('purchase_date', 'desc');
+        $query = Asset::with(['category', 'vendor'])->orderBy('purchase_date', 'desc');
 
+        // Apply filters
         if ($request->filled('start_date')) {
             $query->where('purchase_date', '>=', $request->start_date);
         }
@@ -143,9 +196,25 @@ class ReportController extends Controller
             $query->where('purchase_date', '<=', $request->end_date);
         }
 
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('vendor_id')) {
+            $query->where('vendor_id', $request->vendor_id);
+        }
+
         $assets = $query->paginate(10);
 
-        return view('reports.procurement-history', compact('assets'));
+        // Get data for filter dropdowns
+        $categories = Category::orderBy('name')->get();
+        $vendors = Vendor::orderBy('name')->get();
+
+        return view('reports.procurement-history', compact('assets', 'categories', 'vendors'));
     }
 
     public function disposalHistory(Request $request)
@@ -664,8 +733,8 @@ class ReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        // Get all employees with group_id 2 (secretaries)
-        $employees = User::where('group_id', 2)->get();
+        // Get all employees with group_id 1 (admin) and group_id 2 (secretary)
+        $employees = User::whereIn('group_id', [1, 2])->get();
 
         // Initialize arrays for statistics
         $employeeStats = collect();
@@ -768,7 +837,7 @@ class ReportController extends Controller
             // Add employee stats to collection
             $employeeStats->push((object)[
                 'name' => $employee->name,
-                'role' => 'Secretary', // Since we're only looking at group_id 2 users
+                'role' => $employee->group_id == 1 ? 'Admin' : 'Secretary',
                 'repairs_completed' => $employeeRepairs,
                 'repairs_this_month' => $repairsThisMonth,
                 'maintenance_tasks' => $maintenanceTasks,
@@ -798,16 +867,18 @@ class ReportController extends Controller
             'total_tasks' => $totalTasks
         ];
 
-        // Generate analysis
-        $analysis = $this->generatePerformanceAnalysis($employeeStats, $overallStats);
+        // Sort and rank employees by performance score
+        $employeeStats = $employeeStats->sortByDesc('performance_score')->values();
 
-        return view('employee-performance', compact('employeeStats', 'overallStats', 'analysis'));
+        // Generate key findings
+        $keyFindings = $this->generateKeyFindings($employeeStats, $overallStats);
+
+        return view('employee-performance', compact('employeeStats', 'overallStats', 'keyFindings'));
     }
 
-    private function generatePerformanceAnalysis($employeeStats, $overallStats)
+    private function generateKeyFindings($employeeStats, $overallStats)
     {
         $keyFindings = [];
-        $recommendations = [];
 
         // Analyze performance distribution
         $avgPerformance = $employeeStats->avg('performance_score');
@@ -822,47 +893,26 @@ class ReportController extends Controller
         $keyFindings[] = "Average response time across all employees is " . $overallStats['avg_response_time'] . " hours";
 
         // Analyze role-specific performance
+        $adminStats = $employeeStats->where('role', 'Admin');
         $secretaryStats = $employeeStats->where('role', 'Secretary');
-        $technicianStats = $employeeStats->where('role', 'Technician');
+
+        if ($adminStats->isNotEmpty()) {
+            $adminAvg = $adminStats->avg('performance_score');
+            $keyFindings[] = "Admins average performance score is " . number_format($adminAvg, 1) . "%";
+        }
 
         if ($secretaryStats->isNotEmpty()) {
             $secretaryAvg = $secretaryStats->avg('performance_score');
             $keyFindings[] = "Secretaries average performance score is " . number_format($secretaryAvg, 1) . "%";
         }
 
-        if ($technicianStats->isNotEmpty()) {
-            $technicianAvg = $technicianStats->avg('performance_score');
-            $keyFindings[] = "Technicians average performance score is " . number_format($technicianAvg, 1) . "%";
+        // Top performer analysis
+        if ($employeeStats->isNotEmpty()) {
+            $topPerformer = $employeeStats->first();
+            $keyFindings[] = "Top performer: " . $topPerformer->name . " with " . number_format($topPerformer->performance_score, 1) . "% performance score";
         }
 
-        // Generate recommendations
-        if ($performanceGap > 20) {
-            $recommendations[] = "Consider implementing a mentoring program to help lower-performing employees improve their skills";
-        }
-
-        if ($overallStats['avg_response_time'] > 24) {
-            $recommendations[] = "Review and optimize the task assignment process to reduce response times";
-        }
-
-        if ($overallStats['completion_rate'] < 90) {
-            $recommendations[] = "Investigate reasons for incomplete tasks and implement measures to improve completion rates";
-        }
-
-        if ($secretaryStats->isNotEmpty() && $technicianStats->isNotEmpty()) {
-            $roleGap = abs($secretaryAvg - $technicianAvg);
-            if ($roleGap > 10) {
-                $recommendations[] = "Address the performance gap between secretaries and technicians through targeted training";
-            }
-        }
-
-        // Add general recommendations
-        $recommendations[] = "Regularly review and update performance metrics to ensure they align with organizational goals";
-        $recommendations[] = "Implement a feedback system to gather employee input on performance metrics and improvement areas";
-
-        return [
-            'key_findings' => $keyFindings,
-            'recommendations' => $recommendations
-        ];
+        return $keyFindings;
     }
 
     private function generateVendorRecommendations($vendor, $repairRate, $completionRate, $operationalRate, $statusBreakdown)
@@ -888,5 +938,101 @@ class ReportController extends Controller
         }
 
         return $recommendations;
+    }
+
+    public function exportPaascuFromProcurement(Request $request)
+    {
+        // Get assets with relationships (same as procurement history)
+        $query = Asset::with(['category', 'vendor', 'location']);
+
+        // Apply all filters
+        if ($request->has('start_date') && $request->start_date) {
+            $query->where('purchase_date', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date') && $request->end_date) {
+            $query->where('purchase_date', '<=', $request->end_date);
+        }
+
+        if ($request->has('category_id') && $request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('vendor_id') && $request->vendor_id) {
+            $query->where('vendor_id', $request->vendor_id);
+        }
+
+        // Get all assets (no pagination for export)
+        $assets = $query->orderBy('location_id')
+                       ->orderBy('category_id')
+                       ->get();
+
+        // Generate Excel file
+        $filename = 'PAASCU_Computer_Lab_Inventory_' . now()->format('Y-m-d') . '.xlsx';
+        
+        return Excel::download(new PaascuInventoryExport($assets), $filename);
+    }
+
+    public function exportLabUsageToPaascu(Request $request)
+    {
+        // Group by period based on filter
+        $period = $request->get('period', 'day');
+        $periodFormat = match($period) {
+            'month' => 'DATE_FORMAT(time_in, "%Y-%m")',
+            'year' => 'YEAR(time_in)',
+            default => 'DATE(time_in)'
+        };
+
+        // Get the same data as lab usage report
+        $query = DB::table('lab_logs')
+            ->select(
+                DB::raw("{$periodFormat} as period"),
+                'users.department as department_name',
+                'lab_logs.laboratory as lab_name',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours'),
+                DB::raw('AVG(TIMESTAMPDIFF(HOUR, time_in, time_out)) as avg_duration'),
+                DB::raw('COUNT(DISTINCT user_id) as unique_users')
+            )
+            ->join('users', 'lab_logs.user_id', '=', 'users.id');
+
+        // Apply filters
+        if ($request->has('department_id') && $request->department_id) {
+            $query->where('users.department', $request->department_id);
+        }
+
+        if ($request->has('lab_id') && $request->lab_id) {
+            $query->where('lab_logs.laboratory', $request->lab_id);
+        }
+
+        // Date range filter
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+        }
+
+        // Group by period and names
+        $query->groupBy('period', 'users.department', 'lab_logs.laboratory');
+
+        $usageData = $query->get();
+
+        // Calculate summary statistics
+        $summary = (object) [
+            'total_sessions' => $usageData->sum('total_sessions'),
+            'total_hours' => $usageData->sum('total_hours'),
+            'avg_duration' => $usageData->avg('avg_duration'),
+            'unique_users' => $usageData->sum('unique_users')
+        ];
+
+        // Generate Excel file
+        $filename = 'PAASCU_Laboratory_Utilization_' . now()->format('Y-m-d') . '.xlsx';
+        
+        return Excel::download(
+            new PaascuUtilizationExport($usageData, $summary), 
+            $filename
+        );
     }
 }

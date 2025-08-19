@@ -569,24 +569,24 @@ class MaintenanceController extends Controller
 
     public function getLabAssets($lab)
     {
-        // Get assets by room_number from the location relationship
+        // Get assets by room_number from the location relationship, excluding DISPOSED and PULLED OUT assets
         $assets = Asset::whereHas('location', function($query) use ($lab) {
                 $query->where('room_number', $lab);
             })
-            ->where('status', '!=', 'DISPOSED')
+            ->whereNotIn('status', ['DISPOSED', 'PULLED OUT'])
             ->with('location')
-            ->get(['id', 'serial_number', 'name', 'location_id']);
+            ->get(['id', 'serial_number', 'name', 'location_id', 'status']);
 
         return response()->json($assets);
     }
     
     public function getLocationAssets($locationId)
     {
-        // Get assets by location_id
+        // Get assets by location_id, excluding DISPOSED and PULLED OUT assets
         $assets = Asset::where('location_id', $locationId)
-            ->where('status', '!=', 'DISPOSED')
+            ->whereNotIn('status', ['DISPOSED', 'PULLED OUT'])
             ->with('location')
-            ->get(['id', 'serial_number', 'name', 'location_id']);
+            ->get(['id', 'serial_number', 'name', 'location_id', 'status']);
 
         return response()->json($assets);
     }

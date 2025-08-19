@@ -137,19 +137,27 @@ class AssetController extends Controller
     public function store(Request $request)
     {
         try {
-                    $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'location_id' => 'required|exists:locations,id',
-            'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
-            'model' => 'required|string|max:255',
-            'specification' => 'required|string',
-            'vendor_id' => 'required|exists:vendors,id',
-            'purchase_date' => 'required|date',
-            'warranty_period' => 'required|date|after_or_equal:purchase_date',
-            'purchase_price' => 'required|numeric|min:0',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+            // Special handling for non-registered assets
+            $isFromNonRegistered = $request->has('from_non_registered') && $request->from_non_registered;
+            
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'location_id' => 'required|exists:locations,id',
+                'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
+                'model' => 'required|string|max:255',
+                'specification' => 'required|string',
+                'vendor_id' => 'required|exists:vendors,id',
+                'purchase_date' => 'required|date',
+                'warranty_period' => 'required|date|after_or_equal:purchase_date',
+                'purchase_price' => 'required|numeric|min:0',
+                'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            // For non-registered assets, force status to PULLED OUT
+            if ($isFromNonRegistered) {
+                $validated['status'] = 'PULLED OUT';
+            }
 
             // Ensure the category exists
             $category = Category::findOrFail($validated['category_id']);
@@ -169,14 +177,23 @@ class AssetController extends Controller
             $asset = Asset::create($validated);
 
             // Create asset history record for the new asset
+            $historyRemarks = $isFromNonRegistered 
+                ? 'Asset registered from non-registered pulled out status. Previously pulled out for repair.'
+                : 'New asset added to the system';
+                
             AssetHistory::create([
                 'asset_id' => $asset->id,
                 'change_type' => 'CREATED',
                 'old_value' => null,
-                'new_value' => 'Asset created',
-                'remarks' => 'New asset added to the system',
+                'new_value' => $isFromNonRegistered ? 'Asset registered from non-registered status' : 'Asset created',
+                'remarks' => $historyRemarks,
                 'changed_by' => auth()->id()
             ]);
+
+            // If this is a non-registered asset being registered, link the repair history
+            if ($isFromNonRegistered) {
+                $this->linkNonRegisteredAssetHistory($asset, $request);
+            }
 
             // Create QR code directory if it doesn't exist
             Storage::disk('public')->makeDirectory('qrcodes');
@@ -200,11 +217,18 @@ class AssetController extends Controller
             }
 
             if ($request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Asset added successfully']);
+                $message = $isFromNonRegistered 
+                    ? 'Asset registered successfully from non-registered status'
+                    : 'Asset added successfully';
+                return response()->json(['success' => true, 'message' => $message]);
             }
 
+            $successMessage = $isFromNonRegistered 
+                ? 'Asset has been registered successfully from non-registered pulled out status'
+                : 'Asset has been added successfully';
+
             return redirect()->route('assets.index')
-                ->with('success', 'Asset has been added successfully');
+                ->with('success', $successMessage);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation error: ' . json_encode($e->errors()));
             return redirect()->back()
@@ -218,12 +242,17 @@ class AssetController extends Controller
         }
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $categories = \App\Models\Category::all();
         $vendors = \App\Models\Vendor::orderBy('name')->get();
         $locations = \App\Models\Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
-        return view('add-asset', compact('categories', 'vendors', 'locations'));
+        
+        // Check if this is coming from a non-registered asset context
+        $fromNonRegistered = $request->has('from_non_registered') && $request->from_non_registered;
+        $status = $request->get('status', '');
+        
+        return view('add-asset', compact('categories', 'vendors', 'locations', 'fromNonRegistered', 'status'));
     }
 
     public function qrList()
@@ -535,5 +564,105 @@ class AssetController extends Controller
     public function show(\App\Models\Asset $asset)
     {
         return view('assets.show', compact('asset'));
+    }
+
+    /**
+     * Link repair history from non-registered asset to the newly registered asset
+     */
+    private function linkNonRegisteredAssetHistory(Asset $asset, Request $request)
+    {
+        try {
+            \Log::info('Starting to link non-registered asset history', [
+                'asset_id' => $asset->id,
+                'asset_name' => $asset->name,
+                'asset_location' => $asset->location->building . ' - ' . $asset->location->floor . ' - ' . $asset->location->room_number,
+                'search_criteria' => [
+                    'equipment_name' => $asset->name,
+                    'status' => 'PULLED OUT',
+                    'has_ticket' => true,
+                    'note' => 'Ignoring repair request location, using asset registration location'
+                ]
+            ]);
+
+            // Find the non-registered asset that matches this equipment name
+            // Ignore the repair request location since it might be informal/incorrect
+            // Use the asset registration location instead
+            // This ensures repair history is linked regardless of location mismatches
+            $nonRegisteredAsset = \App\Models\NonRegisteredAsset::where('equipment_name', $asset->name)
+                ->where('status', 'PULLED OUT')
+                ->whereNotNull('ticket_number')
+                ->latest('pulled_out_at')
+                ->first();
+
+            \Log::info('Non-registered asset search result', [
+                'found' => $nonRegisteredAsset ? true : false,
+                'non_registered_asset_id' => $nonRegisteredAsset ? $nonRegisteredAsset->id : null,
+                'ticket_number' => $nonRegisteredAsset ? $nonRegisteredAsset->ticket_number : null
+            ]);
+
+            if ($nonRegisteredAsset && $nonRegisteredAsset->ticket_number) {
+                // Find the repair request
+                $repairRequest = \App\Models\RepairRequest::where('ticket_number', $nonRegisteredAsset->ticket_number)->first();
+                
+                if ($repairRequest) {
+                    // Create repair history record for the new asset
+                    $repairHistory = AssetHistory::create([
+                        'asset_id' => $asset->id,
+                        'change_type' => 'REPAIR',
+                        'old_value' => $repairRequest->ticket_number, // Store ticket number in old_value for easy access
+                        'new_value' => 'pulled_out',
+                        'remarks' => $nonRegisteredAsset->remarks ?? 'Asset was previously non-registered and pulled out for repair',
+                        'changed_by' => auth()->id()
+                    ]);
+
+                    \Log::info('Created repair history record', [
+                        'history_id' => $repairHistory->id,
+                        'asset_id' => $repairHistory->asset_id,
+                        'change_type' => $repairHistory->change_type
+                    ]);
+
+                    // Create status change record showing the asset was pulled out
+                    $statusHistory = AssetHistory::create([
+                        'asset_id' => $asset->id,
+                        'change_type' => 'STATUS',
+                        'old_value' => 'IN USE',
+                        'new_value' => 'PULLED OUT',
+                        'remarks' => "Asset pulled out for repair on " . $nonRegisteredAsset->pulled_out_at->format('M d, Y') . ". Ticket: {$repairRequest->ticket_number}",
+                        'changed_by' => auth()->id()
+                    ]);
+
+                    \Log::info('Created status history record', [
+                        'history_id' => $statusHistory->id,
+                        'asset_id' => $statusHistory->asset_id,
+                        'change_type' => $statusHistory->change_type
+                    ]);
+
+                    // Update the non-registered asset to link it to the new asset
+                    $nonRegisteredAsset->update([
+                        'linked_asset_id' => $asset->id,
+                        'linked_at' => now()
+                    ]);
+
+                    // Update the repair request to link it to the new asset
+                    $repairRequest->update([
+                        'serial_number' => $asset->serial_number,
+                        'status' => 'pulled_out' // Ensure status reflects the asset is now registered but still pulled out
+                    ]);
+
+                    \Log::info('Successfully linked non-registered asset history to new asset', [
+                        'asset_id' => $asset->id,
+                        'non_registered_asset_id' => $nonRegisteredAsset->id,
+                        'ticket_number' => $repairRequest->ticket_number,
+                        'repair_request_updated' => true
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error linking non-registered asset history: ' . $e->getMessage(), [
+                'asset_id' => $asset->id,
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw the exception - this is not critical for asset creation
+        }
     }
 }

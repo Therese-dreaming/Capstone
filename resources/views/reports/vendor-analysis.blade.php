@@ -3,147 +3,210 @@
 @section('title', 'Vendor Analysis')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 py-6">
-    <div class="container mx-auto px-4">
-        <div class="bg-white rounded-lg shadow-lg">
-            <!-- Header -->
-            <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <div class="flex items-center space-x-3">
+<div class="flex-1 p-4 md:p-8 transition-all duration-300" id="mainContent">
+    <div class="max-w-7xl mx-auto">
+        <!-- Main Container -->
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <!-- Header Section -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 md:gap-0">
+                <div class="flex items-center">
+                    <div class="bg-red-100 p-3 rounded-full mr-4">
+                        <svg class="w-8 h-8 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Vendor Analysis Report</h1>
-                        <p class="text-sm text-gray-600">Comprehensive vendor performance and reliability analysis</p>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Vendor Analysis Report</h1>
+                        <p class="text-gray-600 text-sm md:text-base">Comprehensive vendor performance and reliability analysis</p>
                     </div>
                 </div>
-                <button type="button" onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
-                    <i class="fas fa-print mr-2"></i>
+                <button type="button" onclick="window.print()" class="print:hidden inline-flex items-center px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
                     Print Report
                 </button>
             </div>
 
-            <div class="p-6">
-                <!-- Overall Statistics -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-red-50 rounded-lg p-6 shadow-lg border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-building text-3xl text-red-800"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-red-800">Total Vendors</p>
-                                <p class="text-2xl font-bold text-red-900">{{ $overallStats['total_vendors'] }}</p>
-                            </div>
+            <!-- Overall Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-lg border border-red-200 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center">
+                        <div class="bg-red-100 p-3 rounded-full mr-4">
+                            <svg class="w-6 h-6 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
                         </div>
-                    </div>
-
-                    <div class="bg-red-50 rounded-lg p-6 shadow-lg border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-desktop text-3xl text-red-800"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-red-800">Total Assets</p>
-                                <p class="text-2xl font-bold text-red-900">{{ number_format($overallStats['total_assets']) }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-red-50 rounded-lg p-6 shadow-lg border border-gray-200">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-dollar-sign text-3xl text-red-800"></i>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-red-800">Total Value</p>
-                                <p class="text-2xl font-bold text-red-900">₱{{ number_format($overallStats['total_value'], 2) }}</p>
-                            </div>
+                        <div>
+                            <p class="text-sm font-medium text-red-800">Total Vendors</p>
+                            <p class="text-2xl md:text-3xl font-bold text-red-900">{{ $overallStats['total_vendors'] }}</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Vendor Performance Table -->
-                <div class="bg-white rounded-lg border border-gray-200 shadow-lg">
-                    <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Vendor Performance Analysis</h2>
-                        @if(!isset($noData))
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400"></i>
-                            </div>
-                            <input type="text" id="vendorSearch" placeholder="Search vendors..." 
-                                   class="pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center">
+                        <div class="bg-blue-100 p-3 rounded-full mr-4">
+                            <svg class="w-6 h-6 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
                         </div>
-                        @endif
+                        <div>
+                            <p class="text-sm font-medium text-blue-800">Total Assets</p>
+                            <p class="text-2xl md:text-3xl font-bold text-blue-900">{{ number_format($overallStats['total_assets']) }}</p>
+                        </div>
                     </div>
+                </div>
 
-                    @if(isset($noData))
-                    <div class="p-12 text-center">
-                        <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-chart-bar text-3xl text-gray-400"></i>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center">
+                        <div class="bg-green-100 p-3 rounded-full mr-4">
+                            <svg class="w-6 h-6 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                            </svg>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Vendor Data Available</h3>
-                        <p class="text-gray-600 mb-6">There are no assets assigned to vendors yet. To see vendor analysis:</p>
-                        <div class="space-y-2 text-sm text-gray-600">
-                            <p>1. Go to <a href="{{ route('assets.create') }}" class="text-red-600 hover:text-red-700 font-medium">Add Asset</a> and assign vendors to your assets</p>
-                            <p>2. Or update existing assets to include vendor information</p>
-                            <p>3. Once assets are assigned to vendors, this analysis will show detailed performance metrics</p>
+                        <div>
+                            <p class="text-sm font-medium text-green-800">Total Value</p>
+                            <p class="text-2xl md:text-3xl font-bold text-green-900">₱{{ number_format($overallStats['total_value'], 2) }}</p>
                         </div>
                     </div>
-                    @else
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200" id="vendorTable">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assets</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Repairs</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disposed Assets</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Age (Years)</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($vendorAnalysis as $vendor)
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $vendor['name'] }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ $vendor['total_assets'] }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        ₱{{ number_format($vendor['total_value'], 2) }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $vendor['total_repairs'] }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ number_format($vendor['completion_rate'], 1) }}%
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold">
-                                        {{ $vendor['disposed_count'] }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $vendor['average_age'] ?? '-' }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button type="button" 
-                                                onclick="showVendorDetails({{ $vendor['id'] }}, '{{ addslashes($vendor['name']) }}')"
-                                                class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                                            <i class="fas fa-eye mr-1"></i>
-                                            Details
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-lg border border-purple-200 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center">
+                        <div class="bg-purple-100 p-3 rounded-full mr-4">
+                            <svg class="w-6 h-6 text-purple-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-purple-800">Analysis Ready</p>
+                            <p class="text-2xl md:text-3xl font-bold text-purple-900">{{ isset($noData) ? '0' : count($vendorAnalysis) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendor Performance Table -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center p-6 border-b border-gray-200 gap-4">
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-900 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Vendor Performance Analysis
+                    </h2>
+                    @if(!isset($noData))
+                    <div class="relative w-full md:w-auto">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input type="text" id="vendorSearch" placeholder="Search vendors..." 
+                               class="w-full md:w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors print:hidden">
                     </div>
                     @endif
                 </div>
+
+                @if(isset($noData))
+                <div class="p-12 text-center">
+                    <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-medium text-gray-900 mb-3">No Vendor Data Available</h3>
+                    <p class="text-gray-600 mb-6">There are no assets assigned to vendors yet. To see vendor analysis:</p>
+                    <div class="space-y-3 text-sm text-gray-600 max-w-md mx-auto">
+                        <div class="flex items-center">
+                            <span class="bg-red-100 text-red-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3">1</span>
+                            <p>Go to <a href="{{ route('assets.create') }}" class="text-red-600 hover:text-red-700 font-medium">Add Asset</a> and assign vendors to your assets</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="bg-red-100 text-red-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3">2</span>
+                            <p>Or update existing assets to include vendor information</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="bg-red-100 text-red-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3">3</span>
+                            <p>Once assets are assigned to vendors, this analysis will show detailed performance metrics</p>
+                        </div>
+                    </div>
+                </div>
+                @else
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200" id="vendorTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor Name</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assets</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Repairs</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disposed Assets</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Age (Years)</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($vendorAnalysis as $vendor)
+                            <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="bg-red-100 p-2 rounded-lg mr-3">
+                                            <svg class="w-4 h-4 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $vendor['name'] }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $vendor['total_assets'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                    ₱{{ number_format($vendor['total_value'], 2) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        {{ $vendor['total_repairs'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div class="flex items-center">
+                                        <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ $vendor['completion_rate'] }}%"></div>
+                                        </div>
+                                        <span class="text-xs font-medium">{{ number_format($vendor['completion_rate'], 1) }}%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        {{ $vendor['disposed_count'] }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ $vendor['average_age'] ?? '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button type="button" 
+                                            onclick="showVendorDetails({{ $vendor['id'] }}, '{{ addslashes($vendor['name']) }}')"
+                                            class="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Details
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -151,12 +214,14 @@
 
 <!-- Vendor Details Modal -->
 <div id="vendorDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="relative top-20 mx-auto p-6 border w-11/12 md:w-3/4 lg:w-1/2 shadow-xl rounded-xl bg-white">
         <div class="mt-3">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Vendor Details</h3>
-                <button onclick="closeVendorDetails()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-xl"></i>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Vendor Details</h3>
+                <button onclick="closeVendorDetails()" class="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                 </button>
             </div>
             <div id="vendorDetailsContent" class="space-y-4">
@@ -216,10 +281,12 @@ window.showVendorDetails = function(vendorId, vendorName) {
             console.log('AJAX failed:', error); // Debug log
             // Fallback content if AJAX fails
             document.getElementById('vendorDetailsContent').innerHTML = `
-                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
                     <div class="flex">
                         <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                            <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
                         </div>
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-yellow-800">Detailed Analysis Coming Soon</h3>
@@ -263,28 +330,167 @@ document.addEventListener('keydown', function(e) {
 
 <style>
 @media print {
-    .print\\:hidden {
+    /* Hide navigation elements and buttons */
+    aside.fixed,
+    nav.bg-white,
+    .sidebar-nav,
+    header,
+    .header,
+    #header,
+    [x-data],
+    button,
+    .print-hide,
+    .flex.flex-col.md\:flex-row.justify-between.items-start.md\:items-center.mb-8.gap-4.md\:gap-0 > button { /* Hide the print button */
         display: none !important;
     }
-    
-    .print\\:block {
+
+    /* Hide statistics cards */
+    .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4.gap-6.mb-8.print\:hidden,
+    .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4.gap-6.mb-8 {
+        display: none !important;
+    }
+
+    /* Hide search functionality */
+    .flex.flex-col.md\:flex-row.justify-between.items-start.md\:items-center.p-6.border-b.border-gray-200.gap-4 > div:last-child,
+    .relative.w-full.md\:w-auto.print\:hidden,
+    #vendorSearch {
+        display: none !important;
+    }
+
+    /* Ensure main content area is visible and uses full width */
+    .flex-1.p-4,
+    .flex-1.p-8 {
+         padding: 0 !important;
+    }
+
+    /* Remove left margin from main content added for sidebar */
+    .md\:ml-80 {
+        margin-left: 0 !important;
+    }
+
+    /* Ensure container is visible and uses full width */
+    .max-w-7xl, .max-w-full {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Reset layout */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        background: white !important;
+    }
+
+    /* Style the title */
+    h1 {
+        text-align: center !important;
+        margin-bottom: 20px;
+        font-size: 18pt;
+        width: 100% !important;
         display: block !important;
     }
-    
-    .print\\:text-black {
-        color: black !important;
+
+    /* Style the subtitle */
+    .text-gray-600.text-sm.md\:text-base {
+        text-align: center !important;
+        margin-bottom: 20px;
+        font-size: 10pt;
+        display: block !important;
     }
-    
-    .print\\:bg-white {
+
+    /* Ensure the table is visible and styled for print */
+    .overflow-x-auto {
+        display: block !important;
+        overflow-x: visible !important; /* Ensure table is not scrollable in print */
+    }
+
+    .bg-white.rounded-xl.border.border-gray-200.shadow-lg {
+        background-color: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    table {
+        width: 100% !important;
+        table-layout: auto !important; /* Allow columns to size naturally */
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th {
+        background-color: #f3f4f6;
+        color: #6b7280;
+        font-size: 9pt !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 8px !important;
+        text-align: left;
+        white-space: normal !important;
+    }
+
+    td {
+        padding: 8px !important;
+        font-size: 9pt !important;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: normal !important;
+    }
+
+    /* Ensure proper page breaks */
+    thead {
+        display: table-header-group;
+    }
+
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* Remove color-adjust for backgrounds/colors */
+    thead th,
+    .bg-blue-100,
+    .bg-green-100,
+    .bg-red-100 {
+        -webkit-print-color-adjust: unset !important;
+        print-color-adjust: unset !important;
+    }
+
+    /* Hide search input */
+    .relative.w-full.md\:w-auto.print\:hidden {
+        display: none !important;
+    }
+
+    /* Remove gradients and use solid colors for print */
+    .bg-gradient-to-br {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+    }
+
+    /* Remove shadows and borders that don't print well */
+    .shadow-lg,
+    .shadow-xl,
+    .rounded-xl,
+    .rounded-lg {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+
+    /* Hide interactive elements */
+    .hover\\:bg-gray-50 {
         background-color: white !important;
     }
-    
-    .print\\:shadow-none {
-        box-shadow: none !important;
+
+    /* Ensure text is readable */
+    * {
+        color: black !important;
+        background-color: white !important;
     }
-    
-    .print\\:border {
-        border: 1px solid #e5e7eb !important;
+
+    /* Hide Actions column in print */
+    table th:last-child,
+    table td:last-child {
+        display: none !important;
     }
 }
 </style>

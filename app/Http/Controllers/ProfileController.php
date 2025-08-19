@@ -35,13 +35,18 @@ class ProfileController extends Controller
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
             $path = $request->file('profile_picture')->store('profile-pictures', 'public');
-            $user->profile_picture = '/storage/' . $path;
+            $validated['profile_picture'] = '/storage/' . $path;
         }
 
         $user->name = $validated['name'];
         $user->username = $validated['username'];
         $user->department = $validated['department'];
         $user->position = $validated['position'];
+        
+        // Update profile picture if provided
+        if (isset($validated['profile_picture'])) {
+            $user->profile_picture = $validated['profile_picture'];
+        }
         
         if ($request->filled('password')) {
             $user->password = Hash::make($validated['password']);

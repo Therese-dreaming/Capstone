@@ -153,13 +153,13 @@
                     @endif
 
                     @if(auth()->check() && auth()->user()->group_id !== 3)
-                    <!-- Employee Performance Report - Show only to secretary -->
-                    @if(auth()->user()->group_id == 2)
-                    <a href="{{ route('employee-performance') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('employee-performance') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                    <!-- My Performance Report - Show only to secretary -->
+                    @if(false)
+                    <a href="{{ route('secretary-performance') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('secretary-performance') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        <span>Employee Performance</span>
+                        <span>My Performance</span>
                     </a>
                     @endif
                     @endif
@@ -362,6 +362,7 @@
                             <a href="{{ route('reports.lab-usage') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.lab-usage') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
                                 Lab Usage
                             </a>
+
                         </div>
                     </div>
                     @endif
