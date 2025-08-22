@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Maintenance;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class Asset extends Model
@@ -24,6 +25,7 @@ class Asset extends Model
         'photo',
         'serial_number',
         'qr_code',
+        'created_by',
         'purchase_price',
         'disposal_date',
         'disposal_reason',
@@ -78,6 +80,11 @@ class Asset extends Model
     public function vendor()
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function location()

@@ -17,7 +17,7 @@ class AssetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Asset::with(['category', 'location', 'vendor']);
+        $query = Asset::with(['category', 'location', 'vendor', 'creator']);
 
         // Apply filters if they exist
         if ($request->has('search')) {
@@ -174,6 +174,7 @@ class AssetController extends Controller
             }
 
             // Create the asset first
+            $validated['created_by'] = auth()->id();
             $asset = Asset::create($validated);
 
             // Create asset history record for the new asset
@@ -227,7 +228,7 @@ class AssetController extends Controller
                 ? 'Asset has been registered successfully from non-registered pulled out status'
                 : 'Asset has been added successfully';
 
-            return redirect()->route('assets.index')
+            return redirect()->route($this->getRedirectRoute())
                 ->with('success', $successMessage);
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation error: ' . json_encode($e->errors()));
@@ -330,7 +331,7 @@ class AssetController extends Controller
 
         $asset->delete();
 
-        return redirect()->route('assets.index')
+        return redirect()->route($this->getRedirectRoute())
             ->with('success', 'Asset has been deleted successfully');
     }
 
@@ -357,7 +358,14 @@ class AssetController extends Controller
             'changed_by' => auth()->id()
         ]);
 
-        return redirect($request->input('redirect', route('reports.disposal-history')))
+        $redirectRoute = $request->input('redirect');
+        if (!$redirectRoute) {
+            $redirectRoute = auth()->user()->group_id === 4 
+                ? route('custodian.assets.index')
+                : route('reports.disposal-history');
+        }
+        
+        return redirect($redirectRoute)
             ->with('success', 'Asset has been marked as disposed.');
     }
 
@@ -464,7 +472,7 @@ class AssetController extends Controller
         // Update the asset first to ensure all new values are saved
         $asset->update($validated);
 
-        return redirect()->route('assets.index')
+        return redirect()->route($this->getRedirectRoute())
             ->with('success', 'Asset updated successfully');
     }
 
@@ -664,5 +672,16 @@ class AssetController extends Controller
             ]);
             // Don't throw the exception - this is not critical for asset creation
         }
+    }
+
+    /**
+     * Get the appropriate redirect route based on user role
+     */
+    private function getRedirectRoute()
+    {
+        if (auth()->user()->group_id === 4) {
+            return 'custodian.assets.index';
+        }
+        return 'assets.index';
     }
 }

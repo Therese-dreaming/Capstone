@@ -293,9 +293,15 @@
                         <select id="technician_id" name="technician_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
                             <option value="">Select a technician...</option>
                             @foreach($technicians as $technician)
-                            <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                            <option value="{{ $technician->id }}"
+                                    data-ongoing="{{ $technicianOngoingCounts[$technician->id] ?? 0 }}"
+                                    data-repairs="{{ $technicianRepairCounts[$technician->id] ?? 0 }}"
+                                    data-maintenance="{{ $technicianMaintenanceCounts[$technician->id] ?? 0 }}">
+                                {{ $technician->name }} ({{ $technicianRepairCounts[$technician->id] ?? 0 }} repairs, {{ $technicianMaintenanceCounts[$technician->id] ?? 0 }} maintenance)
+                            </option>
                             @endforeach
                         </select>
+                        <p id="updateTechnicianOngoingHint" class="mt-1 text-sm text-gray-500 hidden">Repairs: <span id="updateTechnicianRepairsCount">0</span> • Maintenance: <span id="updateTechnicianMaintenanceCount">0</span> • Total: <span id="updateTechnicianOngoingCount">0</span></p>
                     </div>
                     @else
                     {{-- Display Technician for non-Admins --}}
@@ -478,9 +484,15 @@
                         <select name="technician_id" id="assign_technician_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" required>
                             <option value="">Select a technician...</option>
                             @foreach($technicians as $technician)
-                            <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                            <option value="{{ $technician->id }}"
+                                    data-ongoing="{{ $technicianOngoingCounts[$technician->id] ?? 0 }}"
+                                    data-repairs="{{ $technicianRepairCounts[$technician->id] ?? 0 }}"
+                                    data-maintenance="{{ $technicianMaintenanceCounts[$technician->id] ?? 0 }}">
+                                {{ $technician->name }} ({{ $technicianRepairCounts[$technician->id] ?? 0 }} repairs, {{ $technicianMaintenanceCounts[$technician->id] ?? 0 }} maintenance)
+                            </option>
                             @endforeach
                         </select>
+                        <p id="assignTechnicianOngoingHint" class="mt-1 text-sm text-gray-500 hidden">Repairs: <span id="assignTechnicianRepairsCount">0</span> • Maintenance: <span id="assignTechnicianMaintenanceCount">0</span> • Total: <span id="assignTechnicianOngoingCount">0</span></p>
                     </div>
 
                     <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
@@ -1022,6 +1034,30 @@
                         spinner.classList.add('hidden');
                     });
                 }
+
+                // Add event listener for assign technician select to show ongoing counts
+                document.getElementById('assign_technician_id').addEventListener('change', function() {
+                    const ongoingCount = this.options[this.selectedIndex].dataset.ongoing;
+                    const repairsCount = this.options[this.selectedIndex].dataset.repairs;
+                    const maintenanceCount = this.options[this.selectedIndex].dataset.maintenance;
+
+                    document.getElementById('assignTechnicianOngoingCount').textContent = ongoingCount;
+                    document.getElementById('assignTechnicianRepairsCount').textContent = repairsCount;
+                    document.getElementById('assignTechnicianMaintenanceCount').textContent = maintenanceCount;
+                    document.getElementById('assignTechnicianOngoingHint').classList.remove('hidden');
+                });
+
+                // Add event listener for update modal technician select to show ongoing counts
+                document.getElementById('technician_id').addEventListener('change', function() {
+                    const ongoingCount = this.options[this.selectedIndex].dataset.ongoing;
+                    const repairsCount = this.options[this.selectedIndex].dataset.repairs;
+                    const maintenanceCount = this.options[this.selectedIndex].dataset.maintenance;
+
+                    document.getElementById('updateTechnicianOngoingCount').textContent = ongoingCount;
+                    document.getElementById('updateTechnicianRepairsCount').textContent = repairsCount;
+                    document.getElementById('updateTechnicianMaintenanceCount').textContent = maintenanceCount;
+                    document.getElementById('updateTechnicianOngoingHint').classList.remove('hidden');
+                });
 
                 // Add event listener for assign technician form
                 document.getElementById('assignTechnicianForm').addEventListener('submit', function(e) {

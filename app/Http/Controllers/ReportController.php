@@ -8,6 +8,7 @@ use App\Models\AssetHistory;
 use App\Models\Maintenance;
 use App\Models\Vendor;
 use App\Models\RepairRequest;
+use App\Models\NonRegisteredAsset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -434,6 +435,7 @@ class ReportController extends Controller
                 DB::raw("{$periodFormat} as period"),
                 'users.department as department_name',
                 'lab_logs.laboratory as lab_name',
+                'lab_logs.purpose',
                 DB::raw('COUNT(*) as total_sessions'),
                 DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours'),
                 DB::raw('AVG(TIMESTAMPDIFF(HOUR, time_in, time_out)) as avg_duration'),
@@ -450,13 +452,17 @@ class ReportController extends Controller
             $query->where('lab_logs.laboratory', $request->lab_id);
         }
 
+        if ($request->has('purpose')) {
+            $query->where('lab_logs.purpose', $request->purpose);
+        }
+
         // Date range filter
         if ($request->has('start_date') && $request->has('end_date')) {
             $query->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
         }
 
         // Group by period and names
-        $query->groupBy('period', 'users.department', 'lab_logs.laboratory');
+        $query->groupBy('period', 'users.department', 'lab_logs.laboratory', 'lab_logs.purpose');
 
         // Get summary statistics
         $summary = DB::table('lab_logs')
@@ -473,6 +479,9 @@ class ReportController extends Controller
             })
             ->when($request->has('lab_id'), function($q) use ($request) {
                 return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->when($request->has('purpose'), function($q) use ($request) {
+                return $q->where('lab_logs.purpose', $request->purpose);
             })
             ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
                 return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
@@ -496,6 +505,9 @@ class ReportController extends Controller
             ->when($request->has('lab_id'), function($q) use ($request) {
                 return $q->where('lab_logs.laboratory', $request->lab_id);
             })
+            ->when($request->has('purpose'), function($q) use ($request) {
+                return $q->where('lab_logs.purpose', $request->purpose);
+            })
             ->groupBy('users.department')
             ->orderBy('total_hours', 'desc')
             ->paginate(5);
@@ -517,6 +529,9 @@ class ReportController extends Controller
             ->when($request->has('lab_id'), function($q) use ($request) {
                 return $q->where('lab_logs.laboratory', $request->lab_id);
             })
+            ->when($request->has('purpose'), function($q) use ($request) {
+                return $q->where('lab_logs.purpose', $request->purpose);
+            })
             ->groupBy('laboratory')
             ->orderBy('total_hours', 'desc')
             ->paginate(5);
@@ -537,12 +552,63 @@ class ReportController extends Controller
             ->when($request->has('lab_id'), function($q) use ($request) {
                 return $q->where('lab_logs.laboratory', $request->lab_id);
             })
+            ->when($request->has('purpose'), function($q) use ($request) {
+                return $q->where('lab_logs.purpose', $request->purpose);
+            })
             ->groupBy('hour')
             ->orderBy('total_sessions', 'desc')
             ->get();
 
         // Get data for the table
         $usageData = $query->paginate(10);
+
+        // Get usage by purpose
+        $purposeUsage = DB::table('lab_logs')
+            ->select(
+                'purpose',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->whereNotNull('purpose')
+            ->groupBy('purpose')
+            ->orderBy('total_hours', 'desc')
+            ->get();
+
+        // Get usage by lab and purpose
+        $labPurposeUsage = DB::table('lab_logs')
+            ->select(
+                'laboratory as lab_name',
+                'purpose',
+                DB::raw('COUNT(*) as total_sessions'),
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours')
+            )
+            ->when($request->has('start_date') && $request->has('end_date'), function($q) use ($request) {
+                return $q->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            })
+            ->when($request->has('department_id'), function($q) use ($request) {
+                return $q->join('users', 'lab_logs.user_id', '=', 'users.id')
+                    ->where('users.department', $request->department_id);
+            })
+            ->when($request->has('lab_id'), function($q) use ($request) {
+                return $q->where('lab_logs.laboratory', $request->lab_id);
+            })
+            ->when($request->has('purpose'), function($q) use ($request) {
+                return $q->where('lab_logs.purpose', $request->purpose);
+            })
+            ->whereNotNull('purpose')
+            ->groupBy('laboratory', 'purpose')
+            ->orderBy('total_hours', 'desc')
+            ->get();
 
         // Get all departments and labs for filters
         $departments = DB::table('users')
@@ -556,16 +622,13 @@ class ReportController extends Controller
                 ];
             });
             
-        $labs = DB::table('lab_logs')
-            ->select('laboratory as name')
-            ->distinct()
-            ->get()
-            ->map(function($lab) {
-                return (object)[
-                    'id' => $lab->name,
-                    'name' => $lab->name
-                ];
-            });
+        // Use Laboratory model instead of hardcoded data
+        $labs = \App\Models\Laboratory::orderBy('number')->get()->map(function($lab) {
+            return (object)[
+                'id' => $lab->number,
+                'name' => 'Laboratory ' . $lab->number
+            ];
+        });
 
         return view('reports.lab-usage', compact(
             'summary',
@@ -573,6 +636,8 @@ class ReportController extends Controller
             'labUsage',
             'peakUsage',
             'usageData',
+            'purposeUsage',
+            'labPurposeUsage',
             'departments',
             'labs',
             'period'
@@ -838,6 +903,7 @@ class ReportController extends Controller
 
             // Add employee stats to collection
             $employeeStats->push((object)[
+                'id' => $employee->id,
                 'name' => $employee->name,
                 'role' => $employee->group_id == 1 ? 'Admin' : 'Secretary',
                 'repairs_completed' => $employeeRepairs,
@@ -876,6 +942,67 @@ class ReportController extends Controller
         $keyFindings = $this->generateKeyFindings($employeeStats, $overallStats);
 
         return view('employee-performance', compact('employeeStats', 'overallStats', 'keyFindings'));
+    }
+
+    public function employeeMetrics(User $user)
+    {
+        // Repairs breakdown for this technician
+        $repairs = RepairRequest::where('technician_id', $user->id)
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        // Normalize keys we care about
+        $repairCompleted = (int) ($repairs['completed'] ?? 0);
+        $repairOngoing = (int) ($repairs['ongoing'] ?? 0);
+        $repairPulledOut = (int) ($repairs['pulled_out'] ?? 0);
+
+        // Maintenance breakdown for this technician
+        $maintenance = Maintenance::where('technician_id', $user->id)
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $maintCompleted = (int) ($maintenance['completed'] ?? 0);
+        // Map 'scheduled' to 'ongoing' for display purposes
+        $maintOngoing = (int) (($maintenance['ongoing'] ?? 0) + ($maintenance['scheduled'] ?? 0));
+        $maintCancelled = (int) ($maintenance['cancelled'] ?? 0);
+
+        // Average rating from technician evaluations
+        $avgRating = DB::table('technician_evaluations')
+            ->where('technician_id', $user->id)
+            ->whereNotNull('rating')
+            ->avg('rating');
+
+        // Non-registered assets pulled out by this technician (union by user and by linked ticket technician)
+        $nonRegByUserIds = NonRegisteredAsset::where('status', 'PULLED OUT')
+            ->where('pulled_out_by', $user->id)
+            ->pluck('id');
+
+        $nonRegByTicketIds = NonRegisteredAsset::where('status', 'PULLED OUT')
+            ->whereHas('repairRequest', function ($q) use ($user) {
+                $q->where('technician_id', $user->id);
+            })
+            ->pluck('id');
+
+        $nonRegPulledOutIds = $nonRegByUserIds->merge($nonRegByTicketIds)->unique();
+        $nonRegPulledOut = $nonRegPulledOutIds->count();
+
+        return response()->json([
+            'repairs' => [
+                'completed' => $repairCompleted,
+                'ongoing' => $repairOngoing,
+                'pulled_out' => $repairPulledOut + $nonRegPulledOut,
+                'pulled_out_registered' => $repairPulledOut,
+                'pulled_out_nonregistered' => $nonRegPulledOut,
+            ],
+            'maintenance' => [
+                'completed' => $maintCompleted,
+                'ongoing' => $maintOngoing,
+                'cancelled' => $maintCancelled,
+            ],
+            'rating' => round($avgRating ?? 0, 2),
+        ]);
     }
 
     private function generateKeyFindings($employeeStats, $overallStats)
@@ -1010,6 +1137,9 @@ class ReportController extends Controller
         if ($request->has('lab_id') && $request->lab_id) {
             $query->where('lab_logs.laboratory', $request->lab_id);
         }
+        if ($request->has('purpose') && $request->purpose) {
+            $query->where('lab_logs.purpose', $request->purpose);
+        }
 
         // Date range filter
         if ($request->has('start_date') && $request->has('end_date')) {
@@ -1020,6 +1150,31 @@ class ReportController extends Controller
         $query->groupBy('period', 'users.department', 'lab_logs.laboratory');
 
         $usageData = $query->get();
+
+        // Attach primary purpose per row (most used purpose within the group)
+        $usageData = $usageData->map(function($row) use ($request, $period, $periodFormat) {
+            $purposeQuery = DB::table('lab_logs')
+                ->select('purpose', DB::raw('COUNT(*) as cnt'))
+                ->join('users', 'lab_logs.user_id', '=', 'users.id')
+                ->where('users.department', $row->department_name)
+                ->where('lab_logs.laboratory', $row->lab_name)
+                ->whereNotNull('purpose');
+
+            // Constrain to the same period value
+            $purposeQuery->whereRaw("{$periodFormat} = ?", [$row->period]);
+
+            // Apply request filters again (defensive)
+            if ($request->has('start_date') && $request->has('end_date')) {
+                $purposeQuery->whereBetween('time_in', [$request->start_date, $request->end_date . ' 23:59:59']);
+            }
+            if ($request->has('purpose') && $request->purpose) {
+                $purposeQuery->where('purpose', $request->purpose);
+            }
+
+            $topPurpose = $purposeQuery->groupBy('purpose')->orderByDesc('cnt')->limit(1)->value('purpose');
+            $row->purpose = $topPurpose;
+            return $row;
+        });
 
         // Calculate summary statistics
         $summary = (object) [
@@ -1032,8 +1187,16 @@ class ReportController extends Controller
         // Generate Excel file
         $filename = 'PAASCU_Laboratory_Utilization_' . now()->format('Y-m-d') . '.xlsx';
         
+        $filters = [
+            'start_date' => $request->get('start_date'),
+            'end_date' => $request->get('end_date'),
+            'department_id' => $request->get('department_id'),
+            'lab_id' => $request->get('lab_id'),
+            'purpose' => $request->get('purpose'),
+        ];
+
         return Excel::download(
-            new PaascuUtilizationExport($usageData, $summary), 
+            new PaascuUtilizationExport($usageData, $summary, '', '', '', $filters), 
             $filename
         );
     }

@@ -56,6 +56,7 @@
 
     <div class="filters">
         <p><strong>Laboratory:</strong> {{ $filters['laboratory'] ?? 'All' }}</p>
+        <p><strong>Purpose:</strong> {{ $filters['purpose'] ?? 'All' }}</p>
         <p><strong>Status:</strong> {{ $filters['status'] ?? 'All' }}</p>
         @if($filters['start_date'] || $filters['end_date'])
         <p><strong>Date Range:</strong> {{ $filters['start_date'] ?? 'Any' }} to {{ $filters['end_date'] ?? 'Any' }}</p>
@@ -69,6 +70,7 @@
                 <th class="whitespace-nowrap">Date & Time</th>
                 <th>Faculty</th>
                 <th>Laboratory</th>
+                <th>Purpose</th>
                 <th class="whitespace-nowrap">Type</th>
                 <th>Status</th>
             </tr>
@@ -89,12 +91,13 @@
                         <small>{{ $log->user->position ?? 'N/A' }}</small>
                     </td>
                     <td>{{ $log->laboratory ?? 'N/A' }}</td>
+                    <td>{{ $log->purpose ?? 'N/A' }}</td>
                     <td class="whitespace-nowrap">{{ $log->time_out ? 'Time Out' : 'Time In' }}</td>
                     <td>{{ ucfirst($log->status ?? 'N/A') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" style="text-align: center;">No records found</td>
+                    <td colspan="6" style="text-align: center;">No records found</td>
                 </tr>
             @endforelse
         </tbody>

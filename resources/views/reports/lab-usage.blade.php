@@ -66,6 +66,18 @@
                     </select>
                 </div>
                 <div class="transform transition-all duration-300 hover:scale-[1.02]">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
+                    <select name="purpose" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                        <option value="">All Purposes</option>
+                        <option value="lecture" {{ request('purpose') == 'lecture' ? 'selected' : '' }}>Lecture</option>
+                        <option value="examination" {{ request('purpose') == 'examination' ? 'selected' : '' }}>Examination</option>
+                        <option value="practical" {{ request('purpose') == 'practical' ? 'selected' : '' }}>Practical</option>
+                        <option value="research" {{ request('purpose') == 'research' ? 'selected' : '' }}>Research</option>
+                        <option value="training" {{ request('purpose') == 'training' ? 'selected' : '' }}>Training</option>
+                        <option value="other" {{ request('purpose') == 'other' ? 'selected' : '' }}>Other</option>
+                    </select>
+                </div>
+                <div class="transform transition-all duration-300 hover:scale-[1.02]">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Period</label>
                     <select name="period" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
                         <option value="day" {{ $period == 'day' ? 'selected' : '' }}>Daily</option>
@@ -160,6 +172,35 @@
                 </div>
             </div>
 
+            <!-- Purpose Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Usage by Purpose -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Usage by Purpose
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="purposeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Lab Purpose Usage -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        Lab Purpose Usage
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="labPurposeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <!-- Peak Usage Times -->
             <div class="bg-white rounded-xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -203,19 +244,13 @@
                         <h3 class="text-sm font-medium text-gray-700 mb-3">Laboratory Colors</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             @php
-                                $labColors = [
-                                    '401' => 'bg-red-100 text-red-800',
-                                    '402' => 'bg-green-100 text-green-800',
-                                    '403' => 'bg-blue-100 text-blue-800',
-                                    '404' => 'bg-yellow-100 text-yellow-800',
-                                    '405' => 'bg-purple-100 text-purple-800',
-                                    '406' => 'bg-pink-100 text-pink-800'
-                                ];
+                                // Use a single color for all laboratories
+                                $labColor = 'bg-red-100 text-red-800';
                             @endphp
-                            @foreach($labColors as $lab => $color)
+                            @foreach($labs as $lab)
                                 <div class="flex items-center">
-                                    <div class="w-4 h-4 {{ $color }} rounded mr-2"></div>
-                                    <span class="text-sm text-gray-600">Lab {{ $lab }}</span>
+                                    <div class="w-4 h-4 {{ $labColor }} rounded mr-2"></div>
+                                    <span class="text-sm text-gray-600">{{ $lab->name }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -351,8 +386,8 @@
                     @else
                         @foreach($labUsage as $lab)
                         @php
-                            $labNumber = substr($lab->lab_name, -3);
-                            $labColor = $labColors[$labNumber] ?? 'bg-gray-100 text-gray-800';
+                            $labNumber = $lab->lab_name;
+                            $labColor = $labColor; // Use the single color for all labs
                         @endphp
                         <div class="p-4 hover:bg-gray-50 transition-colors duration-150">
                             <div class="{{ $labColor }} rounded-lg p-3 mb-3">
@@ -401,8 +436,8 @@
                             @else
                                 @foreach($labUsage as $lab)
                                 @php
-                                    $labNumber = substr($lab->lab_name, -3);
-                                    $labColor = $labColors[$labNumber] ?? 'bg-gray-100 text-gray-800';
+                                    $labNumber = $lab->lab_name;
+                                    $labColor = $labColor; // Use the single color for all labs
                                 @endphp
                                 <tr class="hover:bg-gray-50 transition-colors duration-150">
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -455,7 +490,7 @@
                         @php
                             $deptColor = $deptColors[$data->department_name] ?? 'bg-gray-100 text-gray-800';
                             $labNumber = substr($data->lab_name, -3);
-                            $labColor = $labColors[$labNumber] ?? 'bg-gray-100 text-gray-800';
+                            $labColor = $labColor; // Use the single color for all labs
                         @endphp
                         <div class="p-4 hover:bg-gray-50 transition-colors duration-150">
                             <div class="bg-white rounded-lg p-3 mb-3">
@@ -463,6 +498,11 @@
                                     <h4 class="text-base font-semibold text-gray-800">{{ $data->period }}</h4>
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $labColor }}">
                                         {{ $data->lab_name }}
+                                    </span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $data->purpose ?? 'N/A' }}
                                     </span>
                                 </div>
                                 <div class="mb-3">
@@ -501,6 +541,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lab</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Hours</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Duration</th>
@@ -510,7 +551,7 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             @if($usageData->isEmpty())
                                 <tr>
-                                    <td colspan="7" class="px-6 py-12">
+                                    <td colspan="8" class="px-6 py-12">
                                         <div class="text-center">
                                             <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2-2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -528,7 +569,7 @@
                                 @php
                                     $deptColor = $deptColors[$data->department_name] ?? 'bg-gray-100 text-gray-800';
                                     $labNumber = substr($data->lab_name, -3);
-                                    $labColor = $labColors[$labNumber] ?? 'bg-gray-100 text-gray-800';
+                                    $labColor = $labColor; // Use the single color for all labs
                                 @endphp
                                 <tr class="hover:bg-gray-50 transition-colors duration-150">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $data->period }}</td>
@@ -542,6 +583,7 @@
                                             {{ $data->lab_name }}
                                         </span>
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $data->purpose ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($data->total_sessions) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($data->total_hours, 1) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($data->avg_duration, 1) }}h</td>
@@ -674,6 +716,98 @@ document.addEventListener('DOMContentLoaded', function() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
+                    labels: {
+                        font: {
+                            family: 'Poppins'
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            family: 'Poppins'
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            family: 'Poppins'
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Purpose Usage Chart
+    new Chart(document.getElementById('purposeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {!! json_encode($purposeUsage->pluck('purpose')) !!},
+            datasets: [{
+                data: {!! json_encode($purposeUsage->pluck('total_hours')) !!},
+                backgroundColor: [
+                    'rgba(220, 38, 38, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(236, 72, 153, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(220, 38, 38)',
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(245, 158, 11)',
+                    'rgb(139, 92, 246)',
+                    'rgb(236, 72, 153)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            family: 'Poppins'
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Lab Purpose Usage Chart
+    new Chart(document.getElementById('labPurposeChart'), {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode($labPurposeUsage->pluck('lab_name')->unique()) !!},
+            datasets: [
+                @foreach($labPurposeUsage->groupBy('purpose') as $purpose => $data)
+                {
+                    label: '{{ ucfirst($purpose) }}',
+                    data: {!! json_encode($data->pluck('total_hours')) !!},
+                    backgroundColor: '{{ $loop->index == 0 ? "rgba(220, 38, 38, 0.8)" : ($loop->index == 1 ? "rgba(59, 130, 246, 0.8)" : ($loop->index == 2 ? "rgba(16, 185, 129, 0.8)" : ($loop->index == 3 ? "rgba(245, 158, 11, 0.8)" : ($loop->index == 4 ? "rgba(139, 92, 246, 0.8)" : "rgba(236, 72, 153, 0.8)")))) }}',
+                    borderColor: '{{ $loop->index == 0 ? "rgb(220, 38, 38)" : ($loop->index == 1 ? "rgb(59, 130, 246)" : ($loop->index == 2 ? "rgb(16, 185, 129)" : ($loop->index == 3 ? "rgb(245, 158, 11)" : ($loop->index == 4 ? "rgb(139, 92, 246)" : "rgb(236, 72, 153)")))) }}',
+                    borderWidth: 1
+                },
+                @endforeach
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
                     labels: {
                         font: {
                             family: 'Poppins'

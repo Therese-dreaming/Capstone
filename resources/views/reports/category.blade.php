@@ -69,6 +69,60 @@
                 </div>
             </div>
 
+            <!-- Charts Section -->
+            <div class="mb-8">
+                <div class="bg-gray-50 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Asset Distribution Charts
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Asset Count by Category Chart -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                Asset Count
+                            </h4>
+                            <div class="h-64">
+                                <canvas id="assetCountChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Asset Value by Category Chart -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                </svg>
+                                Asset Value
+                            </h4>
+                            <div class="h-64">
+                                <canvas id="assetValueChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Asset Distribution Pie Chart -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                                </svg>
+                                Distribution
+                            </h4>
+                            <div class="h-64">
+                                <canvas id="assetDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Category Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                 @foreach($categories as $category)
@@ -102,6 +156,8 @@
                 </a>
                 @endforeach
             </div>
+
+
 
             <!-- Category Details Table -->
             <div class="overflow-x-auto hidden md:block">
@@ -170,7 +226,212 @@
     </div>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+    // Chart data from PHP
+    const chartData = {
+        categories: @json($categories->pluck('name')),
+        assetCounts: @json($categories->map(fn($cat) => $cat->assets->count())),
+        assetValues: @json($categories->map(fn($cat) => $cat->assets->sum('purchase_price'))),
+        colors: [
+            '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
+            '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
+            '#F97316', '#6366F1', '#14B8A6', '#F43F5E'
+        ]
+    };
+
+    // Asset Count by Category Chart (Bar Chart)
+    const assetCountCtx = document.getElementById('assetCountChart').getContext('2d');
+    new Chart(assetCountCtx, {
+        type: 'bar',
+        data: {
+            labels: chartData.categories,
+            datasets: [{
+                label: 'Asset Count',
+                data: chartData.assetCounts,
+                backgroundColor: chartData.colors.slice(0, chartData.categories.length),
+                borderColor: chartData.colors.slice(0, chartData.categories.length).map(color => color + '80'),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `Assets: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#6B7280',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6B7280',
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45
+                    }
+                }
+            }
+        }
+    });
+
+    // Asset Value by Category Chart (Horizontal Bar Chart)
+    const assetValueCtx = document.getElementById('assetValueChart').getContext('2d');
+    new Chart(assetValueCtx, {
+        type: 'bar',
+        data: {
+            labels: chartData.categories,
+            datasets: [{
+                label: 'Asset Value (₱)',
+                data: chartData.assetValues,
+                backgroundColor: chartData.colors.slice(0, chartData.categories.length).map(color => color + '60'),
+                borderColor: chartData.colors.slice(0, chartData.categories.length),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `Value: ₱${context.parsed.x.toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#6B7280',
+                        font: {
+                            size: 12
+                        },
+                        callback: function(value) {
+                            return '₱' + (value / 1000).toFixed(0) + 'K';
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6B7280',
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Asset Distribution Pie Chart
+    const assetDistributionCtx = document.getElementById('assetDistributionChart').getContext('2d');
+    new Chart(assetDistributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: chartData.categories,
+            datasets: [{
+                data: chartData.assetCounts,
+                backgroundColor: chartData.colors.slice(0, chartData.categories.length),
+                borderColor: 'white',
+                borderWidth: 3,
+                hoverOffset: 15,
+                cutout: '60%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: {
+                            size: 12
+                        },
+                        color: '#374151'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
     function printReport() {
         window.print();
     }
@@ -194,6 +455,11 @@
 
         /* Hide category summary cards */
         .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-4 {
+            display: none !important;
+        }
+
+        /* Hide charts section in print */
+        .mb-8:has(.bg-gray-50.rounded-xl.p-6:has(h3:contains("Asset Distribution Charts"))) {
             display: none !important;
         }
 

@@ -9,6 +9,7 @@ class LabLog extends Model
     protected $fillable = [
         'user_id',
         'laboratory',
+        'purpose',
         'time_in',
         'time_out',
         'status'

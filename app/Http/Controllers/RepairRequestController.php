@@ -290,9 +290,33 @@ class RepairRequestController extends Controller
 
         $requests = $query->latest()->paginate(9)->withQueryString();
 
+        // Compute ongoing counts per technician (repairs: not completed/cancelled/pulled_out; maintenance: scheduled)
+        $maintenanceOngoing = \App\Models\Maintenance::select('technician_id', DB::raw('COUNT(*) as count'))
+            ->where('status', 'scheduled')
+            ->whereNotNull('technician_id')
+            ->groupBy('technician_id')
+            ->pluck('count', 'technician_id');
+
+        $repairOngoing = RepairRequest::select('technician_id', DB::raw('COUNT(*) as count'))
+            ->whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
+            ->whereNotNull('technician_id')
+            ->groupBy('technician_id')
+            ->pluck('count', 'technician_id');
+
+        $technicianOngoingCounts = [];
+        $technicianRepairCounts = [];
+        $technicianMaintenanceCounts = [];
+        foreach ($technicians as $tech) {
+            $maintCount = (int) ($maintenanceOngoing[$tech->id] ?? 0);
+            $repairCount = (int) ($repairOngoing[$tech->id] ?? 0);
+            $technicianOngoingCounts[$tech->id] = $maintCount + $repairCount;
+            $technicianRepairCounts[$tech->id] = $repairCount;
+            $technicianMaintenanceCounts[$tech->id] = $maintCount;
+        }
+
         // If it's an AJAX request, return JSON response
         if ($request->ajax()) {
-            $view = view('repair-status', compact('requests'))->render();
+            $view = view('repair-status', compact('requests', 'technicians', 'technicianOngoingCounts', 'technicianRepairCounts', 'technicianMaintenanceCounts'))->render();
             return response()->json([
                 'html' => $view,
                 'success' => true
@@ -302,7 +326,10 @@ class RepairRequestController extends Controller
         return view('repair-status', compact(
             'urgentRepairs',
             'requests',
-            'technicians'
+            'technicians',
+            'technicianOngoingCounts',
+            'technicianRepairCounts',
+            'technicianMaintenanceCounts'
         ));
     }
 

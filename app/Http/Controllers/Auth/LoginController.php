@@ -60,8 +60,8 @@ class LoginController extends Controller
         
         if ($user->group_id <= 2) {
             return redirect('/my-tasks')->with('auth_redirect', true);
-        } elseif ($user->group_id === 4) { // Coordinator
-            return redirect('/lab-schedule')->with('auth_redirect', true);
+        } elseif ($user->group_id === 4) { // Custodian
+            return redirect('/custodian/assets')->with('auth_redirect', true);
         } elseif ($user->group_id === 3) { // Users
             return redirect('/lab-logging')->with('auth_redirect', true);
         } else {

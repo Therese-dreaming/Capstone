@@ -41,16 +41,18 @@
         <!-- Left side - Logo and Title -->
         <div class="flex items-center space-x-4">
             @auth
+            @if(auth()->user()->group_id !== 4)
             <button id="sidebarToggle" class="md:hidden text-white focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
+            @endif
             @endauth
-            <a href="{{ auth()->check() ? route('my.tasks') : route('login') }}" class="flex items-center space-x-4">
+            <a href="{{ auth()->check() ? (auth()->user()->group_id === 4 ? route('custodian.assets.index') : route('my.tasks')) : route('login') }}" class="flex items-center space-x-4">
                 <img src="{{ asset('images/logo-small.png') }}" alt="Logo" class="h-10 w-10">
-                <h1 class="text-xl font-bold uppercase hidden sm:block">Operations Management System</h1>
-                <h1 class="text-xl font-bold uppercase sm:hidden">OMS</h1>
+                <h1 class="text-xl font-bold uppercase hidden sm:block">IT Asset and Repair Management System</h1>
+                <h1 class="text-xl font-bold uppercase sm:hidden">IT-ARMS</h1>
             </a>
         </div>
 
@@ -89,18 +91,18 @@
     </header>
 
     <!-- Sidebar overlay for mobile -->
-    @auth
+    @if(auth()->check() && auth()->user()->group_id !== 4)
     <div id="sidebarOverlay" class="fixed inset-0 bg-black opacity-0 pointer-events-none z-40 transition-opacity duration-300 ease-in-out md:hidden"></div>
-    @endauth
+    @endif
 
     <div class="flex pt-16">
         <!-- Sidebar -->
-        @auth
+        @if(auth()->check() && auth()->user()->group_id !== 4)
         <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
             <div class="p-4 pl-8">
                 <nav class="space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
                     <a href="{{ route('my.tasks') }}" class="font-bold flex items-center px-6 py-2.5 rounded-lg transition-colors duration-200 {{ request()->routeIs('my.tasks') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-white-500 hover:bg-red-50 hover:text-red-700' }}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -131,7 +133,7 @@
                     @endif
 
                     <!-- Admin and Staff Menu Items -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
                     <!-- Dashboard - Hide from secretary -->
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
                     <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('dashboard') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -152,7 +154,7 @@
                     </a>
                     @endif
 
-                    @if(auth()->check() && auth()->user()->group_id !== 3)
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
                     <!-- My Performance Report - Show only to secretary -->
                     @if(false)
                     <a href="{{ route('secretary-performance') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('secretary-performance') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -165,7 +167,7 @@
                     @endif
 
                     <!-- User Management - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <div class="space-y-1.5">
                         <button onclick="toggleUserMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +190,7 @@
                     @endif
 
                     <!-- Categories - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <a href="{{ route('categories.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('categories.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -198,7 +200,7 @@
                     @endif
 
                     <!-- Locations - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <a href="{{ route('locations.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('locations.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -209,7 +211,7 @@
                     @endif
 
                     <!-- Vendors - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <a href="{{ route('vendors.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('vendors.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -219,17 +221,28 @@
                     @endif
 
                     <!-- Assets -->
-                    @if(auth()->check() && auth()->user()->group_id !== 3)
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3]))
                     <!-- Asset List -->
-                    <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
-                        </svg>
-                        <span>Asset List</span>
-                    </a>
+                    @if(auth()->user()->group_id === 4)
+                        <a href="{{ route('custodian.assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('custodian.assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                            </svg>
+                            <span>Asset List</span>
+                        </a>
+                    @else
+                        <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                            </svg>
+                            <span>Asset List</span>
+                        </a>
+                    @endif
 
                     <!-- Asset Scanner -->
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [4]))
                     <a href="{{ route('scanner') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('scanner') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -237,9 +250,10 @@
                         <span>Asset Scanner</span>
                     </a>
                     @endif
+                    @endif
 
                     <!-- Lab Maintenance -->
-                    @if(auth()->check() && auth()->user()->group_id !== 3)
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
                     <div class="space-y-1.5">
                         <button onclick="toggleMaintenanceMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('maintenance.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,7 +283,7 @@
                     @endauth
 
                     @auth
-                    @if(auth()->check() && auth()->user()->group_id !== 3)
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
                     <!-- Asset Repair -->
                     <div class="space-y-1.5">
                         <button onclick="toggleRepairMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.*') || request()->routeIs('non-registered-assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -304,7 +318,7 @@
                     @endauth
 
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <!-- Lab Schedule -->
                     <div class="space-y-1.5">
                         <button onclick="toggleLabScheduleMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab-schedule.*') || request()->routeIs('lab-history') || request()->routeIs('lab-logging') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -325,13 +339,18 @@
                                 Lab History
                             </a>
                             @endif
+                            @if(auth()->check() && !in_array(auth()->user()->group_id, [2,3,4]))
+                            <a href="{{ route('laboratories.index') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('laboratories.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
+                                Laboratories
+                            </a>
+                            @endif
                         </div>
                     </div>
                     @endif
                     @endauth
 
                     @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
+                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <!-- View Reports -->
                     <div class="space-y-1.5">
                         <button onclick="toggleReportMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('reports.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -370,10 +389,10 @@
                 </nav>
             </div>
         </aside>
-        @endauth
+        @endif
 
         <!-- Main Content -->
-        <main class="@auth md:ml-72 @else w-full flex justify-center @endauth flex-1 transition-all duration-300 ease-in-out">
+        <main class="{{ auth()->check() && auth()->user()->group_id !== 4 ? 'md:ml-72' : 'w-full' }} flex-1 transition-all duration-300 ease-in-out">
             @yield('content')
         </main>
     </div>

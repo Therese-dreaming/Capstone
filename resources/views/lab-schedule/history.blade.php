@@ -95,6 +95,18 @@
                             @endforeach
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Purpose</label>
+                        <select id="purposeFilter" onchange="filterHistory()" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                            <option value="">All Purposes</option>
+                            <option value="lecture">Lecture</option>
+                            <option value="examination">Examination</option>
+                            <option value="practical">Practical</option>
+                            <option value="research">Research</option>
+                            <option value="training">Training</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Delete Actions -->
@@ -139,6 +151,10 @@
                         <div class="font-medium text-gray-900">{{ $log->laboratory }}</div>
                     </div>
                     <div>
+                        <span class="text-gray-500">Purpose:</span>
+                        <div class="font-medium text-gray-900">{{ $log->purpose ?? '-' }}</div>
+                    </div>
+                    <div>
                         <span class="text-gray-500">Time Out:</span>
                         <div class="font-medium text-gray-900">{{ $log->time_out ? $log->time_out->format('M d, Y h:i A') : '-' }}</div>
                     </div>
@@ -173,6 +189,7 @@
                         </th>
                         <th class="px-6 py-4 text-left text-sm font-medium text-white">Faculty</th>
                         <th class="px-6 py-4 text-left text-sm font-medium text-white">Laboratory</th>
+                        <th class="px-6 py-4 text-left text-sm font-medium text-white">Purpose</th>
                         <th class="px-6 py-4 text-left text-sm font-medium text-white">Time In</th>
                         <th class="px-6 py-4 text-left text-sm font-medium text-white">Time Out</th>
                         <th class="px-6 py-4 text-left text-sm font-medium text-white">Status</th>
@@ -190,6 +207,7 @@
                                 <div class="text-sm text-gray-500">{{ $log->user->position }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->laboratory }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->purpose ?? '-' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $log->time_in->format('M d, Y h:i A') }}
                             </td>
@@ -215,7 +233,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                 <div class="flex flex-col items-center">
                                     <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2-2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -289,6 +307,7 @@
     function filterHistory() {
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
+        const purposeFilter = document.getElementById('purposeFilter').value;
         const timeInStartDate = document.getElementById('timeInStartDate').value;
         const timeInEndDate = document.getElementById('timeInEndDate').value;
         const timeOutStartDate = document.getElementById('timeOutStartDate').value;
@@ -298,6 +317,7 @@
         const params = new URLSearchParams();
         if (statusFilter) params.append('status', statusFilter);
         if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
+        if (purposeFilter) params.append('purpose', purposeFilter);
         if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
         if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
         if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
@@ -314,6 +334,7 @@
         // Set status and laboratory filters
         document.getElementById('statusFilter').value = urlParams.get('status') || '';
         document.getElementById('laboratoryFilter').value = urlParams.get('laboratory') || '';
+        document.getElementById('purposeFilter').value = urlParams.get('purpose') || '';
         
         // Set time in date filters
         document.getElementById('timeInStartDate').value = urlParams.get('time_in_start_date') || '';
@@ -331,6 +352,7 @@
     document.getElementById('timeOutEndDate').addEventListener('change', filterHistory);
     document.getElementById('statusFilter').addEventListener('change', filterHistory);
     document.getElementById('laboratoryFilter').addEventListener('change', filterHistory);
+    document.getElementById('purposeFilter').addEventListener('change', filterHistory);
 
     // Delete Functionality
     const selectAll = document.getElementById('selectAll');
@@ -488,6 +510,7 @@
         // Get current filters
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
+        const purposeFilter = document.getElementById('purposeFilter').value;
         const timeInStartDate = document.getElementById('timeInStartDate').value;
         const timeInEndDate = document.getElementById('timeInEndDate').value;
         const timeOutStartDate = document.getElementById('timeOutStartDate').value;
@@ -497,6 +520,7 @@
         const params = new URLSearchParams();
         if (statusFilter) params.append('status', statusFilter);
         if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
+        if (purposeFilter) params.append('purpose', purposeFilter);
         if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
         if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
         if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
@@ -531,6 +555,7 @@
     function downloadPDF() {
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
+        const purposeFilter = document.getElementById('purposeFilter').value;
         const timeInStartDate = document.getElementById('timeInStartDate').value;
         const timeInEndDate = document.getElementById('timeInEndDate').value;
         const timeOutStartDate = document.getElementById('timeOutStartDate').value;
@@ -540,6 +565,7 @@
         const params = new URLSearchParams();
         if (statusFilter) params.append('status', statusFilter);
         if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
+        if (purposeFilter) params.append('purpose', purposeFilter);
         if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
         if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
         if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);

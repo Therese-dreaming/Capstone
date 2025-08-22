@@ -229,7 +229,7 @@
     <div class="items-center px-4 py-3">
         <form id="cancelForm" method="POST">
             @csrf
-            @method('DELETE')
+            @method('PATCH')
             <div id="cancellationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
                 <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
                     <div class="mt-3 text-center">
@@ -240,7 +240,13 @@
                         </div>
                         <h3 class="text-lg leading-6 font-medium text-gray-900">Cancel Maintenance</h3>
                         <div class="mt-2 px-7 py-3">
-                            <p class="text-sm text-gray-500">Are you sure you want to cancel this maintenance task?</p>
+                            <p class="text-sm text-gray-500 mb-4">Are you sure you want to cancel this maintenance task?</p>
+                            
+                            <!-- Notes Field -->
+                            <div class="text-left">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+                                <textarea name="notes" rows="3" placeholder="Add any notes regarding cancellation (e.g., reason for cancellation)" class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 px-3 py-2 text-sm"></textarea>
+                            </div>
                         </div>
                         <div class="flex justify-center space-x-3 mt-6">
                             <button type="submit" 
@@ -294,7 +300,7 @@
 
     function cancelMaintenance(id) {
         const form = document.getElementById('cancelForm');
-        form.action = `{{ url('maintenance') }}/${id}`;
+        form.action = `{{ url('maintenance') }}/${id}/cancel`;
         document.getElementById('cancellationModal').classList.remove('hidden');
     }
 

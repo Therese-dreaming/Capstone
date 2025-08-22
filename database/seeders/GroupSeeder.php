@@ -26,5 +26,11 @@ class GroupSeeder extends Seeder
             'level' => 3,
             'status' => 'Active'
         ]);
+
+        Group::create([
+            'name' => 'Custodian',
+            'level' => 4,
+            'status' => 'Active'
+        ]);
     }
 }

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Asset;
 use App\Models\Notification;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\RepairRequest;
 
 class MaintenanceController extends Controller
 {
@@ -42,9 +43,9 @@ class MaintenanceController extends Controller
     // Modify the schedule method to fetch tasks from the database
     public function schedule()
     {
-        $technicians = User::whereHas('group', function ($query) {
-            $query->whereNotIn('name', ['Users']);
-        })->get();
+        $technicians = User::whereIn('group_id', [1, 2])
+            ->where('status', 'active')
+            ->get();
 
         // Get all available locations
         $locations = \App\Models\Location::all()->mapWithKeys(function ($location) {
@@ -57,7 +58,38 @@ class MaintenanceController extends Controller
             ->pluck('name')
             ->toArray();
 
-        return view('maintenance-schedule', compact('technicians', 'locations', 'maintenanceTasks'));
+        // Compute ongoing counts per technician (repairs: not completed/cancelled/pulled_out; maintenance: scheduled)
+        $maintenanceOngoing = Maintenance::select('technician_id', DB::raw('COUNT(*) as count'))
+            ->where('status', 'scheduled')
+            ->whereNotNull('technician_id')
+            ->groupBy('technician_id')
+            ->pluck('count', 'technician_id');
+
+        $repairOngoing = RepairRequest::select('technician_id', DB::raw('COUNT(*) as count'))
+            ->whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
+            ->whereNotNull('technician_id')
+            ->groupBy('technician_id')
+            ->pluck('count', 'technician_id');
+
+        $technicianOngoingCounts = [];
+        $technicianRepairCounts = [];
+        $technicianMaintenanceCounts = [];
+        foreach ($technicians as $tech) {
+            $maintCount = (int) ($maintenanceOngoing[$tech->id] ?? 0);
+            $repairCount = (int) ($repairOngoing[$tech->id] ?? 0);
+            $technicianOngoingCounts[$tech->id] = $maintCount + $repairCount;
+            $technicianRepairCounts[$tech->id] = $repairCount;
+            $technicianMaintenanceCounts[$tech->id] = $maintCount;
+        }
+
+        return view('maintenance-schedule', compact(
+            'technicians',
+            'locations',
+            'maintenanceTasks',
+            'technicianOngoingCounts',
+            'technicianRepairCounts',
+            'technicianMaintenanceCounts'
+        ));
     }
     public function store(Request $request)
     {
@@ -66,6 +98,7 @@ class MaintenanceController extends Controller
             'maintenance_tasks' => 'required|array|min:1',
             'technician_id' => 'required',
             'scheduled_date' => 'required|date|after_or_equal:today',
+            'target_date' => 'required|date|after_or_equal:scheduled_date',
             'excluded_assets' => 'nullable|string',  // For JSON string
         ]);
 
@@ -84,6 +117,7 @@ class MaintenanceController extends Controller
                     'maintenance_task' => $task,
                     'technician_id' => $request->technician_id,
                     'scheduled_date' => $request->scheduled_date,
+                    'target_date' => $request->target_date,
                     'status' => 'scheduled',
                     'excluded_assets' => $excludedAssets
                 ]);
@@ -139,7 +173,8 @@ class MaintenanceController extends Controller
         $updateData = [
             'status' => 'completed',
             'action_by_id' => auth()->id(),
-            'completed_at' => now()
+            'completed_at' => now(),
+            'notes' => request('notes')
         ];
     
         // Handle asset issues if they exist in the request
@@ -218,38 +253,48 @@ class MaintenanceController extends Controller
 
     public function history(Request $request)
     {
-        $query = Maintenance::whereIn('status', ['completed', 'cancelled']);
+        $query = Maintenance::with(['location', 'technician', 'actionBy'])
+            ->whereIn('status', ['completed', 'cancelled'])
+            ->orderBy('scheduled_date', 'desc');
 
         // Apply filters
-        if ($request->lab) {
+        if ($request->filled('lab')) {
             $query->where('lab_number', $request->lab);
         }
-        if ($request->status) {
+
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->start_date) {
-            $query->whereDate('scheduled_date', '>=', $request->start_date);
+
+        if ($request->filled('start_date')) {
+            $query->where('scheduled_date', '>=', $request->start_date);
         }
-        if ($request->end_date) {
-            $query->whereDate('scheduled_date', '<=', $request->end_date);
+
+        if ($request->filled('end_date')) {
+            $query->where('scheduled_date', '<=', $request->end_date);
         }
-        if ($request->issue) {
+
+        if ($request->filled('issue')) {
             if ($request->issue === 'with_issues') {
                 $query->whereNotNull('asset_issues')->where('asset_issues', '!=', '[]');
-            } else if ($request->issue === 'no_issues') {
+            } elseif ($request->issue === 'no_issues') {
                 $query->where(function($q) {
-                    $q->whereNull('asset_issues')
-                      ->orWhere('asset_issues', '[]');
+                    $q->whereNull('asset_issues')->orWhere('asset_issues', '[]');
                 });
             }
         }
 
-        $maintenances = $query->orderBy('scheduled_date', 'desc')
-            ->orderBy('updated_at', 'desc')
-            ->paginate(10)
-            ->withQueryString();
+        $maintenances = $query->paginate(15);
 
         return view('maintenance-history', compact('maintenances'));
+    }
+
+    public function show($id)
+    {
+        $maintenance = Maintenance::with(['location', 'technician', 'actionBy'])
+            ->findOrFail($id);
+
+        return view('maintenance.show', compact('maintenance'));
     }
 
     public function edit($id)
@@ -259,12 +304,8 @@ class MaintenanceController extends Controller
             $query->whereNotIn('name', ['Users']);
         })->get();
 
-        $labs = [
-            '401' => 'Computer Laboratory 401',
-            '402' => 'Computer Laboratory 402',
-            '403' => 'Computer Laboratory 403',
-            '404' => 'Computer Laboratory 404',
-        ];
+        // Use Laboratory model instead of hardcoded data
+        $labs = \App\Models\Laboratory::orderBy('number')->pluck('name', 'number')->toArray();
 
         $maintenanceTasks = [
             'Format and Software Installation',
@@ -488,7 +529,8 @@ class MaintenanceController extends Controller
                 $maintenance->update([
                     'status' => 'cancelled',
                     'action_by_id' => auth()->id(),
-                    'completed_at' => null
+                    'completed_at' => null,
+                    'notes' => request('notes')
                 ]);
             }
 
@@ -608,5 +650,28 @@ class MaintenanceController extends Controller
             ->get();
 
         return $maintenances;
+    }
+
+    public function cancel($id)
+    {
+        try {
+            $maintenance = Maintenance::findOrFail($id);
+
+            if (auth()->user()->group_id === 2 && $maintenance->technician_id !== auth()->id()) {
+                return redirect()->route('maintenance.upcoming')
+                    ->with('error', 'You are not authorized to cancel this maintenance task');
+            }
+
+            $maintenance->update([
+                'status' => 'cancelled',
+                'action_by_id' => auth()->id(),
+                'completed_at' => null,
+                'notes' => request('notes')
+            ]);
+
+            return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance cancelled');
+        } catch (\Exception $e) {
+            return redirect()->route('maintenance.upcoming')->with('error', 'Failed to cancel maintenance');
+        }
     }
 }

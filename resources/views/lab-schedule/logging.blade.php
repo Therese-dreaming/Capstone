@@ -36,6 +36,120 @@
 
             <!-- Laboratory Selection -->
             <div class="mb-6">
+                <!-- Purpose Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <div class="flex items-center">
+                            <div class="bg-red-100 p-2 rounded-lg mr-3">
+                                <svg class="w-4 h-4 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <span class="font-semibold">Purpose of Usage</span>
+                        </div>
+                        <span id="selectedPurposeText" class="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full">Selected: None</span>
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="lecture" onclick="selectPurpose(this)">
+                            <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
+                                <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
+                                <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
+                                    <div class="bg-red-600 p-1 rounded-full">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-bold text-gray-800 mb-2">Lecture</div>
+                                <div class="text-sm text-gray-500 flex-grow">Regular classroom instruction</div>
+                            </div>
+                        </div>
+
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="examination" onclick="selectPurpose(this)">
+                            <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
+                                <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
+                                <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
+                                    <div class="bg-red-600 p-1 rounded-full">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-bold text-gray-800 mb-2">Examination</div>
+                                <div class="text-sm text-gray-500 flex-grow">Tests and assessments</div>
+                            </div>
+                        </div>
+
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="practical" onclick="selectPurpose(this)">
+                            <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
+                                <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
+                                <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
+                                    <div class="bg-red-600 p-1 rounded-full">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-bold text-gray-800 mb-2">Practical</div>
+                                <div class="text-sm text-gray-500 flex-grow">Hands-on laboratory work</div>
+                            </div>
+                        </div>
+
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="research" onclick="selectPurpose(this)">
+                            <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
+                                <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
+                                <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
+                                    <div class="bg-red-600 p-1 rounded-full">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-bold text-gray-800 mb-2">Research</div>
+                                <div class="text-sm text-gray-500 flex-grow">Academic research activities</div>
+                            </div>
+                        </div>
+
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="training" onclick="selectPurpose(this)">
+                            <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
+                                <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
+                                <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
+                                    <div class="bg-red-600 p-1 rounded-full">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-bold text-gray-800 mb-2">Training</div>
+                                <div class="text-sm text-gray-500 flex-grow">Workshops and skill development</div>
+                            </div>
+                        </div>
+
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="other" onclick="selectPurpose(this)">
+                            <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
+                                <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
+                                <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
+                                    <div class="bg-red-600 p-1 rounded-full">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-bold text-gray-800 mb-2">Other</div>
+                                <div class="text-sm text-gray-500 flex-grow">Please specify below</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Purpose Input (Hidden by default) -->
+                    <div id="otherPurposeInput" class="hidden mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Please specify the purpose:</label>
+                        <input type="text" id="otherPurposeText" placeholder="Enter specific purpose..." 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                    </div>
+                </div>
+
                 <label class="block text-sm font-medium text-gray-700 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div class="flex items-center">
                         <div class="bg-red-100 p-2 rounded-lg mr-3">
@@ -49,8 +163,8 @@
                 </label>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="labCards">
-                    @foreach($laboratories as $lab)
-                    <div class="lab-card cursor-pointer transform transition-all duration-300 hover:scale-105" data-value="{{ $lab }}" onclick="selectLab(this)">
+                    @forelse($laboratories as $lab)
+                    <div class="lab-card cursor-pointer transform transition-all duration-300 hover:scale-105" data-value="{{ $lab->number }}" onclick="selectLab(this)">
                         <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300">
                             <!-- Active State Indicator -->
                             <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
@@ -64,8 +178,15 @@
                                 </div>
                             </div>
 
-                            <!-- Lab Number -->
-                            <div class="text-xl sm:text-2xl font-bold text-gray-800 mb-3 relative">{{ $lab }}</div>
+                            <!-- Lab Number / Name -->
+                            <div class="text-xl sm:text-2xl font-bold text-gray-800 mb-1 relative">Laboratory {{ $lab->number }}</div>
+                            @if($lab->building || $lab->floor || $lab->room_number)
+                                <div class="text-sm text-gray-500 mb-2">
+                                    {{ $lab->building ? $lab->building . ' • ' : '' }}
+                                    {{ $lab->floor ? 'Floor ' . $lab->floor . ' • ' : '' }}
+                                    {{ $lab->room_number ?? '' }}
+                                </div>
+                            @endif
 
                             <!-- Status Indicator -->
                             <div class="flex items-center gap-2 text-sm text-gray-500 relative">
@@ -76,7 +197,15 @@
                             </div>
                         </div>
                     </div>
-                    @endforeach
+                    @empty
+                    <div class="col-span-full text-center py-8 text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2-2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <p class="font-medium">No laboratories found</p>
+                        <p class="text-sm">Please add laboratories in the system settings</p>
+                    </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -191,6 +320,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
+                    <span class="font-medium">Select the purpose of your laboratory usage</span>
+                </li>
+                <li class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="bg-green-100 p-2 rounded-full mr-3">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
                     <span class="font-medium">Select the laboratory where you will conduct your class</span>
                 </li>
                 <li class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -253,10 +390,52 @@
 
 <script>
     let selectedLab = null;
+    let selectedPurpose = null;
     let isProcessing = false;
+
+    // Function to handle purpose selection
+    function selectPurpose(element) {
+        // Remove active state from all purpose cards
+        document.querySelectorAll('.purpose-card').forEach(card => {
+            card.querySelector('.absolute').classList.remove('opacity-50');
+            card.querySelector('.active-checkmark').classList.remove('opacity-100');
+            card.querySelector('.border-2').classList.remove('border-red-500');
+        });
+
+        // Add active state to selected purpose card
+        element.querySelector('.absolute').classList.add('opacity-50');
+        element.querySelector('.active-checkmark').classList.add('opacity-100');
+        element.querySelector('.border-2').classList.add('border-red-500');
+
+        // Update selected purpose
+        selectedPurpose = element.dataset.value;
+        const purposeText = element.querySelector('.text-lg').textContent;
+        document.getElementById('selectedPurposeText').textContent = `Selected: ${purposeText}`;
+
+        // Show/hide other purpose input
+        const otherPurposeInput = document.getElementById('otherPurposeInput');
+        if (selectedPurpose === 'other') {
+            otherPurposeInput.classList.remove('hidden');
+        } else {
+            otherPurposeInput.classList.add('hidden');
+            document.getElementById('otherPurposeText').value = '';
+        }
+    }
 
     // Function to handle lab selection
     function selectLab(element) {
+        // Check if purpose is selected first
+        if (!selectedPurpose) {
+            showStatus('error', 'Please select a purpose first before choosing a laboratory');
+            return;
+        }
+
+        // Check if "Other" is selected but no text is provided
+        if (selectedPurpose === 'other' && !document.getElementById('otherPurposeText').value.trim()) {
+            showStatus('error', 'Please specify the purpose before proceeding');
+            return;
+        }
+
         // Remove active state from all cards
         document.querySelectorAll('.lab-card').forEach(card => {
             card.querySelector('.absolute').classList.remove('opacity-50');
@@ -300,6 +479,25 @@
         selectedLab = null;
         document.getElementById('selectedLabText').textContent = 'Selected: None';
         document.getElementById('selectedLabText').className = 'text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full';
+    }
+
+    // Function to reset purpose selection
+    function resetPurposeSelection() {
+        // Remove active state from all purpose cards
+        document.querySelectorAll('.purpose-card').forEach(card => {
+            card.querySelector('.absolute').classList.remove('opacity-50');
+            card.querySelector('.active-checkmark').classList.remove('opacity-100');
+            card.querySelector('.border-2').classList.remove('border-red-500');
+        });
+
+        // Reset selected purpose
+        selectedPurpose = null;
+        document.getElementById('selectedPurposeText').textContent = 'Selected: None';
+        document.getElementById('selectedPurposeText').className = 'text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full';
+        
+        // Hide other purpose input
+        document.getElementById('otherPurposeInput').classList.add('hidden');
+        document.getElementById('otherPurposeText').value = '';
     }
 
     // Function to start RFID listener
@@ -348,8 +546,19 @@
 
     // Function to handle RFID scan
     async function handleRFIDScan(rfidNumber) {
-        if (!selectedLab || isProcessing) return;
+        if (!selectedLab || !selectedPurpose || isProcessing) return;
         isProcessing = true;
+
+        // Get the purpose text
+        let purposeText = selectedPurpose;
+        if (selectedPurpose === 'other') {
+            purposeText = document.getElementById('otherPurposeText').value.trim();
+            if (!purposeText) {
+                showStatus('error', 'Please specify the purpose before proceeding');
+                isProcessing = false;
+                return;
+            }
+        }
 
         try {
             const response = await fetch('/lab-schedule/rfid-attendance', {
@@ -360,7 +569,8 @@
                 },
                 body: JSON.stringify({
                     rfid_number: rfidNumber,
-                    laboratory: selectedLab
+                    laboratory: selectedLab,
+                    purpose: purposeText
                 })
             });
 

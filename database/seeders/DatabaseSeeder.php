@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             VendorSeeder::class,   // Ensure vendors are seeded before assets
             AssetSeeder::class,
             MaintenanceTaskSeeder::class,
+            LaboratorySeeder::class,
         ]);
     }
 }

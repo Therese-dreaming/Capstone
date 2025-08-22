@@ -13,6 +13,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Illuminate\Support\Facades\DB;
+use App\Models\Laboratory;
 
 class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithMultipleSheets
 {
@@ -21,14 +23,16 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
     protected $primaryPurpose;
     protected $remarks;
     protected $notes;
+    protected $filters;
 
-    public function __construct($usageData, $summary, $primaryPurpose = '', $remarks = '', $notes = '')
+    public function __construct($usageData, $summary, $primaryPurpose = '', $remarks = '', $notes = '', $filters = [])
     {
         $this->usageData = $usageData;
         $this->summary = $summary;
         $this->primaryPurpose = $primaryPurpose;
         $this->remarks = $remarks;
         $this->notes = $notes;
+        $this->filters = $filters;
     }
 
     public function collection()
@@ -46,6 +50,7 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
             'Total Hours',
             'Average Duration (hours)',
             'Unique Users',
+            'Purpose',
             'Utilization Rate (%)'
         ];
     }
@@ -67,6 +72,7 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
             number_format($data->total_hours, 1),
             number_format($data->avg_duration, 1),
             $data->unique_users,
+            $data->purpose ?? '',
             $utilizationRate
         ];
     }
@@ -74,7 +80,7 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
     public function styles(Worksheet $sheet)
     {
         // Style the header row
-        $sheet->getStyle('A1:H1')->applyFromArray([
+        $sheet->getStyle('A1:I1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -90,7 +96,7 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
         ]);
 
         // Style all data cells
-        $sheet->getStyle('A2:H' . ($this->usageData->count() + 1))->applyFromArray([
+        $sheet->getStyle('A2:I' . ($this->usageData->count() + 1))->applyFromArray([
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_LEFT,
                 'vertical' => Alignment::VERTICAL_CENTER,
@@ -107,9 +113,10 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
         $sheet->getStyle('A:A')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('D:F')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('H:H')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('I:I')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Auto-filter
-        $sheet->setAutoFilter('A1:H1');
+        $sheet->setAutoFilter('A1:I1');
 
         return $sheet;
     }
@@ -124,7 +131,8 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
             'E' => 15, // Total Hours
             'F' => 20, // Average Duration
             'G' => 15, // Unique Users
-            'H' => 18, // Utilization Rate
+            'H' => 20, // Purpose
+            'I' => 18, // Utilization Rate
         ];
     }
 
@@ -133,6 +141,7 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
         return [
             'Laboratory Utilization' => $this,
             'Summary' => new PaascuUtilizationSummarySheet($this->usageData, $this->summary, $this->primaryPurpose, $this->remarks, $this->notes),
+            'Lab Weekly Utilization' => new PaascuLabWeeklyUtilizationSheet($this->filters),
         ];
     }
 }
@@ -308,5 +317,138 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithHeadings, Wit
     public function title(): string
     {
         return 'Summary';
+    }
+} 
+
+class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithTitle
+{
+    protected $filters;
+
+    public function __construct($filters = [])
+    {
+        $this->filters = $filters;
+    }
+
+    public function collection()
+    {
+        // Compute per-lab weekly totals within filters
+        $query = DB::table('lab_logs')
+            ->select(
+                'lab_logs.laboratory as lab_name',
+                DB::raw('SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours_used')
+            );
+
+        if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
+            $query->whereBetween('time_in', [$this->filters['start_date'], $this->filters['end_date'] . ' 23:59:59']);
+        }
+        if (!empty($this->filters['department_id'])) {
+            $query->join('users', 'lab_logs.user_id', '=', 'users.id')
+                ->where('users.department', $this->filters['department_id']);
+        }
+        if (!empty($this->filters['lab_id'])) {
+            $query->where('lab_logs.laboratory', $this->filters['lab_id']);
+        }
+        if (!empty($this->filters['purpose'])) {
+            $query->where('lab_logs.purpose', $this->filters['purpose']);
+        }
+
+        $rows = $query->groupBy('lab_logs.laboratory')->get();
+
+        // Enrich with lab meta (location) and compute utilization
+        $labsMeta = Laboratory::all()->keyBy('number');
+        $collection = collect();
+        foreach ($rows as $r) {
+            $labNumber = $r->lab_name; // stored as number per controller convention
+            $lab = $labsMeta->get($labNumber);
+            $roomLocation = $lab ? trim(($lab->building ? $lab->building . ' ' : '') . ($lab->floor ? 'Floor ' . $lab->floor . ' ' : '') . ($lab->room_number ?? '')) : '';
+            $totalHoursAvailable = 40; // per requirement
+            $totalUsed = (float)($r->total_hours_used ?? 0);
+            $utilRate = $totalHoursAvailable > 0 ? round(min(100, ($totalUsed / $totalHoursAvailable) * 100), 1) : 0;
+
+            // Compute primary purpose for this lab within filters
+            $pq = DB::table('lab_logs')
+                ->select('purpose', DB::raw('COUNT(*) as cnt'))
+                ->where('laboratory', $labNumber)
+                ->whereNotNull('purpose');
+            if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
+                $pq->whereBetween('time_in', [$this->filters['start_date'], $this->filters['end_date'] . ' 23:59:59']);
+            }
+            if (!empty($this->filters['department_id'])) {
+                $pq->join('users', 'lab_logs.user_id', '=', 'users.id')
+                   ->where('users.department', $this->filters['department_id']);
+            }
+            if (!empty($this->filters['purpose'])) {
+                $pq->where('lab_logs.purpose', $this->filters['purpose']);
+            }
+            $primaryPurpose = $pq->groupBy('purpose')->orderByDesc('cnt')->limit(1)->value('purpose');
+
+            $collection->push((object) [
+                'lab_name' => 'Laboratory ' . $labNumber,
+                'room_location' => $roomLocation,
+                'total_hours_available' => $totalHoursAvailable,
+                'total_hours_used' => round($totalUsed, 1),
+                'utilization_rate' => $utilRate,
+                'primary_purpose' => $primaryPurpose ?? ''
+            ]);
+        }
+
+        return $collection;
+    }
+
+    public function headings(): array
+    {
+        return [
+            'Laboratory Name / Code',
+            'Room Location',
+            'Total Hours Available per Week',
+            'Total Hours Used per Week',
+            'Utilization Rate (%)',
+            'Primary Purpose',
+        ];
+    }
+
+    public function map($row): array
+    {
+        return [
+            $row->lab_name,
+            $row->room_location,
+            $row->total_hours_available,
+            $row->total_hours_used,
+            $row->utilization_rate,
+            $row->primary_purpose,
+        ];
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        $sheet->getStyle('A1:F1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1F2937']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet->getStyle('A2:F' . ($this->collection()->count() + 1))->applyFromArray([
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E5E7EB']]],
+        ]);
+        $sheet->getStyle('C:E')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->setAutoFilter('A1:F1');
+        return $sheet;
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 30,
+            'B' => 35,
+            'C' => 28,
+            'D' => 28,
+            'E' => 20,
+            'F' => 28,
+        ];
+    }
+
+    public function title(): string
+    {
+        return 'Lab Weekly Utilization';
     }
 } 

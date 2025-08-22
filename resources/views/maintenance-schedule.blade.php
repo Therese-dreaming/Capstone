@@ -74,10 +74,20 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Date</label>
-                        <input type="date" name="scheduled_date" 
+                        <input type="date" name="scheduled_date" id="scheduledDate"
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
                                min="{{ date('Y-m-d') }}">
                         @error('scheduled_date')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Target Date (Deadline)</label>
+                        <input type="date" name="target_date" id="targetDate"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
+                               min="{{ date('Y-m-d') }}">
+                        @error('target_date')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -88,9 +98,15 @@
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
                             <option value="">Select a technician...</option>
                             @foreach($technicians as $technician)
-                            <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                            <option value="{{ $technician->id }}"
+                                    data-ongoing="{{ $technicianOngoingCounts[$technician->id] ?? 0 }}"
+                                    data-repairs="{{ $technicianRepairCounts[$technician->id] ?? 0 }}"
+                                    data-maintenance="{{ $technicianMaintenanceCounts[$technician->id] ?? 0 }}">
+                                {{ $technician->name }} ({{ $technicianRepairCounts[$technician->id] ?? 0 }} repairs, {{ $technicianMaintenanceCounts[$technician->id] ?? 0 }} maintenance)
+                            </option>
                             @endforeach
                         </select>
+                        <p id="technicianOngoingHint" class="mt-1 text-sm text-gray-500 hidden">Repairs: <span id="technicianRepairsCount">0</span> • Maintenance: <span id="technicianMaintenanceCount">0</span> • Total: <span id="technicianOngoingCount">0</span></p>
                         @error('technician_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -279,6 +295,30 @@
             });
         });
 
+        document.querySelector('select[name="technician_id"]').addEventListener('change', function() {
+            const ongoingCount = this.options[this.selectedIndex].dataset.ongoing;
+            const repairsCount = this.options[this.selectedIndex].dataset.repairs;
+            const maintenanceCount = this.options[this.selectedIndex].dataset.maintenance;
+
+            document.getElementById('technicianOngoingCount').textContent = ongoingCount;
+            document.getElementById('technicianOngoingHint').classList.remove('hidden');
+            document.getElementById('technicianRepairsCount').textContent = repairsCount;
+            document.getElementById('technicianMaintenanceCount').textContent = maintenanceCount;
+        });
+
+        const sched = document.getElementById('scheduledDate');
+        const target = document.getElementById('targetDate');
+        function syncTargetMin() {
+            if (sched && target) {
+                target.min = sched.value || '{{ date('Y-m-d') }}';
+                if (target.value && target.value < target.min) {
+                    target.value = target.min;
+                }
+            }
+        }
+        sched.addEventListener('change', syncTargetMin);
+        window.addEventListener('DOMContentLoaded', syncTargetMin);
+
          function addExcludedAsset() {
             const select = document.getElementById('assetSelect');
             const selectedOption = select.options[select.selectedIndex];
@@ -340,9 +380,15 @@
                 month: 'long',
                 day: 'numeric'
             }) : 'Not selected';
+            const targetDate = form.target_date.value ? new Date(form.target_date.value).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : 'Not selected';
             const technician = form.technician_id.options[form.technician_id.selectedIndex]?.text || 'Not selected';
 
-            if (!form.location_id.value || selectedTasks.length === 0 || !form.scheduled_date.value || !form.technician_id.value) {
+            if (!form.location_id.value || selectedTasks.length === 0 || !form.scheduled_date.value || !form.technician_id.value || !form.target_date.value) {
                 showValidationModal('Please fill in all required fields');
                 return;
             }
@@ -354,8 +400,12 @@
                         <p class="text-gray-800">${location}</p>
                     </div>
                     <div>
-                        <p class="text-gray-600 font-medium mb-1">Scheduled Date:</p>
+                        <p class="text-gray-600 font-medium mb-1">Scheduled Date (Start):</p>
                         <p class="text-gray-800">${date}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 font-medium mb-1">Target Date (Deadline):</p>
+                        <p class="text-gray-800">${targetDate}</p>
                     </div>
                     <div>
                         <p class="text-gray-600 font-medium mb-1">Assigned Technician:</p>

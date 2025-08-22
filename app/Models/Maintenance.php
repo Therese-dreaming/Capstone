@@ -11,17 +11,20 @@ class Maintenance extends Model
         'maintenance_task',
         'technician_id',
         'scheduled_date',
+        'target_date',
         'status',
         'action_by_id',
         'completed_at',
         'excluded_assets',
         'asset_issues',
+        'notes',
         'serial_number'
     ];
 
     protected $casts = [
         'excluded_assets' => 'array',
         'scheduled_date' => 'datetime',
+        'target_date' => 'date',
         'asset_issues' => 'array',
         'completed_at' => 'datetime'
     ];

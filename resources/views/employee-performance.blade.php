@@ -17,7 +17,7 @@
 
 
     <!-- Overall Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow duration-200">
             <div class="flex items-center">
                 <div class="bg-blue-100 p-3 rounded-lg">
@@ -63,20 +63,6 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow duration-200">
-            <div class="flex items-center">
-                <div class="bg-purple-100 p-3 rounded-lg">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-sm font-medium text-gray-500">Completion Rate</h3>
-                    <p class="text-2xl font-bold text-gray-900">{{ number_format($overallStats['completion_rate'] ?? 0, 1) }}%</p>
-                    <p class="text-sm text-gray-600">{{ $overallStats['total_tasks'] ?? 0 }} total tasks</p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Employee Performance Section -->
@@ -97,7 +83,6 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repairs</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Maintenance</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Time</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -111,9 +96,12 @@
                                         </svg>
                                     </div>
                                     <div class="ml-3">
-                                        <div class="text-sm font-medium text-gray-900">{{ $employee->name }}</div>
+                                        <button type="button" class="text-left text-sm font-medium text-red-700 hover:underline employee-toggle" data-user-id="{{ $employee->id }}" data-user-name="{{ $employee->name }}">
+                                            {{ $employee->name }}
+                                        </button>
                                     </div>
                                 </div>
+
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -138,18 +126,6 @@
                                     <span class="text-gray-500 ml-1">hours</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-3">
-                                        @php
-                                            $color = $employee->completion_rate >= 90 ? 'bg-green-500' : 
-                                                    ($employee->completion_rate >= 75 ? 'bg-yellow-500' : 'bg-red-500');
-                                        @endphp
-                                        <div class="{{ $color }} h-2 rounded-full" style="width: {{ $employee->completion_rate }}%"></div>
-                                    </div>
-                                    <span class="text-sm font-medium text-gray-900">{{ number_format($employee->completion_rate, 1) }}%</span>
-                                </div>
-                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -170,48 +146,16 @@
                                     </svg>
                                 </div>
                                 <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">{{ $employee->name }}</div>
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <button type="button" class="text-left text-sm font-medium text-red-700 hover:underline employee-toggle" data-user-id="{{ $employee->id }}" data-user-name="{{ $employee->name }}">
+                                        {{ $employee->name }}
+                                    </button>
+                                    <span class="block mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                         {{ $employee->role }}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Performance Metrics Grid -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
-                                <div class="text-lg font-bold text-blue-600">{{ $employee->repairs_completed }}</div>
-                                <div class="text-xs text-gray-500">Repairs</div>
-                            </div>
-                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
-                                <div class="text-lg font-bold text-green-600">{{ $employee->maintenance_tasks }}</div>
-                                <div class="text-xs text-gray-500">Maintenance</div>
-                            </div>
-                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
-                                <div class="text-lg font-bold text-yellow-600">{{ $employee->avg_response_time }}</div>
-                                <div class="text-xs text-gray-500">Hours</div>
-                            </div>
-                            <div class="text-center p-3 bg-white rounded-lg border border-gray-200">
-                                <div class="text-lg font-bold text-purple-600">{{ number_format($employee->completion_rate, 1) }}%</div>
-                                <div class="text-xs text-gray-500">Completion</div>
-                            </div>
-                        </div>
-
-                        <!-- Completion Rate Bar -->
-                        <div class="mt-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-gray-700">Completion Rate</span>
-                                <span class="text-sm text-gray-500">{{ number_format($employee->completion_rate, 1) }}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                @php
-                                    $color = $employee->completion_rate >= 90 ? 'bg-green-500' : 
-                                            ($employee->completion_rate >= 75 ? 'bg-yellow-500' : 'bg-red-500');
-                                @endphp
-                                <div class="{{ $color }} h-2 rounded-full transition-all duration-300" style="width: {{ $employee->completion_rate }}%"></div>
-                            </div>
-                        </div>
                     </div>
                     @endforeach
                 </div>
@@ -231,6 +175,43 @@
                 </div>
             </div>
         @endif
+    </div>
+
+    <!-- Selected Employee Charts Panel -->
+    <div id="employeeChartsPanel" class="mt-6 md:mt-8 hidden">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-red-800 to-red-700 text-white flex items-center justify-between">
+                <div>
+                    <h3 id="panelTitle" class="text-lg md:text-xl font-semibold">Employee Insights</h3>
+                    <p class="text-red-100 text-xs md:text-sm">Repair, Maintenance, and Rating breakdown</p>
+                </div>
+                <button id="closePanel" class="text-white/90 hover:text-white rounded-md border border-white/20 px-3 py-1 text-sm">Close</button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="rounded-xl border border-gray-100 p-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Repairs</h4>
+                        <canvas id="globalRepairChart" height="160"></canvas>
+                        <div class="mt-3 text-xs text-gray-600">
+                            <span class="inline-flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>Completed</span>
+                            <span class="ml-4 inline-flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>Ongoing</span>
+                            <span class="ml-4 inline-flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-red-500"></span>Pulled Out <span id="pulledOutBreakdown" class="ml-1 text-[11px] text-gray-500"></span></span>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-100 p-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Maintenance</h4>
+                        <canvas id="globalMaintChart" height="160"></canvas>
+                    </div>
+                    <div class="rounded-xl border border-gray-100 p-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Average Rating</h4>
+                        <div class="flex items-center gap-2">
+                            <div id="globalRatingStars" class="flex items-center gap-1"></div>
+                            <span id="globalRatingValue" class="text-sm text-gray-600"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Summary Section -->
@@ -276,4 +257,114 @@
 </div>
 
 
+@endsection
+
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartInstances = {};
+        const panel = document.getElementById('employeeChartsPanel');
+        const panelTitle = document.getElementById('panelTitle');
+        const closePanelBtn = document.getElementById('closePanel');
+        let globalCharts = { repair: null, maint: null, rating: null };
+
+        closePanelBtn.addEventListener('click', () => {
+            panel.classList.add('hidden');
+        });
+
+        function makeDoughnut(ctx, labels, data, colors) {
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function renderStars(container, rating) {
+            container.innerHTML = '';
+            const fullStars = Math.floor(rating);
+            const half = rating - fullStars >= 0.5;
+            const emptyStars = 5 - fullStars - (half ? 1 : 0);
+            const starSvg = (fill) => `
+                <svg class="w-5 h-5 ${fill}" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.802-2.034a1 1 0 00-1.176 0l-2.802 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81H7.03a1 1 0 00.95-.69l1.07-3.292z" />
+                </svg>`;
+            const halfStarSvg = `
+                <svg class="w-5 h-5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
+                    <defs>
+                        <linearGradient id="halfGrad" x1="0" x2="1" y1="0" y2="0">
+                            <stop offset="50%" stop-color="#fbbf24" />
+                            <stop offset="50%" stop-color="#e5e7eb" />
+                        </linearGradient>
+                    </defs>
+                    <path fill="url(#halfGrad)" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>`;
+            for (let i = 0; i < fullStars; i++) container.insertAdjacentHTML('beforeend', starSvg('text-yellow-400'));
+            if (half) container.insertAdjacentHTML('beforeend', halfStarSvg);
+            for (let i = 0; i < emptyStars; i++) container.insertAdjacentHTML('beforeend', starSvg('text-gray-300'));
+        }
+
+        async function loadMetrics(userId) {
+            const res = await fetch(`/employee-performance/${userId}/metrics`);
+            if (!res.ok) return null;
+            return await res.json();
+        }
+
+        document.querySelectorAll('.employee-toggle').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const userId = btn.dataset.userId;
+                const name = btn.dataset.userName;
+                panelTitle.textContent = `${name} • Employee Insights`;
+
+                const metrics = await loadMetrics(userId);
+                if (!metrics) return;
+
+                panel.classList.remove('hidden');
+
+                const repairCtx = document.getElementById('globalRepairChart').getContext('2d');
+                const maintCtx = document.getElementById('globalMaintChart').getContext('2d');
+                // Destroy previous charts to avoid duplicates
+                if (globalCharts.repair) { globalCharts.repair.destroy(); }
+                if (globalCharts.maint) { globalCharts.maint.destroy(); }
+
+                globalCharts.repair = makeDoughnut(
+                    repairCtx,
+                    ['Completed', 'Ongoing', 'Pulled Out'],
+                    [metrics.repairs.completed, metrics.repairs.ongoing, metrics.repairs.pulled_out],
+                    ['#10b981', '#f59e0b', '#ef4444']
+                );
+
+                globalCharts.maint = makeDoughnut(
+                    maintCtx,
+                    ['Completed', 'Ongoing', 'Cancelled'],
+                    [metrics.maintenance.completed, metrics.maintenance.ongoing, metrics.maintenance.cancelled],
+                    ['#10b981', '#f59e0b', '#6b7280']
+                );
+
+                // Update pulled out breakdown text
+                const breakdownEl = document.getElementById('pulledOutBreakdown');
+                if (breakdownEl && metrics.repairs.pulled_out_registered !== undefined) {
+                    breakdownEl.textContent = `(Reg: ${metrics.repairs.pulled_out_registered}, Non-Reg: ${metrics.repairs.pulled_out_nonregistered})`;
+                }
+
+                // Render stars for rating
+                const ratingStars = document.getElementById('globalRatingStars');
+                const ratingValue = document.getElementById('globalRatingValue');
+                renderStars(ratingStars, metrics.rating || 0);
+                ratingValue.textContent = `${(metrics.rating || 0).toFixed(2)} / 5`;
+            });
+        });
+    });
+</script>
 @endsection

@@ -17,7 +17,8 @@ class LabScheduleController extends Controller
             // Validate request
             $request->validate([
                 'rfid_number' => 'required|string',
-                'laboratory' => 'required|string'
+                'laboratory' => 'required|string',
+                'purpose' => 'required|string'
             ]);
 
             // Find user by RFID number
@@ -79,6 +80,7 @@ class LabScheduleController extends Controller
             $labLog = new LabLog([
                 'user_id' => $user->id,
                 'laboratory' => $request->laboratory,
+                'purpose' => $request->purpose,
                 'time_in' => now(),
                 'status' => 'on-going'
             ]);
@@ -129,6 +131,9 @@ class LabScheduleController extends Controller
             ->when($request->laboratory, function ($q) use ($request) {
                 return $q->where('laboratory', $request->laboratory);
             })
+            ->when($request->purpose, function ($q) use ($request) {
+                return $q->where('purpose', $request->purpose);
+            })
             ->when($request->status, function ($q) use ($request) {
                 return $q->where('status', $request->status);
             })
@@ -146,6 +151,7 @@ class LabScheduleController extends Controller
             'logs' => $logs,
             'filters' => [
                 'laboratory' => $request->laboratory,
+                'purpose' => $request->purpose,
                 'status' => $request->status,
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date
@@ -160,6 +166,9 @@ class LabScheduleController extends Controller
         $query = LabLog::with('user')
             ->when($request->laboratory, function ($q) use ($request) {
                 return $q->where('laboratory', $request->laboratory);
+            })
+            ->when($request->purpose, function ($q) use ($request) {
+                return $q->where('purpose', $request->purpose);
             })
             ->when($request->status, function ($q) use ($request) {
                 return $q->where('status', $request->status);
@@ -178,6 +187,7 @@ class LabScheduleController extends Controller
             'logs' => $logs,
             'filters' => [
                 'laboratory' => $request->laboratory,
+                'purpose' => $request->purpose,
                 'status' => $request->status,
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date
@@ -202,7 +212,7 @@ class LabScheduleController extends Controller
 
     public function getAllLabsStatus()
     {
-        $labs = ['401', '402', '403', '404', '405', '406'];
+        $labs = \App\Models\Laboratory::orderBy('number')->pluck('number')->toArray();
         $statuses = [];
 
         foreach ($labs as $lab) {
@@ -221,21 +231,23 @@ class LabScheduleController extends Controller
 
     public function logging()
     {
-        $laboratories = ['401', '402', '403', '404', '405', '406'];
+        $laboratories = \App\Models\Laboratory::orderBy('number')->get();
         
         return view('lab-schedule.logging', [
             'laboratories' => $laboratories
         ]);
     }
 
-    // Add this method to match the route used in history.blade.php
     public function history(Request $request)
     {
-        $laboratories = ['401', '402', '403', '404', '405', '406'];
+        $laboratories = \App\Models\Laboratory::orderBy('number')->pluck('number');
 
         $query = LabLog::with('user')
             ->when($request->laboratory, function ($q) use ($request) {
                 return $q->where('laboratory', $request->laboratory);
+            })
+            ->when($request->purpose, function ($q) use ($request) {
+                return $q->where('purpose', $request->purpose);
             })
             ->when($request->status, function ($q) use ($request) {
                 return $q->where('status', $request->status);

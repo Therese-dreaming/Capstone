@@ -118,6 +118,78 @@
             </div>
             @endif
 
+            <!-- Charts Section -->
+            <div class="mb-8">
+                <div class="bg-gray-50 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Procurement Analytics Charts
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Procurement by Category and Asset Status Charts - Side by Side -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Procurement by Category Chart -->
+                            <div class="bg-white rounded-xl shadow-md p-4">
+                                <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    Procurement by Category
+                                </h4>
+                                <div class="h-80">
+                                    <canvas id="procurementCategoryChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Asset Status Chart -->
+                            <div class="bg-white rounded-xl shadow-md p-4">
+                                <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Asset Status Distribution
+                                </h4>
+                                <div class="h-80">
+                                    <canvas id="assetStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Procurement by Vendor and Timeline Charts - Side by Side -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Procurement by Vendor Chart -->
+                            <div class="bg-white rounded-xl shadow-md p-4">
+                                <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                    Procurement by Vendor
+                                </h4>
+                                <div class="h-80">
+                                    <canvas id="procurementVendorChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Procurement Timeline Chart -->
+                            <div class="bg-white rounded-xl shadow-md p-4">
+                                <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Procurement Timeline
+                                </h4>
+                                <div class="h-80">
+                                    <canvas id="procurementTimelineChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Summary Card -->
             <div class="mb-8">
                 <div class="bg-red-800 text-white rounded-xl shadow-lg p-6 md:p-8">
@@ -262,6 +334,397 @@
     </div>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Chart data from PHP
+    const chartData = {
+        categories: @json($categories->pluck('name')),
+        vendors: @json($vendors->pluck('name')),
+        assets: @json($assets->items()),
+        colors: [
+            '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
+            '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
+            '#F97316', '#6366F1', '#14B8A6', '#F43F5E'
+        ]
+    };
+
+    // Wait for DOM to be loaded before creating charts
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, chart data:', chartData); // Debug log
+        
+        // Only create charts if there's data
+        if (chartData.assets && chartData.assets.length > 0) {
+            console.log('Creating charts with', chartData.assets.length, 'assets'); // Debug log
+            
+            // Prepare data for charts
+            const categoryData = prepareCategoryData();
+            const vendorData = prepareVendorData();
+            const timelineData = prepareTimelineData();
+            
+            console.log('Prepared data:', { categoryData, vendorData, timelineData }); // Debug log
+            
+            // Procurement by Category Chart (Bar Chart)
+            const procurementCategoryCtx = document.getElementById('procurementCategoryChart');
+            if (procurementCategoryCtx) {
+                console.log('Creating category chart'); // Debug log
+                new Chart(procurementCategoryCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: categoryData.labels,
+                        datasets: [{
+                            label: 'Asset Count',
+                            data: categoryData.counts,
+                            backgroundColor: chartData.colors.slice(0, categoryData.labels.length),
+                            borderColor: chartData.colors.slice(0, categoryData.labels.length).map(color => color + '80'),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Assets: ${context.parsed.y}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#6B7280',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#6B7280',
+                                    font: {
+                                        size: 11
+                                    },
+                                    maxRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.error('Category chart canvas not found'); // Debug log
+            }
+
+            // Asset Status Chart (Doughnut Chart)
+            const assetStatusCtx = document.getElementById('assetStatusChart');
+            if (assetStatusCtx) {
+                console.log('Creating asset status chart'); // Debug log
+                const statusData = prepareStatusData();
+                new Chart(assetStatusCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusData.labels,
+                        datasets: [{
+                            data: statusData.counts,
+                            backgroundColor: [
+                                '#10B981', // Green for IN USE
+                                '#F59E0B', // Yellow for UNDER REPAIR
+                                '#EF4444', // Red for DISPOSED
+                                '#8B5CF6'  // Purple for PULLED OUT
+                            ],
+                            borderColor: 'white',
+                            borderWidth: 3,
+                            hoverOffset: 15,
+                            cutout: '60%'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 12
+                                    },
+                                    color: '#374151'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.error('Asset status chart canvas not found'); // Debug log
+            }
+
+            // Procurement by Vendor Chart (Horizontal Bar Chart)
+            const procurementVendorCtx = document.getElementById('procurementVendorChart');
+            if (procurementVendorCtx) {
+                console.log('Creating vendor chart'); // Debug log
+                new Chart(procurementVendorCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: vendorData.labels,
+                        datasets: [{
+                            label: 'Asset Count',
+                            data: vendorData.counts,
+                            backgroundColor: chartData.colors.slice(0, vendorData.labels.length).map(color => color + '60'),
+                            borderColor: chartData.colors.slice(0, vendorData.labels.length),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Assets: ${context.parsed.x}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#6B7280',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#6B7280',
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.error('Vendor chart canvas not found'); // Debug log
+            }
+
+            // Procurement Timeline Chart (Line Chart)
+            const procurementTimelineCtx = document.getElementById('procurementTimelineChart');
+            if (procurementTimelineCtx) {
+                console.log('Creating timeline chart'); // Debug log
+                new Chart(procurementTimelineCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: timelineData.labels,
+                        datasets: [{
+                            label: 'Assets Procured',
+                            data: timelineData.counts,
+                            borderColor: '#8B5CF6',
+                            backgroundColor: '#8B5CF6' + '20',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#8B5CF6',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Assets: ${context.parsed.y}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#6B7280',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#6B7280',
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.error('Timeline chart canvas not found'); // Debug log
+            }
+        } else {
+            console.log('No procurement data available for charts'); // Debug log
+        }
+    });
+
+    // Helper functions to prepare chart data
+    function prepareCategoryData() {
+        const categoryCounts = {};
+        chartData.assets.forEach(asset => {
+            const categoryName = asset.category && asset.category.name ? asset.category.name : 'Unknown';
+            categoryCounts[categoryName] = (categoryCounts[categoryName] || 0) + 1;
+        });
+        
+        return {
+            labels: Object.keys(categoryCounts),
+            counts: Object.values(categoryCounts)
+        };
+    }
+
+    function prepareVendorData() {
+        const vendorCounts = {};
+        chartData.assets.forEach(asset => {
+            const vendorName = asset.vendor && asset.vendor.name ? asset.vendor.name : 'Unknown';
+            vendorCounts[vendorName] = (vendorCounts[vendorName] || 0) + 1;
+        });
+        
+        return {
+            labels: Object.keys(vendorCounts),
+            counts: Object.values(vendorCounts)
+        };
+    }
+
+    function prepareTimelineData() {
+        const timelineCounts = {};
+        chartData.assets.forEach(asset => {
+            if (asset.purchase_date) {
+                const date = new Date(asset.purchase_date);
+                const monthYear = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                timelineCounts[monthYear] = (timelineCounts[monthYear] || 0) + 1;
+            }
+        });
+        
+        // Sort by date
+        const sortedEntries = Object.entries(timelineCounts).sort((a, b) => {
+            return new Date(a[0]) - new Date(b[0]);
+        });
+        
+        return {
+            labels: sortedEntries.map(entry => entry[0]),
+            counts: sortedEntries.map(entry => entry[1])
+        };
+    }
+
+    function prepareStatusData() {
+        const statusCounts = {
+            'IN USE': 0,
+            'UNDER REPAIR': 0,
+            'DISPOSED': 0,
+            'PULLED OUT': 0
+        };
+
+        chartData.assets.forEach(asset => {
+            const status = asset.status || 'Unknown';
+            if (statusCounts.hasOwnProperty(status)) {
+                statusCounts[status]++;
+            }
+        });
+
+        return {
+            labels: Object.keys(statusCounts),
+            counts: Object.values(statusCounts)
+        };
+    }
+</script>
+
 <script>
     function printReport() {
         window.print();
@@ -310,6 +773,11 @@
 
         /* Hide summary card */
         .mb-8:has(.bg-red-800) {
+            display: none !important;
+        }
+
+        /* Hide charts section in print */
+        .mb-8 .bg-gray-50.rounded-xl.p-6 {
             display: none !important;
         }
 

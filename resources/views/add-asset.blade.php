@@ -17,7 +17,7 @@
                         <p class="text-red-100 text-sm md:text-lg">Enter the details of the new asset below</p>
                     </div>
                 </div>
-                <a href="{{ route('assets.index') }}" class="inline-flex items-center px-4 py-2 bg-white/20 text-white font-medium rounded-lg hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 transition-colors duration-200">
+                <a href="{{ auth()->check() && auth()->user()->group_id === 4 ? route('custodian.assets.index') : route('assets.index') }}" class="inline-flex items-center px-4 py-2 bg-white/20 text-white font-medium rounded-lg hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 transition-colors duration-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
                     </svg>
@@ -46,7 +46,7 @@
 
     <!-- Main Content Card -->
     <div class="bg-white rounded-xl shadow-md p-4 md:p-6">
-        <form action="{{ route('assets.store') }}" method="POST" enctype="multipart/form-data" id="assetForm">
+        <form action="{{ auth()->check() && auth()->user()->group_id === 4 ? route('custodian.assets.store') : route('assets.store') }}" method="POST" enctype="multipart/form-data" id="assetForm">
             @csrf
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             
@@ -354,7 +354,7 @@
 
             <!-- Action Buttons -->
             <div class="mt-10 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-4 justify-end">
-                <a href="{{ route('assets.index') }}" 
+                <a href="{{ auth()->check() && auth()->user()->group_id === 4 ? route('custodian.assets.index') : route('assets.index') }}" 
                    class="inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

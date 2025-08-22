@@ -46,16 +46,22 @@
                         <input type="text" id="searchInput" placeholder="Search by Serial Number" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
                     </div>
                     <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                        <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
-                            Add New Asset
-                        </a>
-                        @if(auth()->user()->group_id != 2)
-                        <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
-                            Procurement History
-                        </a>
-                        <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
-                            Disposal History
-                        </a>
+                        @if(auth()->user()->group_id === 4)
+                            <a href="{{ route('custodian.assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
+                                Add New Asset
+                            </a>
+                        @else
+                            <a href="{{ route('assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
+                                Add New Asset
+                            </a>
+                            @if(auth()->user()->group_id != 2)
+                            <a href="{{ route('reports.procurement-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
+                                Procurement History
+                            </a>
+                            <a href="{{ route('reports.disposal-history') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
+                                Disposal History
+                            </a>
+                            @endif
                         @endif
                         <button onclick="openFullList()" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,32 +126,46 @@
                         @endif
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-2 text-sm mb-3">
-                        <div>
-                            <p class="text-gray-500">Category:</p>
-                            <p class="font-medium">{{ $asset->category->name ?? '' }}</p>
+                                            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                            <div>
+                                <p class="text-gray-500">Category:</p>
+                                <p class="font-medium">{{ $asset->category->name ?? '' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Price:</p>
+                                <p class="font-medium">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Location:</p>
+                                <p class="font-medium">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Created By:</p>
+                                <p class="font-medium">{{ $asset->creator->name ?? 'N/A' }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-gray-500">Price:</p>
-                            <p class="font-medium">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500">Location:</p>
-                            <p class="font-medium">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</p>
-                        </div>
-                    </div>
                     
                     <div class="flex justify-end space-x-2">
+                        @if(auth()->user()->group_id !== 4)
                         <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </a>
-                        <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                        </a>
+                        @endif
+                        @if(auth()->user()->group_id === 4)
+                            <a href="{{ route('custodian.assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </a>
+                        @else
+                            <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </a>
+                        @endif
                         <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -175,6 +195,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
@@ -229,18 +250,29 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->creator->name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex space-x-2">
+                                    @if(auth()->user()->group_id !== 4)
                                     <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </a>
-                                    <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </a>
+                                    @endif
+                                    @if(auth()->user()->group_id === 4)
+                                        <a href="{{ route('custodian.assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </a>
+                                    @endif
                                     <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -697,7 +729,11 @@
         if (currentAssetId) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/assets/${currentAssetId}`;
+            @if(auth()->user()->group_id === 4)
+                form.action = `/custodian/assets/${currentAssetId}`;
+            @else
+                form.action = `/assets/${currentAssetId}`;
+            @endif
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
             const csrfInput = document.createElement('input');
@@ -721,7 +757,11 @@
         if (currentAssetId) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/assets/${currentAssetId}/dispose`;
+            @if(auth()->user()->group_id === 4)
+                form.action = `/custodian/assets/${currentAssetId}/dispose`;
+            @else
+                form.action = `/assets/${currentAssetId}/dispose`;
+            @endif
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
             const csrfInput = document.createElement('input');
@@ -738,7 +778,11 @@
             const redirectInput = document.createElement('input');
             redirectInput.type = 'hidden';
             redirectInput.name = 'redirect';
-            redirectInput.value = '{{ route("reports.disposal-history") }}';
+            @if(auth()->user()->group_id === 4)
+                redirectInput.value = '{{ route("custodian.assets.index") }}';
+            @else
+                redirectInput.value = '{{ route("reports.disposal-history") }}';
+            @endif
 
             form.appendChild(csrfInput);
             form.appendChild(reasonInput); // Add the reason input to the form
