@@ -130,38 +130,6 @@
                     <input type="text" id="equipment" name="equipment" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" placeholder="Enter equipment name" required>
                 </div>
 
-                <!-- Serial Number (Optional) -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-gray-700">Serial Number (Optional)</label>
-                    <input type="text" id="serial_number" name="serial_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" placeholder="Enter serial number if known">
-                </div>
-
-                <!-- Category -->
-                <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-gray-700">Category</label>
-                    <select id="category_select" name="category_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white" required>
-                        <option value="">Select Category</option>
-                        @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Technician (Admin only) -->
-                @if(auth()->user()->group_id == 1)
-                <div class="space-y-2">
-                    <label class="block text-sm font-semibold text-gray-700">Assign Technician (Optional)</label>
-                    <select name="technician_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white">
-                        <option value="">Select Technician</option>
-                        @foreach($technicians as $technician)
-                        <option value="{{ $technician->id }}">{{ $technician->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                @elseif(auth()->user()->group_id == 2)
-                    <input type="hidden" name="technician_id" value="{{ auth()->id() }}">
-                @endif
-
                 <!-- Issue (full width) -->
                 <div class="md:col-span-2 space-y-2">
                     <label class="block text-sm font-semibold text-gray-700">Issue Description</label>

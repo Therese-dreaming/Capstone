@@ -158,6 +158,34 @@
                 </div>
             </div>
 
+            <!-- Signatures -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </div>
+                    Signatures
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-3">Technician's Signature</p>
+                        <div class="technician-signature-container">
+                            <!-- Technician signature will be inserted here -->
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-3">Caller's Signature</p>
+                        <div class="caller-signature-container">
+                            <!-- Caller signature will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
             <!-- Findings -->
             <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -188,34 +216,6 @@
                 </div>
             </div>
 
-            <!-- Signatures -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <div class="bg-red-100 p-2 rounded-lg mr-3">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                    </div>
-                    Signatures
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <p class="text-sm font-medium text-gray-700 mb-3">Technician's Signature</p>
-                        <div class="technician-signature-container">
-                            <!-- Technician signature will be inserted here -->
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-gray-700 mb-3">Caller's Signature</p>
-                        <div class="caller-signature-container">
-                            <!-- Caller signature will be inserted here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-6">
             <!-- Repair Photo -->
             <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">

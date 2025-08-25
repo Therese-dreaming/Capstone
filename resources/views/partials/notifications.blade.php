@@ -13,7 +13,10 @@
     <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-128 max-w-[90vw] bg-white rounded-lg shadow-lg overflow-hidden z-50">
         <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
             <h3 class="font-semibold text-gray-700">Notifications</h3>
-            <button id="markAllRead" class="text-sm text-red-600 hover:text-red-800">Mark all as read</button>
+            <div class="flex items-center space-x-2">
+                <a href="{{ route('notifications.all') }}" class="text-sm text-blue-600 hover:text-blue-800">View All</a>
+                <button id="markAllRead" class="text-sm text-red-600 hover:text-red-800">Mark all as read</button>
+            </div>
         </div>
         <div id="notificationList" class="max-h-96 overflow-y-auto">
             <!-- Notifications will be loaded here -->
@@ -108,9 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                         `}
                                     </div>
                                     <div class="flex-1 min-w-0 flex-grow">
-                                        <a href="${notification.link || '#'}" 
-                                           class="block group" 
-                                           onclick="event.preventDefault(); window.location.href = '${notification.link || '#'}'">
+                                        <a href="/notifications/go/${notification.id}" 
+                                           class="block group">
                                             <p class="text-sm text-gray-800 mb-1 line-clamp-2 group-hover:text-red-600 transition-colors duration-200">
                                                 ${notification.message}
                                             </p>

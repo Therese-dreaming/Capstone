@@ -39,7 +39,7 @@ class RepairRequestController extends Controller
             'building' => 'required|string|max:255',
             'floor' => 'required|string|max:255',
             'room' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'nullable|exists:categories,id',
             'equipment' => 'required|string',
             'serial_number' => 'nullable|string',
             'issue' => 'required|string',
@@ -160,6 +160,13 @@ class RepairRequestController extends Controller
         // Combine date and time into a single datetime string
         $created_at = date('Y-m-d H:i:s', strtotime($request->date_called . ' ' . $request->time_called));
 
+        // Ensure category_id: default to 'Uncategorized' if not provided
+        $categoryId = $request->category_id;
+        if (!$categoryId) {
+            $uncat = Category::firstOrCreate(['name' => 'Uncategorized']);
+            $categoryId = $uncat->id;
+        }
+
         $repairRequest = RepairRequest::create([
             'ticket_number' => $ticketNumber,
             'date_called' => $request->date_called,
@@ -167,7 +174,7 @@ class RepairRequestController extends Controller
             'building' => $request->building,
             'floor' => $request->floor,
             'room' => $request->room,
-            'category_id' => $request->category_id,
+            'category_id' => $categoryId,
             'equipment' => $request->equipment,
             'serial_number' => $serialNumber,
             'issue' => $request->issue,
@@ -557,8 +564,26 @@ class RepairRequestController extends Controller
         
             // Perform the update
             \Log::info('Attempting to update repair request', ['final_update_data' => $updateData]);
+            $oldTechnicianId = $repairRequest->technician_id;
             $repairRequest->update($updateData);
             \Log::info('Successfully updated repair request');
+
+            // Notify newly assigned technician
+            $newTechnicianId = $repairRequest->technician_id;
+            if (!empty($newTechnicianId) && $newTechnicianId != $oldTechnicianId) {
+                try {
+                    Notification::create([
+                        'user_id' => $newTechnicianId,
+                        'type' => 'repair_assigned',
+                        'message' => "New repair request assigned: {$repairRequest->ticket_number} - {$repairRequest->equipment}",
+                        'is_read' => false,
+                        'link' => url(route('repair.status', [], false))
+                    ]);
+                    \Log::info('Notified assigned technician', ['technician_id' => $newTechnicianId]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to notify assigned technician', ['error' => $e->getMessage()]);
+                }
+            }
 
             // Notify admins about the update if the current user is a secretary or admin
             if (in_array(auth()->user()->group_id, [1, 2])) {
