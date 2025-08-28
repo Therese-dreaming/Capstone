@@ -45,32 +45,12 @@
     <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="p-6 space-y-4">
             @php
-                $startDate = request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->startOfDay() : null;
-                $endDate = request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->endOfDay() : null;
-
-                // Filter actions based on type and date range
-                $filteredActions = $actions->filter(function ($action) use ($startDate, $endDate) {
-                    // Get action date as Carbon instance
-                    $actionDate = $action->action_source === 'asset_history' ? $action->created_at : $action->completed_at;
-                    if (!($actionDate instanceof \Carbon\Carbon)) {
-                        $actionDate = \Carbon\Carbon::parse($actionDate);
-                    }
-                    $actionDate->setTimezone('Asia/Manila');
-
-                    // Apply filters
-                    $typeMatch = request('filter') === null || $action->action_source === request('filter');
-                    $dateMatch = ($startDate === null || $actionDate->greaterThanOrEqualTo($startDate)) &&
-                                 ($endDate === null || $actionDate->lessThanOrEqualTo($endDate));
-
-                    return $typeMatch && $dateMatch;
-                });
-
-                // Reset current date for grouping filtered results
+                // Reset current date for grouping results
                 $currentDate = null;
             @endphp
-            @forelse($filteredActions as $action)
+            @forelse($actions as $action)
                 @php
-                    // Date grouping logic for filtered actions
+                    // Date grouping logic
                     $actionDate = $action->action_source === 'asset_history' ? $action->created_at : $action->completed_at;
                     if (!($actionDate instanceof \Carbon\Carbon)) {
                         $actionDate = \Carbon\Carbon::parse($actionDate);
@@ -79,7 +59,7 @@
 
                     $formattedDate = $actionDate->format('Y-m-d');
 
-                    // Check if this is a new date group *among filtered items*
+                    // Check if this is a new date group
                     if ($currentDate !== $formattedDate) {
                         $currentDate = $formattedDate;
                         $showDateHeader = true;
@@ -156,7 +136,24 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg> {{ $action->asset->location ?? 'No location' }}
+                                    </svg> 
+                                    @php
+                                        $locationData = null;
+                                        if ($action->asset->location) {
+                                            try {
+                                                $locationData = json_decode($action->asset->location, true);
+                                            } catch (Exception $e) {
+                                                $locationData = null;
+                                            }
+                                        }
+                                    @endphp
+                                    @if($locationData && isset($locationData['building']) && isset($locationData['floor']) && isset($locationData['room_number']))
+                                        {{ $locationData['building'] }} - {{ $locationData['floor'] }} - {{ $locationData['room_number'] }}
+                                    @elseif($action->asset->location && !$locationData)
+                                        {{ $action->asset->location }}
+                                    @else
+                                        No location
+                                    @endif
                                     @if($action->asset->lab_number)
                                     <span class="mx-2">|</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,7 +226,24 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg> {{ $action->asset->location ?? 'No location' }}
+                                    </svg> 
+                                    @php
+                                        $locationData = null;
+                                        if ($action->asset->location) {
+                                            try {
+                                                $locationData = json_decode($action->asset->location, true);
+                                            } catch (Exception $e) {
+                                                $locationData = null;
+                                            }
+                                        }
+                                    @endphp
+                                    @if($locationData && isset($locationData['building']) && isset($locationData['floor']) && isset($locationData['room_number']))
+                                        {{ $locationData['building'] }} - {{ $locationData['floor'] }} - {{ $locationData['room_number'] }}
+                                    @elseif($action->asset->location && !$locationData)
+                                        {{ $action->asset->location }}
+                                    @else
+                                        No location
+                                    @endif
                                     @if($action->asset->lab_number)
                                     <span class="mx-2">|</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -300,5 +314,12 @@
             @endforelse
         </div>
     </div>
+
+            <!-- Pagination -->
+            @if($actions->hasPages())
+        <div class="mt-6">
+            {{ $actions->links() }}
+        </div>
+        @endif
 </div>
 @endsection

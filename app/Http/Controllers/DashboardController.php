@@ -516,49 +516,123 @@ class DashboardController extends Controller
         return view('secretary-dashboard', compact('personalStats'));
     }
 
-    public function userActionsHistory()
+    public function userActionsHistory(Request $request)
     {
         $user = auth()->user();
+        $perPage = 10; // Number of items per page
         
-        // Get repair requests completed by this user
-        $completedRepairRequests = RepairRequest::where('technician_id', $user->id)
-            ->where('status', 'completed')
-            ->pluck('id');
-        
-        $actions = collect()
-            ->concat(AssetHistory::with(['asset', 'user'])
-                ->where('changed_by', $user->id)
-                // Filter out STATUS records that are created when a repair is completed
-                ->where(function($query) {
-                    $query->where('change_type', '!=', 'STATUS')
-                        ->orWhere(function($q) {
-                            $q->where('change_type', 'STATUS')
-                            ->where(function($innerQuery) {
-                                $innerQuery->where('old_value', '!=', 'UNDER REPAIR')
-                                          ->orWhere('new_value', '!=', 'IN USE');
-                            });
+        // Get asset history actions
+        $assetHistoryQuery = AssetHistory::with(['asset', 'user'])
+            ->where('changed_by', $user->id)
+            // Filter out STATUS records that are created when a repair is completed
+            ->where(function($query) {
+                $query->where('change_type', '!=', 'STATUS')
+                    ->orWhere(function($q) {
+                        $q->where('change_type', 'STATUS')
+                        ->where(function($innerQuery) {
+                            $innerQuery->where('old_value', '!=', 'UNDER REPAIR')
+                                      ->orWhere('new_value', '!=', 'IN USE');
                         });
-                })
-                ->select('*', DB::raw("'asset_history' as action_source"))
-                ->orderBy('created_at', 'desc')
-                ->get())
-            ->concat(RepairRequest::with(['asset', 'category'])
-                ->where('technician_id', $user->id)
-                ->where('status', 'completed')
-                ->whereNotNull('completed_at')
-                ->select('*', DB::raw("'repair' as action_source"))
-                ->orderBy('completed_at', 'desc')
-                ->get())
-            ->concat(Maintenance::with(['location', 'technician'])
-                ->where('technician_id', $user->id)
-                ->where('status', 'completed')
-                ->whereNotNull('completed_at')
-                ->select('*', DB::raw("'maintenance' as action_source"))
-                ->orderBy('completed_at', 'desc')
-                ->get())
-            ->sortByDesc(function($item) {
-                return $item->action_source === 'asset_history' ? $item->created_at : $item->completed_at;
-            });
+                    });
+            })
+            ->select('*', DB::raw("'asset_history' as action_source"), DB::raw('created_at as action_date'))
+            ->orderBy('created_at', 'desc');
+        
+        // Get repair actions
+        $repairQuery = RepairRequest::with(['asset', 'category'])
+            ->where('technician_id', $user->id)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->select('*', DB::raw("'repair' as action_source"), DB::raw('completed_at as action_date'))
+            ->orderBy('completed_at', 'desc');
+        
+        // Get maintenance actions
+        $maintenanceQuery = Maintenance::with(['location', 'technician'])
+            ->where('technician_id', $user->id)
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->select('*', DB::raw("'maintenance' as action_source"), DB::raw('completed_at as action_date'))
+            ->orderBy('completed_at', 'desc');
+        
+        // Apply filters
+        $filter = $request->get('filter');
+        if ($filter === 'asset_history') {
+            $assetHistoryQuery = $assetHistoryQuery;
+            $repairQuery = null;
+            $maintenanceQuery = null;
+        } elseif ($filter === 'repair') {
+            $assetHistoryQuery = null;
+            $repairQuery = $repairQuery;
+            $maintenanceQuery = null;
+        } elseif ($filter === 'maintenance') {
+            $assetHistoryQuery = null;
+            $repairQuery = null;
+            $maintenanceQuery = $maintenanceQuery;
+        }
+        
+        // Apply date filters
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        if ($startDate) {
+            if ($assetHistoryQuery) {
+                $assetHistoryQuery->whereDate('created_at', '>=', $startDate);
+            }
+            if ($repairQuery) {
+                $repairQuery->whereDate('completed_at', '>=', $startDate);
+            }
+            if ($maintenanceQuery) {
+                $maintenanceQuery->whereDate('completed_at', '>=', $startDate);
+            }
+        }
+        
+        if ($endDate) {
+            if ($assetHistoryQuery) {
+                $assetHistoryQuery->whereDate('created_at', '<=', $endDate);
+            }
+            if ($repairQuery) {
+                $repairQuery->whereDate('completed_at', '<=', $endDate);
+            }
+            if ($maintenanceQuery) {
+                $maintenanceQuery->whereDate('completed_at', '<=', $endDate);
+            }
+        }
+        
+        // Combine all queries using union
+        $combinedQuery = collect();
+        
+        if ($assetHistoryQuery) {
+            $combinedQuery = $combinedQuery->concat($assetHistoryQuery->get());
+        }
+        if ($repairQuery) {
+            $combinedQuery = $combinedQuery->concat($repairQuery->get());
+        }
+        if ($maintenanceQuery) {
+            $combinedQuery = $combinedQuery->concat($maintenanceQuery->get());
+        }
+        
+        // Sort by action date
+        $combinedQuery = $combinedQuery->sortByDesc('action_date');
+        
+        // Manual pagination
+        $currentPage = $request->get('page', 1);
+        $offset = ($currentPage - 1) * $perPage;
+        $paginatedActions = $combinedQuery->slice($offset, $perPage);
+        
+        // Create paginator instance
+        $actions = new \Illuminate\Pagination\LengthAwarePaginator(
+            $paginatedActions,
+            $combinedQuery->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => $request->url(),
+                'pageName' => 'page',
+            ]
+        );
+        
+        // Add query parameters to pagination links
+        $actions->appends($request->except('page'));
     
         return view('actions-history', compact('actions'));
     }
