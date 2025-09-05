@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -62,5 +63,88 @@ class User extends Authenticatable
     public function getProfilePictureUrl()
     {
         return $this->profile_picture ? asset($this->profile_picture) : $this->getDefaultProfilePicture();
+    }
+
+    /**
+     * Get navigation counts for the sidebar
+     */
+    public function getNavigationCounts()
+    {
+        $counts = [];
+
+        // Lab Maintenance counts
+        if ($this->group_id !== 4) { // Not custodian
+            $maintenanceQuery = Maintenance::where('status', 'scheduled');
+            
+            // If user is secretary (group_id = 2), only show their assigned tasks
+            if ($this->group_id === 2) {
+                $maintenanceQuery->where('technician_id', $this->id);
+            }
+            
+            $counts['maintenance_scheduled'] = $maintenanceQuery->count();
+        }
+
+        // Asset Repair counts
+        if ($this->group_id !== 3) { // Not technician
+            $repairQuery = RepairRequest::whereIn('status', ['pending', 'in_progress']);
+            
+            // If user is secretary (group_id = 2), only show their assigned tasks
+            if ($this->group_id === 2) {
+                $repairQuery->where('technician_id', $this->id);
+            }
+            
+            $counts['repair_pending'] = $repairQuery->count();
+        }
+
+        // Asset List - Warranty counts (expired and expiring)
+        if ($this->group_id !== 3) { // Not technician
+            $today = Carbon::now();
+            $thirtyDaysFromNow = $today->copy()->addDays(30);
+            
+            // Expired warranties (past due)
+            $expiredQuery = Asset::where('status', '!=', 'DISPOSED')
+                ->where('warranty_period', '<', $today->format('Y-m-d'));
+            
+            $counts['warranty_expired'] = $expiredQuery->count();
+            
+            // Expiring warranties (within next 30 days, but not yet expired)
+            $expiringQuery = Asset::where('status', '!=', 'DISPOSED')
+                ->whereBetween('warranty_period', [$today->format('Y-m-d'), $thirtyDaysFromNow->format('Y-m-d')]);
+            
+            $counts['warranty_expiring'] = $expiringQuery->count();
+        }
+
+        // Non-Registered Assets - Pulled out assets that are still not registered
+        if ($this->group_id !== 3) { // Not technician
+            $pulledOutQuery = NonRegisteredAsset::where('status', 'PULLED OUT')
+                ->whereNull('linked_asset_id'); // Exclude assets that have been linked to registered assets
+            
+            $counts['non_registered_pulled_out'] = $pulledOutQuery->count();
+        }
+
+        // Lab Schedule counts (if applicable)
+        if ($this->group_id !== 3 && $this->group_id !== 4) { // Not technician or custodian
+            // Add lab schedule counts if needed
+            $counts['lab_schedule'] = 0; // Placeholder for future implementation
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Get specific count for a navigation item
+     */
+    public function getNavigationCount($type)
+    {
+        $counts = $this->getNavigationCounts();
+        return $counts[$type] ?? 0;
+    }
+
+    /**
+     * Get total warranty issues count (expired + expiring)
+     */
+    public function getTotalWarrantyIssues()
+    {
+        return $this->getNavigationCount('warranty_expired') + $this->getNavigationCount('warranty_expiring');
     }
 }

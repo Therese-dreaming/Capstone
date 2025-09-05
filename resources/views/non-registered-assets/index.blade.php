@@ -80,7 +80,17 @@
                 <div class="space-y-4">
                     <!-- Header with Equipment Name and Status -->
                     <div class="flex justify-between items-start">
-                        <h3 class="font-bold text-lg text-gray-900">{{ $asset->equipment_name }}</h3>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg text-gray-900">{{ $asset->equipment_name }}</h3>
+                            @if($asset->linked_asset_id)
+                                <div class="flex items-center mt-1">
+                                    <svg class="w-4 h-4 text-green-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span class="text-xs font-medium text-green-700">Linked to Registered Asset</span>
+                                </div>
+                            @endif
+                        </div>
                         <span class="px-3 py-1.5 inline-flex text-xs font-semibold rounded-full 
                             {{ $asset->status === 'PULLED OUT' ? 'bg-yellow-100 text-yellow-800' : 
                                ($asset->status === 'DISPOSED' ? 'bg-red-100 text-red-800' : 
@@ -99,6 +109,12 @@
                             <span class="font-semibold text-gray-700">Ticket Number:</span> 
                             <span class="text-gray-900">{{ $asset->ticket_number }}</span>
                         </div>
+                        @if($asset->linked_asset_id && $asset->linkedAsset)
+                            <div class="text-sm">
+                                <span class="font-semibold text-gray-700">Linked Asset Serial:</span> 
+                                <span class="text-gray-900">{{ $asset->linkedAsset->serial_number ?? 'N/A' }}</span>
+                            </div>
+                        @endif
                         <div class="text-sm">
                             <span class="font-semibold text-gray-700">Pulled Out By:</span> 
                             <span class="text-gray-900">{{ $asset->pulled_out_by }}</span>
@@ -107,6 +123,12 @@
                             <span class="font-semibold text-gray-700">Date:</span> 
                             <span class="text-gray-900">{{ $asset->pulled_out_at->format('M d, Y H:i') }}</span>
                         </div>
+                        @if($asset->linked_at)
+                            <div class="text-sm">
+                                <span class="font-semibold text-gray-700">Linked Date:</span> 
+                                <span class="text-gray-900">{{ $asset->linked_at->format('M d, Y H:i') }}</span>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Actions -->
@@ -123,13 +145,15 @@
                         @else
                             <div class="space-y-2">
                                 <span class="text-gray-500 text-sm italic block">No repair request linked</span>
-                                <button onclick="openLinkRepairModal('{{ $asset->id }}', '{{ $asset->equipment_name }}')" 
-                                        class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors duration-200">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                    </svg>
-                                    Link to Repair Request
-                                </button>
+                                @if(!$asset->linked_asset_id)
+                                    <button onclick="openLinkRepairModal('{{ $asset->id }}', '{{ $asset->equipment_name }}')" 
+                                            class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors duration-200">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                        Link to Repair Request
+                                    </button>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -152,6 +176,7 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ticket Number</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Linked Asset</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pulled Out By</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
@@ -178,6 +203,27 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
+                            @if($asset->linked_asset_id)
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div>
+                                        <div class="text-sm font-medium text-green-700">
+                                            {{ $asset->linkedAsset->serial_number ?? 'N/A' }}
+                                        </div>
+                                        @if($asset->linked_at)
+                                            <div class="text-xs text-gray-500">
+                                                {{ $asset->linked_at->format('M d, Y') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @else
+                                <span class="text-sm text-gray-500 italic">Not linked</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-700">{{ $asset->pulled_out_by }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -196,13 +242,15 @@
                             @else
                                 <div class="space-y-2">
                                     <span class="text-gray-500 text-sm italic block">No repair request linked</span>
-                                    <button onclick="openLinkRepairModal('{{ $asset->id }}', '{{ $asset->equipment_name }}')" 
-                                            class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors duration-200">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                        </svg>
-                                        Link to Repair Request
-                                    </button>
+                                    @if(!$asset->linked_asset_id)
+                                        <button onclick="openLinkRepairModal('{{ $asset->id }}', '{{ $asset->equipment_name }}')" 
+                                                class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors duration-200">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                            </svg>
+                                            Link to Repair Request
+                                        </button>
+                                    @endif
                                 </div>
                             @endif
                         </td>

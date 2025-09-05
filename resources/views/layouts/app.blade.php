@@ -238,6 +238,18 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
                             </svg>
                             <span>Asset List</span>
+                            <div class="ml-auto flex space-x-1">
+                                @if(auth()->user()->getNavigationCount('warranty_expired') > 0)
+                                    <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expired Warranties">
+                                        {{ auth()->user()->getNavigationCount('warranty_expired') }}
+                                    </span>
+                                @endif
+                                @if(auth()->user()->getNavigationCount('warranty_expiring') > 0)
+                                    <span class="bg-orange-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expiring Warranties (30 days)">
+                                        {{ auth()->user()->getNavigationCount('warranty_expiring') }}
+                                    </span>
+                                @endif
+                            </div>
                         </a>
                     @else
                         <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -246,6 +258,18 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
                             </svg>
                             <span>Asset List</span>
+                            <div class="ml-auto flex space-x-1">
+                                @if(auth()->user()->getNavigationCount('warranty_expired') > 0)
+                                    <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expired Warranties">
+                                        {{ auth()->user()->getNavigationCount('warranty_expired') }}
+                                    </span>
+                                @endif
+                                @if(auth()->user()->getNavigationCount('warranty_expiring') > 0)
+                                    <span class="bg-orange-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expiring Warranties (30 days)">
+                                        {{ auth()->user()->getNavigationCount('warranty_expiring') }}
+                                    </span>
+                                @endif
+                            </div>
                         </a>
                     @endif
 
@@ -268,9 +292,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                             <span>Lab Maintenance</span>
-                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            @if(auth()->user()->getNavigationCount('maintenance_scheduled') > 0)
+                                <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                                    {{ auth()->user()->getNavigationCount('maintenance_scheduled') }}
+                                </span>
+                            @else
+                                <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            @endif
                         </button>
                         <div id="maintenanceMenu" class="hidden ml-8 space-y-1.5">
                             @if(auth()->check() && auth()->user()->group_id !== 2)
@@ -299,9 +329,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
                             </svg>
                             <span>Asset Repair</span>
-                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            @if(auth()->user()->getNavigationCount('repair_pending') > 0)
+                                <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                                    {{ auth()->user()->getNavigationCount('repair_pending') }}
+                                </span>
+                            @else
+                                <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            @endif
                         </button>
                         <div id="repairMenu" class="hidden ml-8 space-y-1.5">
                             @if(auth()->check() && auth()->user()->group_id !== 2)
@@ -313,7 +349,14 @@
                                 Repair Status
                             </a>
                             <a href="{{ route('non-registered-assets.index') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('non-registered-assets.index') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Non-Registered Assets
+                                <div class="flex items-center justify-between w-full">
+                                    <span>Non-Registered Assets</span>
+                                    @if(auth()->user()->getNavigationCount('non_registered_pulled_out') > 0)
+                                        <span class="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Pulled Out Assets Not Yet Registered">
+                                            {{ auth()->user()->getNavigationCount('non_registered_pulled_out') }}
+                                        </span>
+                                    @endif
+                                </div>
                             </a>
                             @if(auth()->check() && auth()->user()->group_id !== 2)
                             <a href="{{ route('repair.completed') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('repair.completed') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">

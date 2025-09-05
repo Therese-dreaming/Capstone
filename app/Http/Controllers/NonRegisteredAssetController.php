@@ -11,7 +11,7 @@ class NonRegisteredAssetController extends Controller
 {
     public function index()
     {
-        $assets = NonRegisteredAsset::orderBy('created_at', 'desc')->paginate(10);
+        $assets = NonRegisteredAsset::with('linkedAsset')->orderBy('created_at', 'desc')->paginate(10);
         return view('non-registered-assets.index', compact('assets'));
     }
 
@@ -57,26 +57,12 @@ class NonRegisteredAssetController extends Controller
         $asset = NonRegisteredAsset::findOrFail($id);
         
         $validated = $request->validate([
-            'status' => 'required|in:DISPOSED,RETURNED',
-            'disposal_details' => 'required_if:status,DISPOSED|nullable|string',
-            'return_remarks' => 'required_if:status,RETURNED|nullable|string'
+            'status' => 'required|in:DISPOSED,RETURNED'
         ]);
 
-        if ($validated['status'] === 'DISPOSED') {
-            $asset->update([
-                'status' => 'DISPOSED',
-                'disposal_details' => $validated['disposal_details'],
-                'disposed_at' => now(),
-                'disposed_by' => Auth::user()->name
-            ]);
-        } else {
-            $asset->update([
-                'status' => 'RETURNED',
-                'return_remarks' => $validated['return_remarks'],
-                'returned_at' => now(),
-                'returned_by' => Auth::user()->name
-            ]);
-        }
+        $asset->update([
+            'status' => $validated['status']
+        ]);
 
         return redirect()->route('repair.details', ['id' => $asset->repairRequest->id])
             ->with('success', 'Asset status has been updated successfully.');
