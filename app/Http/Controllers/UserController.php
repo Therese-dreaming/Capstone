@@ -34,6 +34,7 @@ class UserController extends Controller
                 'username' => 'required|unique:users',
                 'department' => 'required|string|max:255',
                 'position' => 'required|string|max:255',
+                'gender' => 'nullable|in:male,female',
                 'password' => 'required|confirmed|min:6',
                 'group_id' => 'required|exists:groups,id',
             ]);
@@ -80,6 +81,7 @@ class UserController extends Controller
                 'username' => 'required|unique:users,username,' . $user->id,
                 'department' => 'required|string|max:255',
                 'position' => 'required|string|max:255',
+                'gender' => 'nullable|in:male,female',
                 'group_id' => 'required|exists:groups,id',
             ]);
 

@@ -149,7 +149,7 @@
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 md:p-6 border-b border-gray-200">
                 <div class="flex items-center">
                     <div class="relative">
-                        <img src="{{ $user->profile_picture ? asset($user->profile_picture) : asset('images/default-profile.png') }}" 
+                        <img src="{{ $user->getProfilePictureUrl() }}" 
                              alt="{{ $user->name }}'s profile picture" 
                              class="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-4 border-white shadow-md">
                     </div>

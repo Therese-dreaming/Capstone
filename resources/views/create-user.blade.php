@@ -164,6 +164,22 @@
                             placeholder="Enter position">
                     </div>
 
+                    <!-- Gender Field -->
+                    <div class="col-span-1 md:col-span-1">
+                        <label class="block text-sm md:text-base font-medium text-gray-700 mb-2 flex items-center">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Gender
+                        </label>
+                        <select name="gender" 
+                            class="w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 py-3 px-4 text-base transition-colors duration-200">
+                            <option value="">Select Gender</option>
+                            <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
+                            <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
+                        </select>
+                    </div>
+
                     <!-- RFID Number Field -->
                     <div class="col-span-1 md:col-span-1" id="rfid_field" style="display: none;">
                         <label class="block text-sm md:text-base font-medium text-gray-700 mb-2 flex items-center">
@@ -270,6 +286,8 @@
         const departmentSelect = document.getElementsByName('department')[0];
         const department = departmentSelect.options[departmentSelect.selectedIndex].text;
         const position = document.getElementsByName('position')[0].value;
+        const genderSelect = document.getElementsByName('gender')[0];
+        const gender = genderSelect.options[genderSelect.selectedIndex].text;
         const roleSelect = document.getElementsByName('group_id')[0];
         const role = roleSelect.options[roleSelect.selectedIndex].text;
 
@@ -279,6 +297,7 @@
                 <li><span class="font-medium">Username:</span> ${username}</li>
                 <li><span class="font-medium">Department:</span> ${department}</li>
                 <li><span class="font-medium">Position:</span> ${position}</li>
+                <li><span class="font-medium">Gender:</span> ${gender}</li>
                 <li><span class="font-medium">Role:</span> ${role}</li>
             </ul>
         `;

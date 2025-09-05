@@ -17,7 +17,8 @@ class User extends Authenticatable
         'department',
         'position',
         'group_id',
-        'status'
+        'status',
+        'gender'
     ];
 
     protected $casts = [
@@ -38,5 +39,28 @@ class User extends Authenticatable
     public function labLogs()
     {
         return $this->hasMany(LabLog::class);
+    }
+
+    /**
+     * Get the appropriate default profile picture based on gender
+     */
+    public function getDefaultProfilePicture()
+    {
+        if ($this->gender === 'male') {
+            return asset('images/default-profile-male.png');
+        } elseif ($this->gender === 'female') {
+            return asset('images/default-profile.png');
+        }
+        
+        // Default fallback for null gender
+        return asset('images/default-profile.png');
+    }
+
+    /**
+     * Get the profile picture URL, using default if none is set
+     */
+    public function getProfilePictureUrl()
+    {
+        return $this->profile_picture ? asset($this->profile_picture) : $this->getDefaultProfilePicture();
     }
 }

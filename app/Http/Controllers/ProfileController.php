@@ -21,6 +21,7 @@ class ProfileController extends Controller
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
             'department' => 'required|string|max:255',
             'position' => 'required|string|max:255',
+            'gender' => 'nullable|in:male,female',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ];
 
@@ -42,6 +43,7 @@ class ProfileController extends Controller
         $user->username = $validated['username'];
         $user->department = $validated['department'];
         $user->position = $validated['position'];
+        $user->gender = $validated['gender'] ?? null;
         
         // Update profile picture if provided
         if (isset($validated['profile_picture'])) {

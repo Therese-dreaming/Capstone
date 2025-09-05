@@ -62,8 +62,8 @@
             <!-- User Profile Dropdown -->
             <div class="relative">
                 <button id="profileDropdown" class="flex items-center space-x-1 sm:space-x-3 hover:text-gray-200">
-                    @if(Auth::user()->profile_picture)
-                    <img src="{{ asset(Auth::user()->profile_picture) }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
+                    @if(Auth::user()->getProfilePictureUrl())
+                    <img src="{{ Auth::user()->getProfilePictureUrl() }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
                     @else
                     <img src="{{ asset('images/default-profile.png') }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
                     @endif

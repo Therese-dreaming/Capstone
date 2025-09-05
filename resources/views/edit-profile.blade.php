@@ -55,7 +55,7 @@
                 <div class="bg-gray-50 rounded-xl p-6 md:p-8 text-center">
                     <div class="relative w-48 h-48 mx-auto mb-6">
                         <div class="w-full h-full rounded-full overflow-hidden border-4 border-red-100 shadow-lg">
-                            <img src="{{ auth()->user()->profile_picture ? asset(auth()->user()->profile_picture) : asset('images/default-profile.png') }}" 
+                            <img src="{{ auth()->user()->getProfilePictureUrl() }}" 
                                 alt="Profile Picture" 
                                 id="preview-image"
                                 class="w-full h-full object-cover">
@@ -115,16 +115,12 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
                             <div>
-                                <label for="department" class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                                <select id="department" name="department" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 @error('department') border-red-500 @enderror">
-                                    <option value="">Select Department</option>
-                                    <option value="Early Childhood Education (ECE)" {{ old('department', auth()->user()->department) == 'Early Childhood Education (ECE)' ? 'selected' : '' }}>Early Childhood Education (ECE)</option>
-                                    <option value="Grade School" {{ old('department', auth()->user()->department) == 'Grade School' ? 'selected' : '' }}>Grade School</option>
-                                    <option value="Junior High School" {{ old('department', auth()->user()->department) == 'Junior High School' ? 'selected' : '' }}>Junior High School</option>
-                                    <option value="Senior High School" {{ old('department', auth()->user()->department) == 'Senior High School' ? 'selected' : '' }}>Senior High School</option>
-                                    <option value="College" {{ old('department', auth()->user()->department) == 'College' ? 'selected' : '' }}>College</option>
-                                    <option value="School of Graduate Studies" {{ old('department', auth()->user()->department) == 'School of Graduate Studies' ? 'selected' : '' }}>School of Graduate Studies</option>
+                                <label for="gender" class="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                                <select id="gender" name="gender" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 @error('gender') border-red-500 @enderror">
+                                    <option value="">Select Gender</option>
+                                    <option value="male" {{ old('gender', auth()->user()->gender) == 'male' ? 'selected' : '' }}>Male</option>
+                                    <option value="female" {{ old('gender', auth()->user()->gender) == 'female' ? 'selected' : '' }}>Female</option>
                                 </select>
                             </div>
 
@@ -134,6 +130,20 @@
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 @error('position') border-red-500 @enderror"
                                     placeholder="Enter your position">
                             </div>
+                        </div>
+
+                        <div class="mt-4 md:mt-6">
+                            <label for="department" class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                            <select id="department" name="department" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 @error('department') border-red-500 @enderror">
+                                <option value="">Select Department</option>
+                                <option value="Early Childhood Education (ECE)" {{ old('department', auth()->user()->department) == 'Early Childhood Education (ECE)' ? 'selected' : '' }}>Early Childhood Education (ECE)</option>
+                                <option value="Grade School" {{ old('department', auth()->user()->department) == 'Grade School' ? 'selected' : '' }}>Grade School</option>
+                                <option value="Junior High School" {{ old('department', auth()->user()->department) == 'Junior High School' ? 'selected' : '' }}>Junior High School</option>
+                                <option value="Senior High School" {{ old('department', auth()->user()->department) == 'Senior High School' ? 'selected' : '' }}>Senior High School</option>
+                                <option value="College" {{ old('department', auth()->user()->department) == 'College' ? 'selected' : '' }}>College</option>
+                                <option value="School of Graduate Studies" {{ old('department', auth()->user()->department) == 'School of Graduate Studies' ? 'selected' : '' }}>School of Graduate Studies</option>
+                            </select>
                         </div>
                     </div>
 
