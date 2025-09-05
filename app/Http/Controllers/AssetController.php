@@ -11,7 +11,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;  // Add this import
+use Carbon\Carbon;
 
 class AssetController extends Controller
 {
@@ -35,6 +35,15 @@ class AssetController extends Controller
 
         if ($request->has('location')) {
             $query->where('location_id', $request->location);
+        }
+
+        // Add date range filter
+        if ($request->has('date_from') && $request->date_from) {
+            $query->where('purchase_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to) {
+            $query->where('purchase_date', '<=', $request->date_to);
         }
 
         // Get the assets with pagination
@@ -256,28 +265,93 @@ class AssetController extends Controller
         return view('add-asset', compact('categories', 'vendors', 'locations', 'fromNonRegistered', 'status'));
     }
 
-    public function qrList()
+    public function qrList(Request $request)
     {
-        $assets = Asset::all();
-        return view('qr-list', compact('assets'));
+        $query = Asset::with(['category', 'location', 'vendor']);
+
+        // Apply date range filter if provided
+        if ($request->has('date_from') && $request->date_from) {
+            $query->where('purchase_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to) {
+            $query->where('purchase_date', '<=', $request->date_to);
+        }
+
+        // Apply other filters
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        $assets = $query->orderBy('purchase_date', 'desc')->get();
+        
+        // Get filter options for the form
+        $categories = Category::all();
+        
+        return view('qr-list', compact('assets', 'categories'));
     }
 
     public function previewQrCodes(Request $request)
     {
-        $selectedIds = json_decode($request->selected_items);
-        $assets = Asset::whereIn('id', $selectedIds)->get();
+        $query = Asset::with(['category', 'location', 'vendor']);
+
+        // Apply date range filter if provided
+        if ($request->has('date_from') && $request->date_from) {
+            $query->where('purchase_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to) {
+            $query->where('purchase_date', '<=', $request->date_to);
+        }
+
+        // If specific items are selected, use those
+        if ($request->has('selected_items') && $request->selected_items) {
+            $selectedIds = json_decode($request->selected_items);
+            $query->whereIn('id', $selectedIds);
+        }
+
+        $assets = $query->orderBy('purchase_date', 'desc')->get();
 
         $pdf = PDF::loadView('pdf.qr-codes', compact('assets'));
-        return $pdf->stream('preview.pdf');
+        return $pdf->stream('qr-codes-preview.pdf');
     }
 
     public function exportQrCodes(Request $request)
     {
-        $selectedIds = json_decode($request->selected_items);
-        $assets = Asset::whereIn('id', $selectedIds)->get();
+        $query = Asset::with(['category', 'location', 'vendor']);
 
+        // Apply date range filter if provided
+        if ($request->has('date_from') && $request->date_from) {
+            $query->where('purchase_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to) {
+            $query->where('purchase_date', '<=', $request->date_to);
+        }
+
+        // If specific items are selected, use those
+        if ($request->has('selected_items') && $request->selected_items) {
+            $selectedIds = json_decode($request->selected_items);
+            $query->whereIn('id', $selectedIds);
+        }
+
+        $assets = $query->orderBy('purchase_date', 'desc')->get();
+
+        $filename = 'asset-qrcodes-' . now()->format('Y-m-d') . '.pdf';
         $pdf = PDF::loadView('pdf.qr-codes', compact('assets'));
-        return $pdf->download('asset-qrcodes.pdf');
+        return $pdf->download($filename);
     }
 
     public function categoryReport(Request $request)
