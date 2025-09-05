@@ -1100,10 +1100,19 @@ class ReportController extends Controller
                        ->orderBy('category_id')
                        ->get();
 
+        // Prepare filters for the export
+        $filters = [
+            'start_date' => $request->get('start_date'),
+            'end_date' => $request->get('end_date'),
+            'category_id' => $request->get('category_id'),
+            'status' => $request->get('status'),
+            'vendor_id' => $request->get('vendor_id'),
+        ];
+
         // Generate Excel file
         $filename = 'PAASCU_Computer_Lab_Inventory_' . now()->format('Y-m-d') . '.xlsx';
         
-        return Excel::download(new PaascuInventoryExport($assets), $filename);
+        return Excel::download(new PaascuInventoryExport($assets, $filters), $filename);
     }
 
     public function exportLabUsageToPaascu(Request $request)

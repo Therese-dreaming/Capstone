@@ -3,7 +3,6 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
@@ -16,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Illuminate\Support\Facades\DB;
 use App\Models\Laboratory;
 
-class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithMultipleSheets
+class PaascuUtilizationExport implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithMultipleSheets
 {
     protected $usageData;
     protected $summary;
@@ -38,21 +37,6 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
     public function collection()
     {
         return $this->usageData;
-    }
-
-    public function headings(): array
-    {
-        return [
-            'Period',
-            'Department',
-            'Laboratory',
-            'Total Sessions',
-            'Total Hours',
-            'Average Duration (hours)',
-            'Unique Users',
-            'Purpose',
-            'Utilization Rate (%)'
-        ];
     }
 
     public function map($data): array
@@ -79,10 +63,13 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
 
     public function styles(Worksheet $sheet)
     {
-        // Style the header row
-        $sheet->getStyle('A1:I1')->applyFromArray([
+        // Add header section
+        $sheet->mergeCells('A1:I1');
+        $sheet->setCellValue('A1', 'PAASCU LABORATORY UTILIZATION REPORT');
+        $sheet->getStyle('A1')->applyFromArray([
             'font' => [
                 'bold' => true,
+                'size' => 18,
                 'color' => ['rgb' => 'FFFFFF'],
             ],
             'fill' => [
@@ -95,19 +82,192 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
             ],
         ]);
 
-        // Style all data cells
-        $sheet->getStyle('A2:I' . ($this->usageData->count() + 1))->applyFromArray([
+        // Add subtitle with generation date
+        $sheet->mergeCells('A2:I2');
+        $sheet->setCellValue('A2', 'Generated on ' . \Carbon\Carbon::now()->format('F d, Y \a\t h:i A'));
+        $sheet->getStyle('A2')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 12,
+                'color' => ['rgb' => '374151'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'F3F4F6'], // Gray-100
+            ],
             'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        // Add date range filter information if available
+        $currentRow = 3;
+        if (!empty($this->filters['start_date']) || !empty($this->filters['end_date'])) {
+            $sheet->mergeCells('A' . $currentRow . ':I' . $currentRow);
+            $dateRangeText = 'Date Range: ';
+            
+            if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
+                $dateRangeText .= \Carbon\Carbon::parse($this->filters['start_date'])->format('M d, Y') . ' to ' . \Carbon\Carbon::parse($this->filters['end_date'])->format('M d, Y');
+            } elseif (!empty($this->filters['start_date'])) {
+                $dateRangeText .= 'From ' . \Carbon\Carbon::parse($this->filters['start_date'])->format('M d, Y') . ' onwards';
+            } elseif (!empty($this->filters['end_date'])) {
+                $dateRangeText .= 'Up to ' . \Carbon\Carbon::parse($this->filters['end_date'])->format('M d, Y');
+            }
+            
+            $sheet->setCellValue('A' . $currentRow, $dateRangeText);
+            $sheet->getStyle('A' . $currentRow)->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'size' => 11,
+                    'color' => ['rgb' => '1F2937'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E5E7EB'], // Gray-200
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+            $currentRow++;
+        }
+
+        // Add other filter information if available
+        $filterTexts = [];
+        if (!empty($this->filters['department_id'])) {
+            $filterTexts[] = 'Department: ' . $this->filters['department_id'];
+        }
+        if (!empty($this->filters['lab_id'])) {
+            $filterTexts[] = 'Laboratory: ' . $this->filters['lab_id'];
+        }
+        if (!empty($this->filters['purpose'])) {
+            $filterTexts[] = 'Purpose: ' . $this->filters['purpose'];
+        }
+        if (!empty($this->filters['period'])) {
+            $filterTexts[] = 'Period: ' . ucfirst($this->filters['period']);
+        }
+
+        if (!empty($filterTexts)) {
+            $sheet->mergeCells('A' . $currentRow . ':I' . $currentRow);
+            $sheet->setCellValue('A' . $currentRow, 'Filters Applied: ' . implode(' | ', $filterTexts));
+            $sheet->getStyle('A' . $currentRow)->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'size' => 11,
+                    'color' => ['rgb' => '1F2937'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E5E7EB'], // Gray-200
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+            $currentRow++;
+        }
+
+        // Add summary row
+        $sheet->mergeCells('A' . $currentRow . ':I' . $currentRow);
+        $summaryText = 'Total Sessions: ' . ($this->summary->total_sessions ?? 0) . 
+                      ' | Total Hours: ' . number_format($this->summary->total_hours ?? 0, 1) . 
+                      ' | Unique Users: ' . ($this->summary->unique_users ?? 0);
+        $sheet->setCellValue('A' . $currentRow, $summaryText);
+        $sheet->getStyle('A' . $currentRow)->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => '1F2937'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E5E7EB'], // Gray-200
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $currentRow++;
+
+        // Manually set the column headers in the correct row
+        $headerRow = $currentRow;
+        $headers = [
+            'Period',
+            'Department',
+            'Laboratory',
+            'Total Sessions',
+            'Total Hours',
+            'Average Duration (hours)',
+            'Unique Users',
+            'Purpose',
+            'Utilization Rate (%)'
+        ];
+
+        // Set header values
+        foreach ($headers as $index => $header) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($column . $headerRow, $header);
+        }
+
+        // Style the column headers
+        $sheet->getStyle('A' . $headerRow . ':I' . $headerRow)->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '1F2937'], // Gray-800
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'E5E7EB'],
+                    'color' => ['rgb' => '374151'],
                 ],
             ],
         ]);
+
+        // Manually place the data starting from the next row
+        $dataStartRow = $headerRow + 1;
+        $rowIndex = $dataStartRow;
+        
+        foreach ($this->usageData as $data) {
+            $mappedData = $this->map($data);
+            foreach ($mappedData as $colIndex => $value) {
+                $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+                $sheet->setCellValue($column . $rowIndex, $value);
+            }
+            $rowIndex++;
+        }
+
+        // Style all data cells
+        $lastRow = $rowIndex - 1;
+        if ($lastRow >= $dataStartRow) {
+            $sheet->getStyle('A' . $dataStartRow . ':I' . $lastRow)->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_LEFT,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'D1D5DB'],
+                    ],
+                ],
+                'font' => [
+                    'size' => 10,
+                ],
+            ]);
+        }
 
         // Center align specific columns
         $sheet->getStyle('A:A')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -115,8 +275,16 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
         $sheet->getStyle('H:H')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('I:I')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Auto-filter
-        $sheet->setAutoFilter('A1:I1');
+        // Auto-filter for data rows only
+        $sheet->setAutoFilter('A' . $headerRow . ':I' . $headerRow);
+
+        // Set row heights
+        $sheet->getRowDimension(1)->setRowHeight(30);
+        $sheet->getRowDimension(2)->setRowHeight(25);
+        for ($i = 3; $i < $currentRow; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(25);
+        }
+        $sheet->getRowDimension($headerRow)->setRowHeight(20);
 
         return $sheet;
     }
@@ -140,27 +308,29 @@ class PaascuUtilizationExport implements FromCollection, WithHeadings, WithMappi
     {
         return [
             'Laboratory Utilization' => $this,
-            'Summary' => new PaascuUtilizationSummarySheet($this->usageData, $this->summary, $this->primaryPurpose, $this->remarks, $this->notes),
+            'Summary' => new PaascuUtilizationSummarySheet($this->usageData, $this->summary, $this->primaryPurpose, $this->remarks, $this->notes, $this->filters),
             'Lab Weekly Utilization' => new PaascuLabWeeklyUtilizationSheet($this->filters),
         ];
     }
 }
 
-class PaascuUtilizationSummarySheet implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithTitle
+class PaascuUtilizationSummarySheet implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithTitle
 {
     protected $usageData;
     protected $summary;
     protected $primaryPurpose;
     protected $remarks;
     protected $notes;
+    protected $filters;
 
-    public function __construct($usageData, $summary, $primaryPurpose, $remarks, $notes)
+    public function __construct($usageData, $summary, $primaryPurpose, $remarks, $notes, $filters = [])
     {
         $this->usageData = $usageData;
         $this->summary = $summary;
         $this->primaryPurpose = $primaryPurpose;
         $this->remarks = $remarks;
         $this->notes = $notes;
+        $this->filters = $filters;
     }
 
     public function collection()
@@ -219,16 +389,6 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithHeadings, Wit
         return $summaryData->merge($departmentSummary)->merge($labSummary);
     }
 
-    public function headings(): array
-    {
-        return [
-            'Type',
-            'Metric',
-            'Value',
-            'Details'
-        ];
-    }
-
     public function map($item): array
     {
         return [
@@ -241,10 +401,13 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithHeadings, Wit
 
     public function styles(Worksheet $sheet)
     {
-        // Style the header row
-        $sheet->getStyle('A1:D1')->applyFromArray([
+        // Add header section
+        $sheet->mergeCells('A1:D1');
+        $sheet->setCellValue('A1', 'UTILIZATION SUMMARY REPORT');
+        $sheet->getStyle('A1')->applyFromArray([
             'font' => [
                 'bold' => true,
+                'size' => 16,
                 'color' => ['rgb' => 'FFFFFF'],
             ],
             'fill' => [
@@ -257,29 +420,146 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithHeadings, Wit
             ],
         ]);
 
-        // Style all data cells
-        $sheet->getStyle('A2:D' . ($this->collection()->count() + 1))->applyFromArray([
+        // Add subtitle with generation date
+        $sheet->mergeCells('A2:D2');
+        $sheet->setCellValue('A2', 'Generated on ' . \Carbon\Carbon::now()->format('F d, Y \a\t h:i A'));
+        $sheet->getStyle('A2')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => '374151'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'F3F4F6'], // Gray-100
+            ],
             'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        // Add date range filter information if available
+        $currentRow = 3;
+        if (!empty($this->filters['start_date']) || !empty($this->filters['end_date'])) {
+            $sheet->mergeCells('A' . $currentRow . ':D' . $currentRow);
+            $dateRangeText = 'Date Range: ';
+            
+            if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
+                $dateRangeText .= \Carbon\Carbon::parse($this->filters['start_date'])->format('M d, Y') . ' to ' . \Carbon\Carbon::parse($this->filters['end_date'])->format('M d, Y');
+            } elseif (!empty($this->filters['start_date'])) {
+                $dateRangeText .= 'From ' . \Carbon\Carbon::parse($this->filters['start_date'])->format('M d, Y') . ' onwards';
+            } elseif (!empty($this->filters['end_date'])) {
+                $dateRangeText .= 'Up to ' . \Carbon\Carbon::parse($this->filters['end_date'])->format('M d, Y');
+            }
+            
+            $sheet->setCellValue('A' . $currentRow, $dateRangeText);
+            $sheet->getStyle('A' . $currentRow)->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'size' => 11,
+                    'color' => ['rgb' => '1F2937'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E5E7EB'], // Gray-200
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+            $currentRow++;
+        }
+
+        // Manually set the column headers in the correct row
+        $headerRow = $currentRow;
+        $headers = [
+            'Type',
+            'Metric',
+            'Value',
+            'Details'
+        ];
+
+        // Set header values
+        foreach ($headers as $index => $header) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($column . $headerRow, $header);
+        }
+
+        // Style the column headers
+        $sheet->getStyle('A' . $headerRow . ':D' . $headerRow)->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'DC2626'], // Red-800
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'E5E7EB'],
+                    'color' => ['rgb' => '374151'],
                 ],
             ],
         ]);
+
+        // Manually place the data starting from the next row
+        $dataStartRow = $headerRow + 1;
+        $rowIndex = $dataStartRow;
+        
+        foreach ($this->collection() as $item) {
+            $mappedData = $this->map($item);
+            foreach ($mappedData as $colIndex => $value) {
+                $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+                $sheet->setCellValue($column . $rowIndex, $value);
+            }
+            $rowIndex++;
+        }
+
+        // Style all data cells
+        $lastRow = $rowIndex - 1;
+        if ($lastRow >= $dataStartRow) {
+            $sheet->getStyle('A' . $dataStartRow . ':D' . $lastRow)->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_LEFT,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'D1D5DB'],
+                    ],
+                ],
+                'font' => [
+                    'size' => 10,
+                ],
+            ]);
+        }
 
         // Center align specific columns
         $sheet->getStyle('A:A')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('C:C')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Auto-filter
-        $sheet->setAutoFilter('A1:D1');
+        // Auto-filter for data rows only
+        $sheet->setAutoFilter('A' . $headerRow . ':D' . $headerRow);
+
+        // Set row heights
+        $sheet->getRowDimension(1)->setRowHeight(25);
+        $sheet->getRowDimension(2)->setRowHeight(20);
+        if ($currentRow > 3) {
+            $sheet->getRowDimension(3)->setRowHeight(20);
+        }
+        $sheet->getRowDimension($headerRow)->setRowHeight(20);
 
         // Add additional information at the bottom
-        $row = $this->collection()->count() + 3;
+        $row = $lastRow + 3;
         
         if ($this->primaryPurpose) {
             $sheet->setCellValue("A{$row}", 'Primary Purpose:');
@@ -320,7 +600,7 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithHeadings, Wit
     }
 } 
 
-class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithTitle
+class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithTitle
 {
     protected $filters;
 
@@ -395,18 +675,6 @@ class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithHeadings, W
         return $collection;
     }
 
-    public function headings(): array
-    {
-        return [
-            'Laboratory Name / Code',
-            'Room Location',
-            'Total Hours Available per Week',
-            'Total Hours Used per Week',
-            'Utilization Rate (%)',
-            'Primary Purpose',
-        ];
-    }
-
     public function map($row): array
     {
         return [
@@ -421,17 +689,161 @@ class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithHeadings, W
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:F1')->applyFromArray([
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1F2937']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        // Add header section
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', 'LABORATORY WEEKLY UTILIZATION REPORT');
+        $sheet->getStyle('A1')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 16,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '1F2937'], // Gray-800
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
         ]);
-        $sheet->getStyle('A2:F' . ($this->collection()->count() + 1))->applyFromArray([
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
-            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E5E7EB']]],
+
+        // Add subtitle with generation date
+        $sheet->mergeCells('A2:F2');
+        $sheet->setCellValue('A2', 'Generated on ' . \Carbon\Carbon::now()->format('F d, Y \a\t h:i A'));
+        $sheet->getStyle('A2')->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => '374151'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'F3F4F6'], // Gray-100
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
         ]);
+
+        // Add date range filter information if available
+        $currentRow = 3;
+        if (!empty($this->filters['start_date']) || !empty($this->filters['end_date'])) {
+            $sheet->mergeCells('A' . $currentRow . ':F' . $currentRow);
+            $dateRangeText = 'Date Range: ';
+            
+            if (!empty($this->filters['start_date']) && !empty($this->filters['end_date'])) {
+                $dateRangeText .= \Carbon\Carbon::parse($this->filters['start_date'])->format('M d, Y') . ' to ' . \Carbon\Carbon::parse($this->filters['end_date'])->format('M d, Y');
+            } elseif (!empty($this->filters['start_date'])) {
+                $dateRangeText .= 'From ' . \Carbon\Carbon::parse($this->filters['start_date'])->format('M d, Y') . ' onwards';
+            } elseif (!empty($this->filters['end_date'])) {
+                $dateRangeText .= 'Up to ' . \Carbon\Carbon::parse($this->filters['end_date'])->format('M d, Y');
+            }
+            
+            $sheet->setCellValue('A' . $currentRow, $dateRangeText);
+            $sheet->getStyle('A' . $currentRow)->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'size' => 11,
+                    'color' => ['rgb' => '1F2937'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E5E7EB'], // Gray-200
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+            $currentRow++;
+        }
+
+        // Manually set the column headers in the correct row
+        $headerRow = $currentRow;
+        $headers = [
+            'Laboratory Name / Code',
+            'Room Location',
+            'Total Hours Available per Week',
+            'Total Hours Used per Week',
+            'Utilization Rate (%)',
+            'Primary Purpose',
+        ];
+
+        // Set header values
+        foreach ($headers as $index => $header) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($column . $headerRow, $header);
+        }
+
+        // Style the column headers
+        $sheet->getStyle('A' . $headerRow . ':F' . $headerRow)->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'DC2626'], // Red-800
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => '374151'],
+                ],
+            ],
+        ]);
+
+        // Manually place the data starting from the next row
+        $dataStartRow = $headerRow + 1;
+        $rowIndex = $dataStartRow;
+        
+        foreach ($this->collection() as $row) {
+            $mappedData = $this->map($row);
+            foreach ($mappedData as $colIndex => $value) {
+                $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+                $sheet->setCellValue($column . $rowIndex, $value);
+            }
+            $rowIndex++;
+        }
+
+        // Style all data cells
+        $lastRow = $rowIndex - 1;
+        if ($lastRow >= $dataStartRow) {
+            $sheet->getStyle('A' . $dataStartRow . ':F' . $lastRow)->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_LEFT,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'D1D5DB'],
+                    ],
+                ],
+                'font' => [
+                    'size' => 10,
+                ],
+            ]);
+        }
+
         $sheet->getStyle('C:E')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->setAutoFilter('A1:F1');
+        $sheet->setAutoFilter('A' . $headerRow . ':F' . $headerRow);
+
+        // Set row heights
+        $sheet->getRowDimension(1)->setRowHeight(25);
+        $sheet->getRowDimension(2)->setRowHeight(20);
+        if ($currentRow > 3) {
+            $sheet->getRowDimension(3)->setRowHeight(20);
+        }
+        $sheet->getRowDimension($headerRow)->setRowHeight(20);
+
         return $sheet;
     }
 
