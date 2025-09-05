@@ -85,25 +85,18 @@ class LocationController extends Controller
 
     public function update(Request $request, Location $location)
     {
-        // Handle custom room case
-        $roomNumber = $request->room_number;
-        if ($roomNumber === 'Other') {
-            $request->validate([
-                'building' => 'required|string|max:255',
-                'floor' => 'required|string|max:255',
-                'other_room' => 'required|string|max:255',
-            ]);
-            $roomNumber = $request->other_room;
-        } else {
-            // For predefined rooms, check if room_number is provided
-            if (empty($roomNumber)) {
-                return back()->withErrors(['room_number' => 'Please select a room/office.'])->withInput();
-            }
-            $request->validate([
-                'building' => 'required|string|max:255',
-                'floor' => 'required|string|max:255',
-            ]);
+        // Use the final_room_number field instead
+        $roomNumber = $request->final_room_number;
+        
+        // Validate that we have a room number
+        if (empty($roomNumber)) {
+            return back()->withErrors(['room_number' => 'Please select a room/office.'])->withInput();
         }
+        
+        $request->validate([
+            'building' => 'required|string|max:255',
+            'floor' => 'required|string|max:255',
+        ]);
 
         $validated = [
             'building' => $request->building,

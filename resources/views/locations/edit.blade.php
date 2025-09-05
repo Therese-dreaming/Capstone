@@ -121,6 +121,9 @@
                         </div>
                     </div>
                     
+                    <!-- Add this hidden input after the room_number select -->
+                    <input type="hidden" name="final_room_number" id="final_room_number" value="">
+                    
                     <!-- Action Buttons -->
                     <div class="flex flex-col sm:flex-row gap-3 pt-6">
                         <a href="{{ route('locations.index') }}" class="inline-flex items-center justify-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
@@ -434,19 +437,51 @@ document.getElementById('room_number').addEventListener('change', function() {
 
 // Form submission handler
 document.getElementById('locationForm').addEventListener('submit', function(e) {
-    const roomSelect = document.getElementById('room_number');
-    const otherRoomInput = document.getElementById('other_room');
-    
-    // If "Other" is selected, use the custom input value
-    if (roomSelect.value === 'Other') {
-        if (otherRoomInput.value.trim() === '') {
+    try {
+        console.log('Form submit event fired!');
+        
+        const roomSelect = document.getElementById('room_number');
+        const otherRoomInput = document.getElementById('other_room');
+        const finalRoomInput = document.getElementById('final_room_number');
+        
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('roomSelect.value before:', roomSelect.value);
+        console.log('otherRoomInput.value before:', otherRoomInput.value);
+        
+        // Check if any room is selected
+        if (!roomSelect.value || roomSelect.value === '') {
             e.preventDefault();
-            alert('Please specify the room/office name.');
-            otherRoomInput.focus();
+            alert('Please select a room/office.');
+            roomSelect.focus();
             return;
         }
-        // Replace the "Other" value with the custom input
-        roomSelect.value = otherRoomInput.value.trim();
+        
+        let finalRoomValue = roomSelect.value;
+        
+        // If "Other" is selected, validate and prepare the data
+        if (roomSelect.value === 'Other') {
+            console.log('Other selected, validating...');
+            if (otherRoomInput.value.trim() === '') {
+                e.preventDefault();
+                alert('Please specify the room/office name.');
+                otherRoomInput.focus();
+                return;
+            }
+            finalRoomValue = otherRoomInput.value.trim();
+            console.log('Updated finalRoomValue to:', finalRoomValue);
+        }
+        
+        // Set the final room value in the hidden field
+        finalRoomInput.value = finalRoomValue;
+        
+        console.log('roomSelect.value after:', roomSelect.value);
+        console.log('finalRoomValue:', finalRoomValue);
+        console.log('=== END DEBUG ===');
+        
+        // Let the form submit normally with the updated data
+        
+    } catch (error) {
+        console.error('Error in form submission handler:', error);
     }
 });
 

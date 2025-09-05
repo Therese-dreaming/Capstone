@@ -22,7 +22,7 @@ class DashboardController extends Controller
             ->count();
 
         // Add repair request statistics
-        $totalOpen = RepairRequest::whereIn('status', ['pending', 'urgent', 'in_progress'])->count();
+        $totalOpen = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->count();
         $completedThisMonth = RepairRequest::where('status', 'completed')
             ->whereMonth('completed_at', now()->month)
             ->whereYear('completed_at', now()->year)
@@ -137,8 +137,9 @@ class DashboardController extends Controller
             ]
         ]);
 
-        // Get urgent repairs
-        $urgentRepairs = RepairRequest::where('status', 'urgent')
+        // Get urgent repairs (urgency_level = 1)
+        $urgentRepairs = RepairRequest::where('urgency_level', 1)
+            ->whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
             ->latest()
             ->take(3)
             ->get();
@@ -278,7 +279,7 @@ class DashboardController extends Controller
         
         // Calculate completion rate
         $totalTasks = RepairRequest::where('technician_id', $user->id)
-            ->whereIn('status', ['pending', 'urgent', 'in_progress', 'completed'])
+            ->whereIn('status', ['pending', 'in_progress', 'completed'])
             ->count();
         $completedTasks = RepairRequest::where('technician_id', $user->id)
             ->where('status', 'completed')
