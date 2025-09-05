@@ -423,10 +423,12 @@ document.getElementById('room_number').addEventListener('change', function() {
     if (this.value === 'Other') {
         otherRoomDiv.classList.remove('hidden');
         otherRoomInput.required = true;
+        this.removeAttribute('required'); // Remove required attribute completely
     } else {
         otherRoomDiv.classList.add('hidden');
         otherRoomInput.required = false;
         otherRoomInput.value = '';
+        this.setAttribute('required', 'required'); // Add required attribute back
     }
 });
 

@@ -89,7 +89,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                         </div>
-                        <select name="room_number" id="room_number" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" required>
+                        <select name="room_number" id="room_number" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
                             <option value="">Select Room/Office</option>
                         </select>
                     </div>
@@ -107,6 +107,9 @@
                         <input type="text" name="other_room" id="other_room" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="Enter custom room/office name" value="{{ old('other_room') }}">
                     </div>
                 </div>
+                
+                <!-- Add this hidden input after the room_number select -->
+                <input type="hidden" name="final_room_number" id="final_room_number" value="">
                 
                 <div class="pt-4">
                     <div class="flex justify-between items-center">
@@ -147,6 +150,8 @@
 </div>
 
 <script>
+console.log('JavaScript is loading...');
+
 // Location data from CSV
 const locationData = {
     "FR. Smits Building": {
@@ -364,8 +369,11 @@ const locationData = {
     }
 };
 
+console.log('Location data loaded');
+
 // Building change handler
 document.getElementById('building').addEventListener('change', function() {
+    console.log('Building changed to:', this.value);
     const building = this.value;
     const floorSelect = document.getElementById('floor');
     const roomSelect = document.getElementById('room_number');
@@ -427,28 +435,62 @@ document.getElementById('room_number').addEventListener('change', function() {
     if (this.value === 'Other') {
         otherRoomDiv.classList.remove('hidden');
         otherRoomInput.required = true;
+        // Don't set required on room_number when Other is selected
     } else {
         otherRoomDiv.classList.add('hidden');
         otherRoomInput.required = false;
         otherRoomInput.value = '';
+        // Don't set required on room_number for predefined rooms either
     }
 });
 
 // Form submission handler
 document.getElementById('locationForm').addEventListener('submit', function(e) {
-    const roomSelect = document.getElementById('room_number');
-    const otherRoomInput = document.getElementById('other_room');
-    
-    // If "Other" is selected, use the custom input value
-    if (roomSelect.value === 'Other') {
-        if (otherRoomInput.value.trim() === '') {
+    try {
+        console.log('Form submit event fired!');
+        
+        const roomSelect = document.getElementById('room_number');
+        const otherRoomInput = document.getElementById('other_room');
+        const finalRoomInput = document.getElementById('final_room_number');
+        
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('roomSelect.value before:', roomSelect.value);
+        console.log('otherRoomInput.value before:', otherRoomInput.value);
+        
+        // Check if any room is selected
+        if (!roomSelect.value || roomSelect.value === '') {
             e.preventDefault();
-            alert('Please specify the room/office name.');
-            otherRoomInput.focus();
+            alert('Please select a room/office.');
+            roomSelect.focus();
             return;
         }
-        // Replace the "Other" value with the custom input
-        roomSelect.value = otherRoomInput.value.trim();
+        
+        let finalRoomValue = roomSelect.value;
+        
+        // If "Other" is selected, validate and prepare the data
+        if (roomSelect.value === 'Other') {
+            console.log('Other selected, validating...');
+            if (otherRoomInput.value.trim() === '') {
+                e.preventDefault();
+                alert('Please specify the room/office name.');
+                otherRoomInput.focus();
+                return;
+            }
+            finalRoomValue = otherRoomInput.value.trim();
+            console.log('Updated finalRoomValue to:', finalRoomValue);
+        }
+        
+        // Set the final room value in the hidden field
+        finalRoomInput.value = finalRoomValue;
+        
+        console.log('roomSelect.value after:', roomSelect.value);
+        console.log('finalRoomValue:', finalRoomValue);
+        console.log('=== END DEBUG ===');
+        
+        // Let the form submit normally with the updated data
+        
+    } catch (error) {
+        console.error('Error in form submission handler:', error);
     }
 });
 

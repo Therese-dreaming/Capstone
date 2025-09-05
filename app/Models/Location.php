@@ -20,7 +20,7 @@ class Location extends Model
     // Helper method to get full location display name
     public function getFullLocationAttribute()
     {
-        return "{$this->building} - Floor {$this->floor} - Room {$this->room_number}";
+        return "{$this->building} - {$this->floor} - {$this->room_number}";
     }
 
     // Helper method to get lab number (for backward compatibility)

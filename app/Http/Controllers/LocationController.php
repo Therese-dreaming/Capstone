@@ -18,7 +18,7 @@ class LocationController extends Controller
                 $q->where('building', 'like', "%{$search}%")
                   ->orWhere('floor', 'like', "%{$search}%")
                   ->orWhere('room_number', 'like', "%{$search}%")
-                  ->orWhereRaw("CONCAT(building, ' - Floor ', floor, ' - Room ', room_number) LIKE ?", ["%{$search}%"]);
+                  ->orWhereRaw("CONCAT(building, ' - ', floor, ' - ', room_number) LIKE ?", ["%{$search}%"]);
             });
         }
         
@@ -33,11 +33,24 @@ class LocationController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // Use the final_room_number field instead
+        $roomNumber = $request->final_room_number;
+        
+        // Validate that we have a room number
+        if (empty($roomNumber)) {
+            return back()->withErrors(['room_number' => 'Please select a room/office.'])->withInput();
+        }
+        
+        $request->validate([
             'building' => 'required|string|max:255',
             'floor' => 'required|string|max:255',
-            'room_number' => 'required|string|max:255',
         ]);
+
+        $validated = [
+            'building' => $request->building,
+            'floor' => $request->floor,
+            'room_number' => $roomNumber,
+        ];
 
         // Check if location already exists
         $existingLocation = Location::where([
@@ -72,11 +85,31 @@ class LocationController extends Controller
 
     public function update(Request $request, Location $location)
     {
-        $validated = $request->validate([
-            'building' => 'required|string|max:255',
-            'floor' => 'required|string|max:255',
-            'room_number' => 'required|string|max:255',
-        ]);
+        // Handle custom room case
+        $roomNumber = $request->room_number;
+        if ($roomNumber === 'Other') {
+            $request->validate([
+                'building' => 'required|string|max:255',
+                'floor' => 'required|string|max:255',
+                'other_room' => 'required|string|max:255',
+            ]);
+            $roomNumber = $request->other_room;
+        } else {
+            // For predefined rooms, check if room_number is provided
+            if (empty($roomNumber)) {
+                return back()->withErrors(['room_number' => 'Please select a room/office.'])->withInput();
+            }
+            $request->validate([
+                'building' => 'required|string|max:255',
+                'floor' => 'required|string|max:255',
+            ]);
+        }
+
+        $validated = [
+            'building' => $request->building,
+            'floor' => $request->floor,
+            'room_number' => $roomNumber,
+        ];
 
         // Check if another location already exists with these details
         $existingLocation = Location::where([
