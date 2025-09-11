@@ -95,6 +95,21 @@ class RepairRequestController extends Controller
                     ->withInput()
                     ->with('error', 'Error! No asset found with this serial number. Please check and try again.');
             }
+            
+            // Check if asset is in a state that prevents repair linking
+            if (in_array($asset->status, ['DISPOSED', 'LOST', 'PULLED OUT'])) {
+                $statusMessage = match($asset->status) {
+                    'DISPOSED' => 'disposed',
+                    'LOST' => 'lost',
+                    'PULLED OUT' => 'already pulled out for repair',
+                    default => 'in an invalid state'
+                };
+                
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', "Error! This asset has been {$statusMessage} and cannot be linked to a repair request.");
+            }
+            
             // Use the exact serial number from the database
             $serialNumber = $asset->serial_number;
             

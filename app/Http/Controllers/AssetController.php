@@ -25,15 +25,15 @@ class AssetController extends Controller
             $query->where('serial_number', 'like', "%{$search}%");
         }
 
-        if ($request->has('status')) {
+        if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
 
-        if ($request->has('category')) {
+        if ($request->has('category') && $request->category) {
             $query->where('category_id', $request->category);
         }
 
-        if ($request->has('location')) {
+        if ($request->has('location') && $request->location) {
             $query->where('location_id', $request->location);
         }
 
@@ -48,6 +48,10 @@ class AssetController extends Controller
 
         // Get the assets with pagination
         $assets = $query->paginate(10)->withQueryString();
+
+        // Get filter data
+        $categories = Category::all();
+        $locations = Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
 
         // Calculate lifespan and other metrics for each asset
         $assets->getCollection()->transform(function ($asset) {
@@ -113,7 +117,7 @@ class AssetController extends Controller
             return $asset;
         });
     
-        return view('asset-list', compact('assets'));
+        return view('asset-list', compact('assets', 'categories', 'locations'));
     }
 
     private function getLifeStatus($remainingLife, $totalLifespan)
@@ -153,7 +157,7 @@ class AssetController extends Controller
                 'name' => 'required|string|max:255',
                 'category_id' => 'required|exists:categories,id',
                 'location_id' => 'required|exists:locations,id',
-                'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
+                'status' => 'required|in:IN USE,UNDER REPAIR,PULLED OUT,LOST,DISPOSED',
                 'model' => 'required|string|max:255',
                 'specification' => 'required|string',
                 'vendor_id' => 'required|exists:vendors,id',
@@ -393,54 +397,332 @@ class AssetController extends Controller
 
     public function destroy(Asset $asset)
     {
-        // Create a history record for deletion
-        AssetHistory::create([
-            'asset_id' => $asset->id,
-            'change_type' => 'STATUS',
-            'old_value' => $asset->status,
-            'new_value' => 'DELETED',
-            'remarks' => 'Asset was deleted from the system',
-            'changed_by' => auth()->id()
-        ]);
+        \Log::info('=== DELETE METHOD CALLED ===');
+        \Log::info('Asset ID:', ['asset_id' => $asset->id]);
+        \Log::info('Asset current status:', ['status' => $asset->status]);
+        \Log::info('User ID:', ['user_id' => auth()->id()]);
 
-        $asset->delete();
+        try {
+            // Create a history record for deletion
+            $historyData = [
+                'asset_id' => $asset->id,
+                'change_type' => 'STATUS',
+                'old_value' => $asset->status,
+                'new_value' => 'DELETED',
+                'remarks' => 'Asset was deleted from the system',
+                'changed_by' => auth()->id()
+            ];
 
-        return redirect()->route($this->getRedirectRoute())
-            ->with('success', 'Asset has been deleted successfully');
+            \Log::info('Creating asset history with data:', $historyData);
+            
+            AssetHistory::create($historyData);
+
+            \Log::info('Asset history created successfully');
+
+            \Log::info('Deleting asset...');
+            $asset->delete();
+
+            \Log::info('Asset deleted successfully');
+
+            $redirectRoute = $this->getRedirectRoute();
+            \Log::info('Redirecting to:', ['route' => $redirectRoute]);
+
+            return redirect()->route($redirectRoute)
+                ->with('success', 'Asset has been deleted successfully');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error in destroy method:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors(['error' => 'An error occurred while deleting the asset: ' . $e->getMessage()]);
+        }
     }
 
     public function dispose(Request $request, Asset $asset)
     {
-        $request->validate([
-            'disposal_reason' => 'required|string|max:255'
-        ]);
+        \Log::info('=== DISPOSE METHOD CALLED ===');
+        \Log::info('Request data:', $request->all());
+        \Log::info('Asset ID:', ['asset_id' => $asset->id]);
+        \Log::info('Asset current status:', ['status' => $asset->status]);
+        \Log::info('User ID:', ['user_id' => auth()->id()]);
 
-        // Update asset status and disposal information
-        $asset->update([
-            'status' => 'DISPOSED',
-            'disposal_date' => now(),
-            'disposal_reason' => $request->disposal_reason
-        ]);
+        try {
+            $request->validate([
+                'disposal_reason' => 'required|string|max:255'
+            ]);
 
-        // Create asset history record
-        AssetHistory::create([
-            'asset_id' => $asset->id,
-            'change_type' => 'disposal',
-            'old_value' => 'active',
-            'new_value' => 'DISPOSED',
-            'remarks' => $request->disposal_reason,
-            'changed_by' => auth()->id()
-        ]);
+            \Log::info('Validation passed for disposal');
 
-        $redirectRoute = $request->input('redirect');
-        if (!$redirectRoute) {
-            $redirectRoute = auth()->user()->group_id === 4 
-                ? route('custodian.assets.index')
-                : route('reports.disposal-history');
+            // Store old status for history
+            $oldStatus = $asset->status;
+
+            // Update asset status and disposal information
+            $updateData = [
+                'status' => 'DISPOSED',
+                'disposal_date' => now(),
+                'disposal_reason' => $request->disposal_reason
+            ];
+
+            \Log::info('Updating asset with data:', $updateData);
+            
+            $asset->update($updateData);
+
+            \Log::info('Asset updated successfully');
+
+            // Create asset history record
+            $historyData = [
+                'asset_id' => $asset->id,
+                'change_type' => 'disposal',
+                'old_value' => $oldStatus,
+                'new_value' => 'DISPOSED',
+                'remarks' => $request->disposal_reason,
+                'changed_by' => auth()->id()
+            ];
+
+            \Log::info('Creating asset history with data:', $historyData);
+            
+            AssetHistory::create($historyData);
+
+            \Log::info('Asset history created successfully');
+
+            $redirectRoute = $request->input('redirect');
+            if (!$redirectRoute) {
+                $redirectRoute = auth()->user()->group_id === 4 
+                    ? route('custodian.assets.index')
+                    : route('reports.disposal-history');
+            }
+
+            \Log::info('Redirecting to:', ['route' => $redirectRoute]);
+            
+            return redirect($redirectRoute)
+                ->with('success', 'Asset has been marked as disposed.');
+                
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in dispose method:', [
+                'errors' => $e->errors(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Error in dispose method:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors(['error' => 'An error occurred while disposing the asset: ' . $e->getMessage()]);
         }
-        
-        return redirect($redirectRoute)
-            ->with('success', 'Asset has been marked as disposed.');
+    }
+
+    public function markAsLost(Request $request, Asset $asset)
+    {
+        \Log::info('=== MARK AS LOST METHOD CALLED ===');
+        \Log::info('Request data:', $request->all());
+        \Log::info('Asset ID:', ['asset_id' => $asset->id]);
+        \Log::info('Asset current status:', ['status' => $asset->status]);
+        \Log::info('User ID:', ['user_id' => auth()->id()]);
+
+        try {
+            $request->validate([
+                'lost_reason' => 'required|string|max:255'
+            ]);
+
+            \Log::info('Validation passed for mark as lost');
+
+            // Store the old status
+            $oldStatus = $asset->status;
+
+            // Update asset status to LOST
+            $updateData = [
+                'status' => 'LOST',
+                'lost_date' => now(),
+                'lost_reason' => $request->lost_reason
+            ];
+
+            \Log::info('Updating asset with data:', $updateData);
+            
+            $asset->update($updateData);
+
+            \Log::info('Asset updated successfully');
+
+            // Create asset history record
+            $historyData = [
+                'asset_id' => $asset->id,
+                'change_type' => 'STATUS',
+                'old_value' => $oldStatus,
+                'new_value' => 'LOST',
+                'remarks' => $request->lost_reason,
+                'changed_by' => auth()->id()
+            ];
+
+            \Log::info('Creating asset history with data:', $historyData);
+            
+            AssetHistory::create($historyData);
+
+            \Log::info('Asset history created successfully');
+
+            $redirectRoute = $request->input('redirect');
+            if (!$redirectRoute) {
+                $redirectRoute = auth()->user()->group_id === 4 
+                    ? route('custodian.assets.index')
+                    : route('assets.index');
+            }
+
+            \Log::info('Redirecting to:', ['route' => $redirectRoute]);
+            
+            return redirect($redirectRoute)
+                ->with('success', 'Asset has been marked as lost.');
+                
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in markAsLost method:', [
+                'errors' => $e->errors(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Error in markAsLost method:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors(['error' => 'An error occurred while marking the asset as lost: ' . $e->getMessage()]);
+        }
+    }
+
+    public function markAsFound(Request $request, Asset $asset)
+    {
+        \Log::info('=== MARK AS FOUND METHOD CALLED ===');
+        \Log::info('Request data:', $request->all());
+        \Log::info('Asset ID:', ['asset_id' => $asset->id]);
+        \Log::info('Asset current status:', ['status' => $asset->status]);
+        \Log::info('User ID:', ['user_id' => auth()->id()]);
+
+        try {
+            // Check if user is creating a new location
+            if ($request->has('new_building') && $request->has('new_floor') && $request->has('new_room')) {
+                // Validate new location data
+                $request->validate([
+                    'new_building' => 'required|string|max:255',
+                    'new_floor' => 'required|string|max:255',
+                    'new_room' => 'required|string|max:255'
+                ]);
+
+                \Log::info('Creating new location for found asset');
+
+                // Create new location
+                $newLocation = \App\Models\Location::create([
+                    'building' => $request->new_building,
+                    'floor' => $request->new_floor,
+                    'room_number' => $request->new_room
+                ]);
+
+                \Log::info('New location created:', ['location_id' => $newLocation->id, 'location' => $newLocation->full_location]);
+
+                $foundLocationId = $newLocation->id;
+            } else {
+                // Validate existing location
+                $request->validate([
+                    'found_location_id' => 'required|exists:locations,id'
+                ]);
+
+                $foundLocationId = $request->found_location_id;
+            }
+
+            \Log::info('Validation passed for mark as found');
+
+            // Store the old status and location
+            $oldStatus = $asset->status;
+            $oldLocation = $asset->location_id;
+
+            // Get the new location
+            $newLocation = \App\Models\Location::findOrFail($foundLocationId);
+
+            // Update asset status to IN USE and set new location
+            $updateData = [
+                'status' => 'IN USE',
+                'location_id' => $foundLocationId,
+                'found_date' => now(),
+                'lost_date' => null, // Clear lost date
+                'lost_reason' => null // Clear lost reason
+            ];
+
+            \Log::info('Updating asset with data:', $updateData);
+            
+            $asset->update($updateData);
+
+            \Log::info('Asset updated successfully');
+
+            // Create asset history record for status change
+            $statusHistoryData = [
+                'asset_id' => $asset->id,
+                'change_type' => 'STATUS',
+                'old_value' => $oldStatus,
+                'new_value' => 'IN USE',
+                'remarks' => "Asset found and marked as in use at {$newLocation->full_location}",
+                'changed_by' => auth()->id()
+            ];
+
+            \Log::info('Creating status history with data:', $statusHistoryData);
+            AssetHistory::create($statusHistoryData);
+
+            // Create asset history record for location change if location changed
+            if ($oldLocation != $foundLocationId) {
+                $locationHistoryData = [
+                    'asset_id' => $asset->id,
+                    'change_type' => 'LOCATION',
+                    'old_value' => $oldLocation,
+                    'new_value' => $foundLocationId,
+                    'remarks' => "Asset location updated to {$newLocation->full_location} when found",
+                    'changed_by' => auth()->id()
+                ];
+
+                \Log::info('Creating location history with data:', $locationHistoryData);
+                AssetHistory::create($locationHistoryData);
+            }
+
+            \Log::info('Asset history created successfully');
+
+            $redirectRoute = $request->input('redirect');
+            if (!$redirectRoute) {
+                $redirectRoute = auth()->user()->group_id === 4 
+                    ? route('custodian.assets.index')
+                    : route('assets.index');
+            }
+
+            \Log::info('Redirecting to:', ['route' => $redirectRoute]);
+            
+            $successMessage = $request->has('new_building') 
+                ? "Asset has been marked as found and is now in use at the new location: {$newLocation->full_location}"
+                : 'Asset has been marked as found and is now in use.';
+            
+            return redirect($redirectRoute)
+                ->with('success', $successMessage);
+                
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in markAsFound method:', [
+                'errors' => $e->errors(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Error in markAsFound method:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'asset_id' => $asset->id
+            ]);
+            return redirect()->back()
+                ->withErrors(['error' => 'An error occurred while marking the asset as found: ' . $e->getMessage()]);
+        }
     }
 
     public function edit(Asset $asset)
@@ -459,7 +741,7 @@ class AssetController extends Controller
             'category_id' => 'required|exists:categories,id',
             'location_id' => 'required|exists:locations,id',
             'purchase_price' => 'required|numeric',
-            'status' => 'required|in:IN USE,UNDER REPAIR,UPGRADE,PULLED OUT',
+            'status' => 'required|in:IN USE,UNDER REPAIR,PULLED OUT,LOST,DISPOSED',
             'model' => 'required',
             'specification' => 'required',
             'vendor_id' => 'required|exists:vendors,id',

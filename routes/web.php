@@ -134,6 +134,8 @@ Route::middleware(['auth'])->group(function () {
 		Route::post('/qrcodes/export', [AssetController::class, 'exportQrCodes'])->name('qrcodes.export');
 		Route::post('/qrcodes/preview', [AssetController::class, 'previewQrCodes'])->name('qrcodes.preview');
 		Route::post('/assets/{asset}/dispose', [AssetController::class, 'dispose'])->name('assets.dispose');
+		Route::post('/assets/{asset}/mark-as-lost', [AssetController::class, 'markAsLost'])->name('assets.mark-as-lost');
+		Route::post('/assets/{asset}/mark-as-found', [AssetController::class, 'markAsFound'])->name('assets.mark-as-found');
 
 		// Maintenance routes
 		Route::get('/maintenance/schedule', [MaintenanceController::class, 'schedule'])->name('maintenance.schedule');
@@ -226,5 +228,7 @@ Route::middleware(['auth'])->group(function () {
 		Route::put('/custodian/assets/{asset}', [AssetController::class, 'update'])->name('custodian.assets.update');
 		Route::delete('/custodian/assets/{asset}', [AssetController::class, 'destroy'])->name('custodian.assets.destroy');
 		Route::post('/custodian/assets/{asset}/dispose', [AssetController::class, 'dispose'])->name('custodian.assets.dispose');
+		Route::post('/custodian/assets/{asset}/mark-as-lost', [AssetController::class, 'markAsLost'])->name('custodian.assets.mark-as-lost');
+		Route::post('/custodian/assets/{asset}/mark-as-found', [AssetController::class, 'markAsFound'])->name('custodian.assets.mark-as-found');
 	});
 });

@@ -29,6 +29,8 @@ class Asset extends Model
         'purchase_price',
         'disposal_date',
         'disposal_reason',
+        'lost_date',
+        'lost_reason',
         'calculated_lifespan',
         'remaining_life',
         'end_of_life_date',
@@ -39,12 +41,14 @@ class Asset extends Model
     protected $casts = [
         'end_of_life_date' => 'datetime',
         'disposal_date' => 'datetime',
+        'lost_date' => 'datetime',
         'calculated_lifespan' => 'decimal:2',
         'remaining_life' => 'decimal:2'
     ];
 
     protected $dates = [
         'disposal_date',
+        'lost_date',
     ];
 
     // Boot method to automatically generate serial number

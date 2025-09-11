@@ -47,13 +47,13 @@ class Maintenance extends Model
     public function assets()
     {
         return $this->hasManyThrough(Asset::class, Location::class, 'id', 'location_id', 'location_id', 'id')
-            ->where('assets.status', '!=', 'DISPOSED');
+            ->whereNotIn('assets.status', ['DISPOSED', 'LOST', 'PULLED OUT']);
     }
     
     public function maintenanceAssets()
     {
         return $this->hasManyThrough(Asset::class, Location::class, 'id', 'location_id', 'location_id', 'id')
-            ->where('assets.status', '!=', 'DISPOSED');
+            ->whereNotIn('assets.status', ['DISPOSED', 'LOST', 'PULLED OUT']);
     }
     
     // Keep laboratory() for backward compatibility, but make it point to location

@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
             CreateDefaultUserSeeder::class,
             CategorySeeder::class,  // Make sure CategorySeeder runs before AssetSeeder
             VendorSeeder::class,   // Ensure vendors are seeded before assets
-            AssetSeeder::class,
             MaintenanceTaskSeeder::class,
             LaboratorySeeder::class,
         ]);

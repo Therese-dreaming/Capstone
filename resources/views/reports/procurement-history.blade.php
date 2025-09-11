@@ -38,8 +38,9 @@
 
             <!-- Filters -->
             <form action="{{ route('reports.procurement-history') }}" method="GET" class="mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    <div class="transform transition-all duration-300 hover:scale-[1.02] md:col-span-2 lg:col-span-1">
+                <!-- First Row: Date Range and Category -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="transform transition-all duration-300 hover:scale-[1.02] md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
                         <div class="flex space-x-2">
                             <input type="date" name="start_date" value="{{ request('start_date') }}" class="h-10 flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
@@ -57,6 +58,10 @@
                             @endforeach
                         </select>
                     </div>
+                </div>
+
+                <!-- Second Row: Status and Vendor -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div class="transform transition-all duration-300 hover:scale-[1.02]">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                         <select name="status" class="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
@@ -65,6 +70,7 @@
                             <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
                             <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
                             <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
+                            <option value="LOST" {{ request('status') == 'LOST' ? 'selected' : '' }}>LOST</option>
                         </select>
                     </div>
                     <div class="transform transition-all duration-300 hover:scale-[1.02]">
@@ -453,7 +459,8 @@
                                 '#10B981', // Green for IN USE
                                 '#F59E0B', // Yellow for UNDER REPAIR
                                 '#EF4444', // Red for DISPOSED
-                                '#8B5CF6'  // Purple for PULLED OUT
+                                '#8B5CF6', // Purple for PULLED OUT
+                                '#DC2626'  // Dark red for LOST
                             ],
                             borderColor: 'white',
                             borderWidth: 3,
@@ -708,7 +715,8 @@
             'IN USE': 0,
             'UNDER REPAIR': 0,
             'DISPOSED': 0,
-            'PULLED OUT': 0
+            'PULLED OUT': 0,
+            'LOST': 0
         };
 
         chartData.assets.forEach(asset => {

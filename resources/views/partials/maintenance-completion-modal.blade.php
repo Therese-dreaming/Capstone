@@ -30,7 +30,7 @@
                             </svg>
                             <label class="text-sm font-medium text-gray-700">Did you notice any issues with assets?</label>
                         </div>
-                        <p class="text-xs text-gray-500 mb-3">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues. Assets that are "PULLED OUT" or "DISPOSED" are not eligible.</p>
+                        <p class="text-xs text-gray-500 mb-3">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues. Assets that are "PULLED OUT", "DISPOSED", or "LOST" are not eligible.</p>
                         <div class="flex items-center space-x-6 ml-7">
                             <label class="inline-flex items-center hover:cursor-pointer">
                                 <input type="radio" name="has_issues" value="0" class="form-radio text-red-800 focus:ring-red-800" checked onclick="toggleIssueDetails(false)">
@@ -52,7 +52,7 @@
                                 </svg>
                                 <label class="text-sm font-medium text-gray-700">Search Asset</label>
                             </div>
-                            <p class="text-xs text-gray-500 mb-2">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues.</p>
+                            <p class="text-xs text-gray-500 mb-2">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues. Assets that are "PULLED OUT", "DISPOSED", or "LOST" are not eligible.</p>
                             <div class="flex space-x-2">
                                 <div class="flex-1">
                                     <input type="text" id="serial_number" name="serial_number" placeholder="Enter serial number" class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 h-12 px-4">                                </div>
@@ -199,10 +199,10 @@ async function searchAsset() {
             throw new Error(`This asset does not belong to the location being maintained`);
         }
 
-        // Check if the asset is available for maintenance (not pulled out or disposed)
-        if (data.status === 'PULLED OUT' || data.status === 'DISPOSED') {
+        // Check if the asset is available for maintenance (not pulled out, disposed, or lost)
+        if (data.status === 'PULLED OUT' || data.status === 'DISPOSED' || data.status === 'LOST') {
             console.log(`Asset ${data.serial_number} rejected: Status is ${data.status}`);
-            throw new Error(`This asset is ${data.status.toLowerCase()} and cannot be included in maintenance issues. Only assets with status "IN USE" or "UNDER REPAIR" are allowed.`);
+            throw new Error(`This asset is ${data.status.toLowerCase()} and cannot be included in maintenance issues. Only assets with status "IN USE" or "UNDER REPAIR" are allowed. Assets that are "PULLED OUT", "DISPOSED", or "LOST" are not eligible.`);
         }
 
         // Auto-fill all asset details
@@ -240,7 +240,7 @@ function addAnotherIssue() {
                                 </svg>
                                 <label class="text-xs md:text-sm font-medium text-gray-700">Search Additional Asset</label>
                             </div>
-                            <p class="text-xs text-gray-500 mb-1 md:mb-2">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues.</p>
+                            <p class="text-xs text-gray-500 mb-1 md:mb-2">Note: Only assets with status "IN USE" or "UNDER REPAIR" can be included in maintenance issues. Assets that are "PULLED OUT", "DISPOSED", or "LOST" are not eligible.</p>
             <div class="flex space-x-2">
                 <div class="flex-1">
                     <input type="text" class="serial_number w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 h-10 md:h-12 px-3 md:px-4 text-xs md:text-sm" 
@@ -362,10 +362,10 @@ async function searchAdditionalAsset(button) {
             throw new Error(`This asset does not belong to the location being maintained`);
         }
 
-        // Check if the asset is available for maintenance (not pulled out or disposed)
-        if (data.status === 'PULLED OUT' || data.status === 'DISPOSED') {
+        // Check if the asset is available for maintenance (not pulled out, disposed, or lost)
+        if (data.status === 'PULLED OUT' || data.status === 'DISPOSED' || data.status === 'LOST') {
             console.log(`Additional asset ${data.serial_number} rejected: Status is ${data.status}`);
-            throw new Error(`This asset is ${data.status.toLowerCase()} and cannot be included in maintenance issues. Only assets with status "IN USE" or "UNDER REPAIR" are allowed.`);
+            throw new Error(`This asset is ${data.status.toLowerCase()} and cannot be included in maintenance issues. Only assets with status "IN USE" or "UNDER REPAIR" are allowed. Assets that are "PULLED OUT", "DISPOSED", or "LOST" are not eligible.`);
         }
 
         // Auto-fill all asset details

@@ -124,12 +124,12 @@
                         </button>
                         
                         @if(request('date_from') || request('date_to'))
-                            <a href="{{ request()->url() }}" 
+                            <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('status') ? (request('search') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('search') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('search') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}" 
                                class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                                Clear
+                                Clear Date
                             </a>
                         @endif
                     </div>
@@ -147,6 +147,109 @@
                             @endif
                             @if(request('date_to'))
                                 {{ \Carbon\Carbon::parse(request('date_to'))->format('M d, Y') }}
+                            @endif
+                            ({{ $assets->total() }} assets found)
+                        </p>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Additional Filters Section -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Additional Filters</h3>
+                <form method="GET" action="{{ request()->url() }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Preserve existing search and date parameters -->
+                    @if(request('search'))
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    @endif
+                    @if(request('date_from'))
+                        <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                    @endif
+                    @if(request('date_to'))
+                        <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                    @endif
+                    
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <option value="">All Status</option>
+                            <option value="IN USE" {{ request('status') == 'IN USE' ? 'selected' : '' }}>IN USE</option>
+                            <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
+                            <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
+                            <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
+                            <option value="LOST" {{ request('status') == 'LOST' ? 'selected' : '' }}>LOST</option>
+                            <option value="PENDING DEPLOYMENT" {{ request('status') == 'PENDING DEPLOYMENT' ? 'selected' : '' }}>PENDING DEPLOYMENT</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select name="category" id="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <select name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <option value="">All Locations</option>
+                            @foreach($locations as $location)
+                                <option value="{{ $location->id }}" {{ request('location') == $location->id ? 'selected' : '' }}>
+                                    {{ $location->full_location }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                            </svg>
+                            Apply Filters
+                        </button>
+                        
+                        @if(request('status') || request('category') || request('location'))
+                            <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('date_from') ? (request('search') ? '&' : '?') . 'date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('search') || request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}" 
+                               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Clear Filters
+                            </a>
+                        @endif
+                    </div>
+                </form>
+                
+                @if(request('status') || request('category') || request('location'))
+                    <div class="mt-3 p-3 bg-red-50 rounded-md">
+                        <p class="text-sm text-red-800">
+                            <strong>Filtered by:</strong> 
+                            @if(request('status'))
+                                Status: {{ request('status') }}
+                            @endif
+                            @if(request('category'))
+                                @php
+                                    $selectedCategory = $categories->firstWhere('id', request('category'));
+                                @endphp
+                                @if($selectedCategory)
+                                    @if(request('status')) | @endif
+                                    Category: {{ $selectedCategory->name }}
+                                @endif
+                            @endif
+                            @if(request('location'))
+                                @php
+                                    $selectedLocation = $locations->firstWhere('id', request('location'));
+                                @endphp
+                                @if($selectedLocation)
+                                    @if(request('status') || request('category')) | @endif
+                                    Location: {{ $selectedLocation->full_location }}
+                                @endif
                             @endif
                             ({{ $assets->total() }} assets found)
                         </p>
@@ -178,14 +281,14 @@
                                     @case('DISPOSED')
                                         bg-red-100 text-red-800
                                         @break
-                                    @case('UPGRADE')
-                                        bg-blue-100 text-blue-800
-                                        @break
                                     @case('PENDING DEPLOYMENT')
                                         bg-purple-100 text-purple-800
                                         @break
                                     @case('PULLED OUT')
                                         bg-orange-100 text-orange-800
+                                        @break
+                                    @case('LOST')
+                                        bg-red-200 text-red-900
                                         @break
                                     @default
                                         bg-gray-100 text-gray-800
@@ -248,16 +351,29 @@
                                 </svg>
                             </a>
                         @endif
-                        <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
+                        <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
-                        <button onclick="confirmDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
+                        <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                             </svg>
                         </button>
+                        @if($asset->status === 'LOST')
+                            <button onclick="confirmAssetMarkAsFound({{ $asset->id }})" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 tooltip" title="Mark as Found">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                        @else
+                            <button onclick="confirmAssetMarkAsLost({{ $asset->id }})" class="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 tooltip" title="Mark as Lost">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </button>
+                        @endif
                     </div>
                 </div>
                 @endforeach
@@ -315,14 +431,14 @@
                                                 @case('DISPOSED')
                                                     bg-red-100 text-red-800
                                                     @break
-                                                @case('UPGRADE')
-                                                    bg-blue-100 text-blue-800
-                                                    @break
                                                 @case('PENDING DEPLOYMENT')
                                                     bg-purple-100 text-purple-800
                                                     @break
                                                 @case('PULLED OUT')
                                                     bg-orange-100 text-orange-800
+                                                    @break
+                                                @case('LOST')
+                                                    bg-red-200 text-red-900
                                                     @break
                                                 @default
                                                     bg-gray-100 text-gray-800
@@ -355,16 +471,29 @@
                                             </svg>
                                         </a>
                                     @endif
-                                    <button onclick="confirmDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
+                                    <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                     </button>
-                                    <button onclick="confirmDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
+                                    <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                                         </svg>
                                     </button>
+                                    @if($asset->status === 'LOST')
+                                        <button onclick="confirmAssetMarkAsFound({{ $asset->id }})" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 tooltip" title="Mark as Found">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </button>
+                                    @else
+                                        <button onclick="confirmAssetMarkAsLost({{ $asset->id }})" class="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 tooltip" title="Mark as Lost">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -574,14 +703,14 @@
                                         @case('DISPOSED')
                                             bg-red-100 text-red-800
                                             @break
-                                        @case('UPGRADE')
-                                            bg-blue-100 text-blue-800
-                                            @break
                                         @case('PENDING DEPLOYMENT')
                                             bg-purple-100 text-purple-800
                                             @break
                                         @case('PULLED OUT')
                                             bg-orange-100 text-orange-800
+                                            @break
+                                        @case('LOST')
+                                            bg-red-200 text-red-900
                                             @break
                                         @default
                                             bg-gray-100 text-gray-800
@@ -647,7 +776,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
+<div id="assetDeleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3 text-center">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
@@ -660,10 +789,10 @@
                 <p class="text-sm text-gray-500">Are you sure you want to delete this asset? This action cannot be undone.</p>
             </div>
             <div class="flex justify-center gap-4 mt-4">
-                <button id="deleteConfirm" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                <button id="assetDeleteConfirm" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
                     Delete
                 </button>
-                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <button onclick="closeAssetDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
                     Cancel
                 </button>
             </div>
@@ -672,7 +801,7 @@
 </div>
 
 <!-- Dispose Confirmation Modal -->
-<div id="disposeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
+<div id="assetDisposeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3 text-center">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
@@ -686,13 +815,110 @@
                 <div class="text-left">
                     <label for="disposeReason" class="block text-sm font-medium text-gray-700 mb-2">Reason for Disposal</label>
                     <textarea id="disposeReason" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" rows="3" placeholder="Enter reason for disposal"></textarea>
+                    <div id="disposeError" class="hidden mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm"></div>
                 </div>
             </div>
             <div class="flex justify-center gap-4 mt-4">
-                <button id="disposeConfirm" class="px-4 py-2 bg-yellow-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                <button id="assetDisposeConfirm" class="px-4 py-2 bg-yellow-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-300">
                     Dispose
                 </button>
-                <button onclick="closeDisposeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <button onclick="closeAssetDisposeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Lost Confirmation Modal -->
+<div id="assetMarkAsLostModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Mark Asset as Lost</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500 mb-4">Are you sure you want to mark this asset as lost?</p>
+                <div class="text-left">
+                    <label for="lostReason" class="block text-sm font-medium text-gray-700 mb-2">Reason for Loss</label>
+                    <textarea id="lostReason" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" rows="3" placeholder="Enter reason for loss"></textarea>
+                    <div id="lostError" class="hidden mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm"></div>
+                </div>
+            </div>
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="assetMarkAsLostConfirm" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    Mark as Lost
+                </button>
+                <button onclick="closeAssetMarkAsLostModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Found Confirmation Modal -->
+<div id="assetMarkAsFoundModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Mark Asset as Found</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500 mb-4">Where was this asset found? It will be marked as "In Use" at the selected location.</p>
+                <div class="text-left">
+                    <label for="foundLocation" class="block text-sm font-medium text-gray-700 mb-2">Found Location</label>
+                    <select id="foundLocation" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        <option value="">Select location where asset was found</option>
+                        @foreach($locations as $location)
+                            <option value="{{ $location->id }}" data-location="{{ $location->full_location }}">
+                                {{ $location->full_location }}
+                            </option>
+                        @endforeach
+                        <option value="new_location">+ Add New Location</option>
+                    </select>
+                    
+                    <!-- New Location Form (Hidden by default) -->
+                    <div id="newLocationForm" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border">
+                        <h4 class="text-sm font-medium text-gray-700 mb-3">Add New Location</h4>
+                        <div class="grid grid-cols-1 gap-3">
+                            <div>
+                                <label for="newBuilding" class="block text-xs font-medium text-gray-600 mb-1">Building</label>
+                                <input type="text" id="newBuilding" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Main Building">
+                            </div>
+                            <div>
+                                <label for="newFloor" class="block text-xs font-medium text-gray-600 mb-1">Floor</label>
+                                <input type="text" id="newFloor" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., 2nd Floor">
+                            </div>
+                            <div>
+                                <label for="newRoom" class="block text-xs font-medium text-gray-600 mb-1">Room Number</label>
+                                <input type="text" id="newRoom" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Room 201">
+                            </div>
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <button type="button" id="saveNewLocation" class="px-3 py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                Save Location
+                            </button>
+                            <button type="button" id="cancelNewLocation" class="px-3 py-1.5 bg-gray-500 text-white text-xs rounded hover:bg-gray-600">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="foundError" class="hidden mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm"></div>
+                </div>
+            </div>
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="assetMarkAsFoundConfirm" class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Mark as Found
+                </button>
+                <button onclick="closeAssetMarkAsFoundModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
                     Cancel
                 </button>
             </div>
@@ -784,95 +1010,208 @@
     });
 
     let currentAssetId = null;
-
-    function confirmDelete(assetId) {
-        currentAssetId = assetId;
-        document.getElementById('deleteModal').classList.remove('hidden');
+    
+    // Debug function to track currentAssetId changes
+    function debugCurrentAssetId(action) {
+        console.log(`currentAssetId ${action}:`, currentAssetId, 'type:', typeof currentAssetId);
     }
 
-    function confirmDispose(assetId) {
-        currentAssetId = assetId;
-        document.getElementById('disposeModal').classList.remove('hidden');
+    // Helper functions for error display
+    function showError(errorElementId, message) {
+        const errorElement = document.getElementById(errorElementId);
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
     }
 
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.add('hidden');
+    function hideError(errorElementId) {
+        const errorElement = document.getElementById(errorElementId);
+        if (errorElement) {
+            errorElement.classList.add('hidden');
+        }
+    }
+
+    function confirmAssetDelete(assetId) {
+        console.log('confirmAssetDelete called with assetId:', assetId, 'type:', typeof assetId);
+        if (assetId && assetId !== null && assetId !== undefined && !isNaN(assetId)) {
+            currentAssetId = assetId;
+            debugCurrentAssetId('set in confirmAssetDelete');
+            const deleteModal = document.getElementById('assetDeleteModal');
+            if (deleteModal) {
+                deleteModal.classList.remove('hidden');
+            }
+        } else {
+            console.error('Invalid asset ID provided to confirmAssetDelete:', assetId);
+        }
+    }
+
+    function confirmAssetDispose(assetId) {
+        console.log('confirmAssetDispose called with assetId:', assetId, 'type:', typeof assetId);
+        if (assetId && assetId !== null && assetId !== undefined && !isNaN(assetId)) {
+            currentAssetId = assetId;
+            debugCurrentAssetId('set in confirmAssetDispose');
+            const disposeModal = document.getElementById('assetDisposeModal');
+            if (disposeModal) {
+                // Clear any previous errors and reset the form
+                hideError('disposeError');
+                const disposeReasonElement = document.getElementById('disposeReason');
+                if (disposeReasonElement) {
+                    disposeReasonElement.value = '';
+                }
+                
+                disposeModal.classList.remove('hidden');
+                // Ensure the textarea is accessible
+                console.log('Dispose reason element after modal open:', !!disposeReasonElement);
+                if (disposeReasonElement) {
+                    disposeReasonElement.focus();
+                    // Add real-time validation
+                    disposeReasonElement.addEventListener('input', function() {
+                        if (this.value.trim()) {
+                            hideError('disposeError');
+                        }
+                    });
+                }
+            }
+        } else {
+            console.error('Invalid asset ID provided to confirmAssetDispose:', assetId);
+        }
+    }
+
+    function confirmAssetMarkAsLost(assetId) {
+        console.log('confirmAssetMarkAsLost called with assetId:', assetId, 'type:', typeof assetId);
+        if (assetId && assetId !== null && assetId !== undefined && !isNaN(assetId)) {
+            currentAssetId = assetId;
+            debugCurrentAssetId('set in confirmAssetMarkAsLost');
+            const markAsLostModal = document.getElementById('assetMarkAsLostModal');
+            if (markAsLostModal) {
+                // Clear any previous errors and reset the form
+                hideError('lostError');
+                const lostReasonElement = document.getElementById('lostReason');
+                if (lostReasonElement) {
+                    lostReasonElement.value = '';
+                }
+                
+                markAsLostModal.classList.remove('hidden');
+                // Ensure the textarea is accessible
+                console.log('Lost reason element after modal open:', !!lostReasonElement);
+                if (lostReasonElement) {
+                    lostReasonElement.focus();
+                    // Add real-time validation
+                    lostReasonElement.addEventListener('input', function() {
+                        if (this.value.trim()) {
+                            hideError('lostError');
+                        }
+                    });
+                }
+            }
+        } else {
+            console.error('Invalid asset ID provided to confirmAssetMarkAsLost:', assetId);
+        }
+    }
+
+    function confirmAssetMarkAsFound(assetId) {
+        console.log('confirmAssetMarkAsFound called with assetId:', assetId, 'type:', typeof assetId);
+        if (assetId && assetId !== null && assetId !== undefined && !isNaN(assetId)) {
+            currentAssetId = assetId;
+            debugCurrentAssetId('set in confirmAssetMarkAsFound');
+            const markAsFoundModal = document.getElementById('assetMarkAsFoundModal');
+            if (markAsFoundModal) {
+                // Clear any previous errors and reset the form
+                hideError('foundError');
+                const foundLocationElement = document.getElementById('foundLocation');
+                const newLocationForm = document.getElementById('newLocationForm');
+                if (foundLocationElement) {
+                    foundLocationElement.value = '';
+                }
+                if (newLocationForm) {
+                    newLocationForm.classList.add('hidden');
+                }
+                
+                markAsFoundModal.classList.remove('hidden');
+                // Ensure the dropdown is accessible
+                console.log('Found location element after modal open:', !!foundLocationElement);
+                if (foundLocationElement) {
+                    foundLocationElement.focus();
+                    // Add real-time validation
+                    foundLocationElement.addEventListener('change', function() {
+                        if (this.value === 'new_location') {
+                            // Show new location form
+                            if (newLocationForm) {
+                                newLocationForm.classList.remove('hidden');
+                            }
+                        } else {
+                            // Hide new location form
+                            if (newLocationForm) {
+                                newLocationForm.classList.add('hidden');
+                            }
+                        }
+                        if (this.value && this.value !== 'new_location') {
+                            hideError('foundError');
+                        }
+                    });
+                }
+            }
+        } else {
+            console.error('Invalid asset ID provided to confirmAssetMarkAsFound:', assetId);
+        }
+    }
+
+    function closeAssetDeleteModal() {
+        debugCurrentAssetId('before closeAssetDeleteModal');
+        const deleteModal = document.getElementById('assetDeleteModal');
+        if (deleteModal) {
+            deleteModal.classList.add('hidden');
+        }
         currentAssetId = null;
+        debugCurrentAssetId('after closeAssetDeleteModal');
     }
 
-    function closeDisposeModal() {
-        document.getElementById('disposeModal').classList.add('hidden');
-        document.getElementById('disposeReason').value = ''; // Clear the reason field
+    function closeAssetDisposeModal() {
+        debugCurrentAssetId('before closeAssetDisposeModal');
+        const disposeModal = document.getElementById('assetDisposeModal');
+        if (disposeModal) {
+            disposeModal.classList.add('hidden');
+        }
+        const disposeReasonElement = document.getElementById('disposeReason');
+        if (disposeReasonElement) {
+            disposeReasonElement.value = ''; // Clear the reason field
+        }
         document.body.style.overflow = 'auto'; // Restore page scrolling
         currentAssetId = null;
+        debugCurrentAssetId('after closeAssetDisposeModal');
     }
 
-    document.getElementById('deleteConfirm').addEventListener('click', function() {
-        if (currentAssetId) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            @if(auth()->user()->group_id === 4)
-                form.action = `/custodian/assets/${currentAssetId}`;
-            @else
-                form.action = `/assets/${currentAssetId}`;
-            @endif
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = csrfToken;
-
-            const methodInput = document.createElement('input');
-            methodInput.type = 'hidden';
-            methodInput.name = '_method';
-            methodInput.value = 'DELETE';
-
-            form.appendChild(csrfInput);
-            form.appendChild(methodInput);
-            document.body.appendChild(form);
-            form.submit();
+    function closeAssetMarkAsLostModal() {
+        debugCurrentAssetId('before closeAssetMarkAsLostModal');
+        const markAsLostModal = document.getElementById('assetMarkAsLostModal');
+        if (markAsLostModal) {
+            markAsLostModal.classList.add('hidden');
         }
-    });
-
-    document.getElementById('disposeConfirm').addEventListener('click', function() {
-        if (currentAssetId) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            @if(auth()->user()->group_id === 4)
-                form.action = `/custodian/assets/${currentAssetId}/dispose`;
-            @else
-                form.action = `/assets/${currentAssetId}/dispose`;
-            @endif
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = csrfToken;
-
-            // Add disposal reason input
-            const reasonInput = document.createElement('input');
-            reasonInput.type = 'hidden';
-            reasonInput.name = 'disposal_reason';
-            reasonInput.value = document.getElementById('disposeReason').value;
-
-            const redirectInput = document.createElement('input');
-            redirectInput.type = 'hidden';
-            redirectInput.name = 'redirect';
-            @if(auth()->user()->group_id === 4)
-                redirectInput.value = '{{ route("custodian.assets.index") }}';
-            @else
-                redirectInput.value = '{{ route("reports.disposal-history") }}';
-            @endif
-
-            form.appendChild(csrfInput);
-            form.appendChild(reasonInput); // Add the reason input to the form
-            form.appendChild(redirectInput);
-            document.body.appendChild(form);
-            form.submit();
+        const lostReasonElement = document.getElementById('lostReason');
+        if (lostReasonElement) {
+            lostReasonElement.value = ''; // Clear the reason field
         }
-    });
+        document.body.style.overflow = 'auto'; // Restore page scrolling
+        currentAssetId = null;
+        debugCurrentAssetId('after closeAssetMarkAsLostModal');
+    }
+
+    function closeAssetMarkAsFoundModal() {
+        debugCurrentAssetId('before closeAssetMarkAsFoundModal');
+        const markAsFoundModal = document.getElementById('assetMarkAsFoundModal');
+        if (markAsFoundModal) {
+            markAsFoundModal.classList.add('hidden');
+        }
+        const foundLocationElement = document.getElementById('foundLocation');
+        if (foundLocationElement) {
+            foundLocationElement.value = ''; // Clear the location field
+        }
+        document.body.style.overflow = 'auto'; // Restore page scrolling
+        currentAssetId = null;
+        debugCurrentAssetId('after closeAssetMarkAsFoundModal');
+    }
+
 
     document.addEventListener('DOMContentLoaded', function() {
         const selectAll = document.getElementById('selectAll');
@@ -880,6 +1219,395 @@
         const columnFilterMenu = document.getElementById('columnFilterMenu');
         const fullListTable = document.querySelector('.full-list-table');
         const toggles = document.querySelectorAll('.column-toggle');
+
+        // Add event listeners for modal buttons
+        const deleteConfirmBtn = document.getElementById('assetDeleteConfirm');
+        if (deleteConfirmBtn) {
+            deleteConfirmBtn.addEventListener('click', function() {
+                console.log('=== DELETE CONFIRM CLICKED ===');
+                console.log('currentAssetId:', currentAssetId, 'type:', typeof currentAssetId);
+                debugCurrentAssetId('in delete confirm click');
+                
+                if (currentAssetId && currentAssetId !== null && currentAssetId !== undefined) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    @if(auth()->user()->group_id === 4)
+                        form.action = `/custodian/assets/${currentAssetId}`;
+                    @else
+                        form.action = `/assets/${currentAssetId}`;
+                    @endif
+                    
+                    console.log('Delete form action:', form.action);
+                    console.log('Form method:', form.method);
+
+                    const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfTokenElement ? csrfTokenElement.content : '';
+                    console.log('CSRF Token:', csrfToken);
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+
+                    const methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = '_method';
+                    methodInput.value = 'DELETE';
+
+                    form.appendChild(csrfInput);
+                    form.appendChild(methodInput);
+                    
+                    console.log('Form data before submit:', {
+                        action: form.action,
+                        method: form.method,
+                        csrfToken: csrfToken,
+                        methodOverride: 'DELETE',
+                        assetId: currentAssetId
+                    });
+                    
+                    document.body.appendChild(form);
+                    console.log('Submitting delete form...');
+                    form.submit();
+                } else {
+                    console.error('Invalid currentAssetId for delete:', currentAssetId);
+                }
+            });
+        }
+
+        const disposeConfirmBtn = document.getElementById('assetDisposeConfirm');
+        if (disposeConfirmBtn) {
+            disposeConfirmBtn.addEventListener('click', function() {
+                console.log('=== DISPOSE CONFIRM CLICKED ===');
+                console.log('currentAssetId:', currentAssetId, 'type:', typeof currentAssetId);
+                debugCurrentAssetId('in dispose confirm click');
+                
+                if (currentAssetId && currentAssetId !== null && currentAssetId !== undefined) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    @if(auth()->user()->group_id === 4)
+                        form.action = `/custodian/assets/${currentAssetId}/dispose`;
+                    @else
+                        form.action = `/assets/${currentAssetId}/dispose`;
+                    @endif
+
+                    console.log('Dispose form action:', form.action);
+                    console.log('Form method:', form.method);
+
+                    const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfTokenElement ? csrfTokenElement.content : '';
+                    console.log('CSRF Token:', csrfToken);
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+
+                    const redirectInput = document.createElement('input');
+                    redirectInput.type = 'hidden';
+                    redirectInput.name = 'redirect';
+                    @if(auth()->user()->group_id === 4)
+                        redirectInput.value = '{{ route("custodian.assets.index") }}';
+                    @else
+                        redirectInput.value = '{{ route("reports.disposal-history") }}';
+                    @endif
+
+                    // Add disposal reason input
+                    const reasonInput = document.createElement('input');
+                    reasonInput.type = 'hidden';
+                    reasonInput.name = 'disposal_reason';
+                    
+                    // Wait a moment for the modal to be fully rendered
+                    setTimeout(() => {
+                        const disposeReasonElement = document.getElementById('disposeReason');
+                        const disposalReason = disposeReasonElement ? disposeReasonElement.value.trim() : '';
+                        reasonInput.value = disposalReason;
+                        console.log('Disposal reason element found:', !!disposeReasonElement);
+                        console.log('Disposal reason value:', disposalReason);
+                        
+                        // Validate that we have a reason
+                        if (!disposalReason) {
+                            console.error('No disposal reason provided!');
+                            showError('disposeError', 'Please enter a reason for disposal.');
+                            return;
+                        }
+                        
+                        // Continue with form submission
+                        form.appendChild(csrfInput);
+                        form.appendChild(reasonInput);
+                        form.appendChild(redirectInput);
+                        
+                        console.log('Form data before submit:', {
+                            action: form.action,
+                            method: form.method,
+                            csrfToken: csrfToken,
+                            disposalReason: disposalReason,
+                            redirect: redirectInput.value,
+                            assetId: currentAssetId
+                        });
+                        
+                        document.body.appendChild(form);
+                        console.log('Submitting dispose form...');
+                        form.submit();
+                    }, 100);
+                } else {
+                    console.error('Invalid currentAssetId for dispose:', currentAssetId);
+                }
+            });
+        }
+
+        const markAsLostConfirmBtn = document.getElementById('assetMarkAsLostConfirm');
+        if (markAsLostConfirmBtn) {
+            markAsLostConfirmBtn.addEventListener('click', function() {
+                console.log('=== MARK AS LOST CONFIRM CLICKED ===');
+                console.log('currentAssetId:', currentAssetId, 'type:', typeof currentAssetId);
+                debugCurrentAssetId('in mark as lost confirm click');
+                
+                if (currentAssetId && currentAssetId !== null && currentAssetId !== undefined) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    @if(auth()->user()->group_id === 4)
+                        form.action = `/custodian/assets/${currentAssetId}/mark-as-lost`;
+                    @else
+                        form.action = `/assets/${currentAssetId}/mark-as-lost`;
+                    @endif
+
+                    console.log('Mark as Lost form action:', form.action);
+                    console.log('Form method:', form.method);
+
+                    const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfTokenElement ? csrfTokenElement.content : '';
+                    console.log('CSRF Token:', csrfToken);
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+
+                    const redirectInput = document.createElement('input');
+                    redirectInput.type = 'hidden';
+                    redirectInput.name = 'redirect';
+                    @if(auth()->user()->group_id === 4)
+                        redirectInput.value = '{{ route("custodian.assets.index") }}';
+                    @else
+                        redirectInput.value = '{{ route("assets.index") }}';
+                    @endif
+
+                    // Add lost reason input
+                    const reasonInput = document.createElement('input');
+                    reasonInput.type = 'hidden';
+                    reasonInput.name = 'lost_reason';
+                    
+                    // Wait a moment for the modal to be fully rendered
+                    setTimeout(() => {
+                        const lostReasonElement = document.getElementById('lostReason');
+                        const lostReason = lostReasonElement ? lostReasonElement.value.trim() : '';
+                        reasonInput.value = lostReason;
+                        console.log('Lost reason element found:', !!lostReasonElement);
+                        console.log('Lost reason value:', lostReason);
+                        
+                        // Validate that we have a reason
+                        if (!lostReason) {
+                            console.error('No lost reason provided!');
+                            showError('lostError', 'Please enter a reason for loss.');
+                            return;
+                        }
+                        
+                        // Continue with form submission
+                        form.appendChild(csrfInput);
+                        form.appendChild(reasonInput);
+                        form.appendChild(redirectInput);
+                        
+                        console.log('Form data before submit:', {
+                            action: form.action,
+                            method: form.method,
+                            csrfToken: csrfToken,
+                            lostReason: lostReason,
+                            redirect: redirectInput.value,
+                            assetId: currentAssetId
+                        });
+                        
+                        document.body.appendChild(form);
+                        console.log('Submitting mark as lost form...');
+                        form.submit();
+                    }, 100);
+                } else {
+                    console.error('Invalid currentAssetId for mark as lost:', currentAssetId);
+                }
+            });
+        }
+
+        const markAsFoundConfirmBtn = document.getElementById('assetMarkAsFoundConfirm');
+        if (markAsFoundConfirmBtn) {
+            markAsFoundConfirmBtn.addEventListener('click', function() {
+                console.log('=== MARK AS FOUND CONFIRM CLICKED ===');
+                console.log('currentAssetId:', currentAssetId, 'type:', typeof currentAssetId);
+                debugCurrentAssetId('in mark as found confirm click');
+                
+                if (currentAssetId && currentAssetId !== null && currentAssetId !== undefined) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    @if(auth()->user()->group_id === 4)
+                        form.action = `/custodian/assets/${currentAssetId}/mark-as-found`;
+                    @else
+                        form.action = `/assets/${currentAssetId}/mark-as-found`;
+                    @endif
+
+                    console.log('Mark as Found form action:', form.action);
+                    console.log('Form method:', form.method);
+
+                    const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfTokenElement ? csrfTokenElement.content : '';
+                    console.log('CSRF Token:', csrfToken);
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+
+                    const redirectInput = document.createElement('input');
+                    redirectInput.type = 'hidden';
+                    redirectInput.name = 'redirect';
+                    @if(auth()->user()->group_id === 4)
+                        redirectInput.value = '{{ route("custodian.assets.index") }}';
+                    @else
+                        redirectInput.value = '{{ route("assets.index") }}';
+                    @endif
+
+                    // Wait a moment for the modal to be fully rendered
+                    setTimeout(() => {
+                        const foundLocationElement = document.getElementById('foundLocation');
+                        const foundLocationId = foundLocationElement ? foundLocationElement.value : '';
+                        console.log('Found location element found:', !!foundLocationElement);
+                        console.log('Found location value:', foundLocationId);
+                        
+                        // Check if user selected "Add New Location"
+                        if (foundLocationId === 'new_location') {
+                            // Validate new location form
+                            const newBuilding = document.getElementById('newBuilding').value.trim();
+                            const newFloor = document.getElementById('newFloor').value.trim();
+                            const newRoom = document.getElementById('newRoom').value.trim();
+                            
+                            if (!newBuilding || !newFloor || !newRoom) {
+                                showError('foundError', 'Please fill in all location fields (Building, Floor, Room).');
+                                return;
+                            }
+                            
+                            // Add new location data to form
+                            const buildingInput = document.createElement('input');
+                            buildingInput.type = 'hidden';
+                            buildingInput.name = 'new_building';
+                            buildingInput.value = newBuilding;
+                            
+                            const floorInput = document.createElement('input');
+                            floorInput.type = 'hidden';
+                            floorInput.name = 'new_floor';
+                            floorInput.value = newFloor;
+                            
+                            const roomInput = document.createElement('input');
+                            roomInput.type = 'hidden';
+                            roomInput.name = 'new_room';
+                            roomInput.value = newRoom;
+                            
+                            form.appendChild(csrfInput);
+                            form.appendChild(buildingInput);
+                            form.appendChild(floorInput);
+                            form.appendChild(roomInput);
+                            form.appendChild(redirectInput);
+                            
+                            console.log('Form data before submit (new location):', {
+                                action: form.action,
+                                method: form.method,
+                                csrfToken: csrfToken,
+                                newBuilding: newBuilding,
+                                newFloor: newFloor,
+                                newRoom: newRoom,
+                                redirect: redirectInput.value,
+                                assetId: currentAssetId
+                            });
+                        } else {
+                            // Validate that we have a location
+                            if (!foundLocationId) {
+                                console.error('No found location provided!');
+                                showError('foundError', 'Please select a location where the asset was found.');
+                                return;
+                            }
+                            
+                            // Add found location input
+                            const locationInput = document.createElement('input');
+                            locationInput.type = 'hidden';
+                            locationInput.name = 'found_location_id';
+                            locationInput.value = foundLocationId;
+                            
+                            form.appendChild(csrfInput);
+                            form.appendChild(locationInput);
+                            form.appendChild(redirectInput);
+                            
+                            console.log('Form data before submit (existing location):', {
+                                action: form.action,
+                                method: form.method,
+                                csrfToken: csrfToken,
+                                foundLocationId: foundLocationId,
+                                redirect: redirectInput.value,
+                                assetId: currentAssetId
+                            });
+                        }
+                        
+                        document.body.appendChild(form);
+                        console.log('Submitting mark as found form...');
+                        form.submit();
+                    }, 100);
+                } else {
+                    console.error('Invalid currentAssetId for mark as found:', currentAssetId);
+                }
+            });
+        }
+
+        // Add event listeners for new location form
+        const saveNewLocationBtn = document.getElementById('saveNewLocation');
+        const cancelNewLocationBtn = document.getElementById('cancelNewLocation');
+        
+        if (saveNewLocationBtn) {
+            saveNewLocationBtn.addEventListener('click', function() {
+                // Validate new location form
+                const newBuilding = document.getElementById('newBuilding').value.trim();
+                const newFloor = document.getElementById('newFloor').value.trim();
+                const newRoom = document.getElementById('newRoom').value.trim();
+                
+                if (!newBuilding || !newFloor || !newRoom) {
+                    showError('foundError', 'Please fill in all location fields (Building, Floor, Room).');
+                    return;
+                }
+                
+                // Hide error if validation passes
+                hideError('foundError');
+                
+                // You could add AJAX call here to save the location and get the ID
+                // For now, we'll let the form submission handle it
+                console.log('New location validated:', { newBuilding, newFloor, newRoom });
+            });
+        }
+        
+        if (cancelNewLocationBtn) {
+            cancelNewLocationBtn.addEventListener('click', function() {
+                // Hide new location form and reset dropdown
+                const newLocationForm = document.getElementById('newLocationForm');
+                const foundLocationElement = document.getElementById('foundLocation');
+                
+                if (newLocationForm) {
+                    newLocationForm.classList.add('hidden');
+                }
+                if (foundLocationElement) {
+                    foundLocationElement.value = '';
+                }
+                
+                // Clear form fields
+                document.getElementById('newBuilding').value = '';
+                document.getElementById('newFloor').value = '';
+                document.getElementById('newRoom').value = '';
+                
+                hideError('foundError');
+            });
+        }
 
         // Toggle menu
         columnFilterBtn.addEventListener('click', function(e) {
@@ -935,4 +1663,3 @@
 
 </script>
 @endsection
-</div>
