@@ -293,7 +293,10 @@
                                         Asset: {{ is_array($serialNumbers) ? ($serialNumbers[$index] ?? 'N/A') : $maintenance->serial_number }}
                                     </h4>
                                 </div>
-                                <a href="{{ route('repair.request') }}?serial_number={{ is_array($serialNumbers) ? ($serialNumbers[$index] ?? '') : $maintenance->serial_number }}&issue={{ urlencode($issue['issue_description']) }}&location=Laboratory {{ $maintenance->lab_number }}" 
+                                @php
+                                    $issueDesc = is_array($issue) ? ($issue['issue_description'] ?? '') : (string)$issue;
+                                @endphp
+                                <a href="{{ route('repair.request') }}?serial_number={{ is_array($serialNumbers) ? ($serialNumbers[$index] ?? '') : $maintenance->serial_number }}&issue={{ urlencode($issueDesc) }}&location=Laboratory {{ $maintenance->lab_number }}" 
                                    class="inline-flex items-center px-3 py-1 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors">
                                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -301,7 +304,7 @@
                                     Create Repair Request
                                 </a>
                             </div>
-                            <p class="text-sm text-gray-700 ml-11">{{ $issue['issue_description'] }}</p>
+                            <p class="text-sm text-gray-700 ml-11">{{ $issueDesc }}</p>
                         </div>
                     @endforeach
                 </div>
