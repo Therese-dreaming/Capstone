@@ -16,6 +16,13 @@
             display: block !important;
         }
 
+        /* Desktop content shift when sidebar is open */
+        @media (min-width: 768px) {
+            .content-shifted {
+                margin-left: 18rem !important; /* matches w-72 */
+            }
+        }
+
         /* Mobile sidebar */
         @media (max-width: 768px) {
             .sidebar-open {
@@ -42,7 +49,7 @@
         <div class="flex items-center space-x-4">
             @auth
             @if(auth()->user()->group_id !== 4)
-            <button id="sidebarToggle" class="md:hidden text-white focus:outline-none">
+            <button id="sidebarToggle" class="text-white focus:outline-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -98,7 +105,7 @@
     <div class="flex pt-16">
         <!-- Sidebar -->
         @if(auth()->check() && auth()->user()->group_id !== 4)
-        <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+        <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
             <div class="p-4 pl-8">
                 <nav class="space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
                     @auth
@@ -443,7 +450,7 @@
         @endif
 
         <!-- Main Content -->
-        <main class="{{ auth()->check() && auth()->user()->group_id !== 4 ? 'md:ml-72' : 'w-full' }} flex-1 transition-all duration-300 ease-in-out">
+        <main id="mainContent" class="w-full flex-1 transition-all duration-300 ease-in-out">
             @yield('content')
         </main>
     </div>
@@ -459,11 +466,35 @@
             const mainContent = document.getElementById('mainContent');
 
             if (sidebarToggle && sidebar && sidebarOverlay) {
+                // Initialize from persisted state
+                const persistedOpen = localStorage.getItem('sidebarOpen') === 'true';
+                if (persistedOpen) {
+                    sidebar.classList.remove('-translate-x-full');
+                    mainContent.classList.add('content-shifted');
+                    if (window.innerWidth < 768) {
+                        sidebarOverlay.classList.remove('opacity-0');
+                        sidebarOverlay.classList.remove('pointer-events-none');
+                    } else {
+                        sidebarOverlay.classList.add('opacity-0');
+                        sidebarOverlay.classList.add('pointer-events-none');
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    mainContent.classList.remove('content-shifted');
+                    sidebarOverlay.classList.add('opacity-0');
+                    sidebarOverlay.classList.add('pointer-events-none');
+                }
+
                 sidebarToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('-translate-x-full');
-                    sidebarOverlay.classList.toggle('opacity-0');
-                    sidebarOverlay.classList.toggle('pointer-events-none');
+                    if (window.innerWidth < 768) {
+                        sidebarOverlay.classList.toggle('opacity-0');
+                        sidebarOverlay.classList.toggle('pointer-events-none');
+                    }
                     mainContent.classList.toggle('content-shifted');
+
+                    const isOpen = !sidebar.classList.contains('-translate-x-full');
+                    localStorage.setItem('sidebarOpen', isOpen ? 'true' : 'false');
                 });
 
                 sidebarOverlay.addEventListener('click', function() {
@@ -471,30 +502,37 @@
                     sidebarOverlay.classList.add('opacity-0');
                     sidebarOverlay.classList.add('pointer-events-none');
                     mainContent.classList.remove('content-shifted');
+
+                    localStorage.setItem('sidebarOpen', 'false');
                 });
 
-                // Close sidebar when clicking on a menu item (mobile only)
-                const menuItems = sidebar.querySelectorAll('a[href]');
-                menuItems.forEach(item => {
-                    item.addEventListener('click', function() {
-                        if (window.innerWidth < 768) {
-                            sidebar.classList.add('-translate-x-full');
-                            sidebarOverlay.classList.add('opacity-0');
-                            sidebarOverlay.classList.add('pointer-events-none');
-                            mainContent.classList.remove('content-shifted');
-                        }
-                    });
-                });
-
-                // Handle window resize
+                // Handle window resize (preserve sidebar state)
                 window.addEventListener('resize', function() {
-                    if (window.innerWidth >= 768) {
+                    const isOpen = localStorage.getItem('sidebarOpen') === 'true';
+                    if (isOpen) {
                         sidebar.classList.remove('-translate-x-full');
-                        sidebarOverlay.classList.add('opacity-0');
-                        sidebarOverlay.classList.add('pointer-events-none');
-                        mainContent.classList.remove('content-shifted');
                     } else {
                         sidebar.classList.add('-translate-x-full');
+                    }
+
+                    if (window.innerWidth >= 768) {
+                        sidebarOverlay.classList.add('opacity-0');
+                        sidebarOverlay.classList.add('pointer-events-none');
+                        if (isOpen) {
+                            mainContent.classList.add('content-shifted');
+                        } else {
+                            mainContent.classList.remove('content-shifted');
+                        }
+                    } else {
+                        if (isOpen) {
+                            sidebarOverlay.classList.remove('opacity-0');
+                            sidebarOverlay.classList.remove('pointer-events-none');
+                        } else {
+                            sidebarOverlay.classList.add('opacity-0');
+                            sidebarOverlay.classList.add('pointer-events-none');
+                        }
+                        // On mobile, content should not be shifted visually
+                        mainContent.classList.remove('content-shifted');
                     }
                 });
             }

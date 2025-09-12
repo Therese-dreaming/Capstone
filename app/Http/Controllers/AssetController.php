@@ -397,6 +397,19 @@ class AssetController extends Controller
 
     public function destroy(Asset $asset)
     {
+        // Only Admins (group_id = 1) can delete assets
+        if (!auth()->check() || auth()->user()->group_id !== 1) {
+            return redirect()->back()->withErrors(['error' => 'Unauthorized: Only admins can delete assets.']);
+        }
+
+        // Verify password confirmation
+        request()->validate([
+            'password' => 'required|string'
+        ]);
+
+        if (!\Hash::check(request('password'), auth()->user()->password)) {
+            return redirect()->back()->withErrors(['error' => 'Password confirmation failed.']);
+        }
         \Log::info('=== DELETE METHOD CALLED ===');
         \Log::info('Asset ID:', ['asset_id' => $asset->id]);
         \Log::info('Asset current status:', ['status' => $asset->status]);

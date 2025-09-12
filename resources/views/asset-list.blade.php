@@ -351,11 +351,13 @@
                                 </svg>
                             </a>
                         @endif
+                        @if(auth()->user()->group_id === 1)
                         <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
+                        @endif
                         <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -471,11 +473,13 @@
                                             </svg>
                                         </a>
                                     @endif
+                                    @if(auth()->user()->group_id === 1)
                                     <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                     </button>
+                                    @endif
                                     <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -786,7 +790,12 @@
             </div>
             <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Delete Asset</h3>
             <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">Are you sure you want to delete this asset? This action cannot be undone.</p>
+                <p class="text-sm text-gray-500 mb-4">Are you sure you want to delete this asset? This action cannot be undone.</p>
+                <div class="text-left">
+                    <label for="deletePassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm your password</label>
+                    <input id="deletePassword" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" placeholder="Enter your password" autocomplete="current-password">
+                    <div id="deleteError" class="hidden mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm"></div>
+                </div>
             </div>
             <div class="flex justify-center gap-4 mt-4">
                 <button id="assetDeleteConfirm" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
@@ -1229,6 +1238,21 @@
                 debugCurrentAssetId('in delete confirm click');
                 
                 if (currentAssetId && currentAssetId !== null && currentAssetId !== undefined) {
+                    const passwordInput = document.getElementById('deletePassword');
+                    const errorBox = document.getElementById('deleteError');
+                    const password = passwordInput ? passwordInput.value : '';
+
+                    // Require password
+                    if (!password) {
+                        if (errorBox) {
+                            errorBox.textContent = 'Password is required to confirm deletion.';
+                            errorBox.classList.remove('hidden');
+                        }
+                        return;
+                    } else if (errorBox) {
+                        errorBox.classList.add('hidden');
+                        errorBox.textContent = '';
+                    }
                     const form = document.createElement('form');
                     form.method = 'POST';
                     @if(auth()->user()->group_id === 4)
@@ -1254,8 +1278,14 @@
                     methodInput.name = '_method';
                     methodInput.value = 'DELETE';
 
+                    const passwordField = document.createElement('input');
+                    passwordField.type = 'hidden';
+                    passwordField.name = 'password';
+                    passwordField.value = password;
+
                     form.appendChild(csrfInput);
                     form.appendChild(methodInput);
+                    form.appendChild(passwordField);
                     
                     console.log('Form data before submit:', {
                         action: form.action,
