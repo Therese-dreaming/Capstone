@@ -53,14 +53,9 @@
                         </div>
                         <select name="building" id="building" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" required>
                             <option value="">Select Building</option>
-                            <option value="FR. Smits Building" {{ old('building') == 'FR. Smits Building' ? 'selected' : '' }}>FR. Smits Building</option>
-                            <option value="Msgr. Gabriel Building" {{ old('building') == 'Msgr. Gabriel Building' ? 'selected' : '' }}>Msgr. Gabriel Building</option>
-                            <option value="Msgr. Sunga Building" {{ old('building') == 'Msgr. Sunga Building' ? 'selected' : '' }}>Msgr. Sunga Building</option>
-                            <option value="Bishop San Diego Building" {{ old('building') == 'Bishop San Diego Building' ? 'selected' : '' }}>Bishop San Diego Building</option>
-                            <option value="Fr. Carlos Building" {{ old('building') == 'Fr. Carlos Building' ? 'selected' : '' }}>Fr. Carlos Building</option>
-                            <option value="Fr. Urbano Building" {{ old('building') == 'Fr. Urbano Building' ? 'selected' : '' }}>Fr. Urbano Building</option>
-                            <option value="Fr. Joseph Building" {{ old('building') == 'Fr. Joseph Building' ? 'selected' : '' }}>Fr. Joseph Building</option>
-                            <option value="Facade Building" {{ old('building') == 'Facade Building' ? 'selected' : '' }}>Facade Building</option>
+                            @foreach($buildings as $building)
+                            <option value="{{ $building->name }}" {{ old('building') == $building->name ? 'selected' : '' }}>{{ $building->name }}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -80,7 +75,7 @@
                     </div>
                 </div>
                 
-                <!-- Room Dropdown -->
+                <!-- Room Input -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Room/Office</label>
                     <div class="relative">
@@ -89,27 +84,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                         </div>
-                        <select name="room_number" id="room_number" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
-                            <option value="">Select Room/Office</option>
-                        </select>
+                        <input type="text" name="room_number" id="room_number" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="Enter room/office name" value="{{ old('room_number') }}" required>
                     </div>
                 </div>
-
-                <!-- Other Room Input (hidden by default) -->
-                <div id="otherRoomDiv" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Specify Room/Office</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <input type="text" name="other_room" id="other_room" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="Enter custom room/office name" value="{{ old('other_room') }}">
-                    </div>
-                </div>
-                
-                <!-- Add this hidden input after the room_number select -->
-                <input type="hidden" name="final_room_number" id="final_room_number" value="">
                 
                 <div class="pt-4">
                     <div class="flex justify-between items-center">
@@ -142,7 +119,7 @@
             <div class="ml-3">
                 <h3 class="text-sm font-medium text-blue-800">Location Information</h3>
                 <div class="mt-2 text-sm text-blue-700">
-                    <p>Locations are used to track where assets are physically located. Select from the predefined options or choose "Other" to specify a custom room.</p>
+                    <p>Locations are used to track where assets are physically located. Select the building and floor, then enter the specific room or office name.</p>
                 </div>
             </div>
         </div>
@@ -152,222 +129,12 @@
 <script>
 console.log('JavaScript is loading...');
 
-// Location data from CSV
-const locationData = {
-    "FR. Smits Building": {
-        "Ground Floor": [
-            "Concessionaire",
-            "Electrician Quarters",
-            "Janitor's Quarter",
-            "HS Electrical/Electronic Drafting Room",
-            "HS Sewing Room",
-            "HS Woodworking Room",
-            "Stock Issuance Section",
-            "Purchasing Office",
-            "GSU Working Area",
-            "Kios",
-            "ABCI",
-            "GSU",
-            "Bookstore Stockroom",
-            "Bookstore"
-        ],
-        "2nd Floor": [
-            "College Faculty",
-            "HS Rooms 52–55",
-            "Speech Lab Rooms 56–57",
-            "Mini Hotel",
-            "SHS Classroom",
-            "Security Guard Barracks"
-        ],
-        "3rd Floor": [
-            "HS Rooms 59–62",
-            "HS Laboratory Rooms 63–64",
-            "President's Hall",
-            "Caregiver Lecture Room"
-        ],
-        "4th Floor": [
-            "HS Rooms 65–69, 74",
-            "HS Laboratory Rooms 70–71",
-            "Apicius Rooms 72–73",
-            "HS Laboratory Stockroom"
-        ]
-    },
-    "Msgr. Gabriel Building": {
-        "Ground Floor": [
-            "ECE Multimedia",
-            "ECE Rooms 1–7",
-            "ACU Canteen"
-        ],
-        "2nd Floor": [
-            "College Dean's Office",
-            "SHS Principal's Office",
-            "SHS Faculty Room",
-            "SHS OSA",
-            "College Guidance Office",
-            "Conference Room",
-            "Office of the President",
-            "Office of Student Affairs and Services",
-            "Testing Area",
-            "Institutional Office of Student Services and Affairs",
-            "Physical Plant Office & PCO",
-            "Veranda",
-            "Control Booth",
-            "SHS Rooms 211–214",
-            "SHS Classroom Caceres"
-        ],
-        "3rd Floor": [
-            "HS Library",
-            "SHS Library",
-            "College Library",
-            "Grade School Library",
-            "Caregiver Lecture Room 3",
-            "SGS Conference Room",
-            "SGS Office",
-            "VPRPDEO Headquarters",
-            "VPRPDEO Office"
-        ],
-        "4th Floor": [
-            "Computer Labs 401–409",
-            "ICTC"
-        ],
-        "5th Floor": [
-            "SHS Rooms 510–520",
-            "Science Labs 1–2"
-        ],
-        "6th Floor": [
-            "St. Joseph Gymnasium",
-            "Aula Minor"
-        ]
-    },
-    "Msgr. Sunga Building": {
-        "Ground Floor": [
-            "Security Office",
-            "Mini Stage",
-            "Pastoral",
-            "JHS OSA",
-            "JHS Principal's Office",
-            "Registrar's Office",
-            "EVP",
-            "CFO",
-            "Sister's Convention",
-            "IOSA",
-            "CPARTS"
-        ],
-        "2nd Floor": [
-            "JHS Faculty",
-            "HS Guidance",
-            "Testing Room",
-            "SHS Rooms 206–208",
-            "ACADE"
-        ],
-        "3rd Floor": [
-            "JHS Rooms 401–408"
-        ],
-        "4th Floor": [
-            "JHS Rooms 401–408"
-        ],
-        "5th Floor": [
-            "JHS Rooms 501–508"
-        ],
-        "Mezzanine Floor": [
-            "HS OSA",
-            "Pastoral Storage",
-            "JHS Academic Office",
-            "Registrar Files Room",
-            "EVP Storage",
-            "EVP Board Room",
-            "CCF Board Room",
-            "Sister's Convent"
-        ]
-    },
-    "Bishop San Diego Building": {
-        "Ground Floor": [
-            "Pump Room",
-            "Main Canteen",
-            "Kitchen",
-            "Sto. Niño Chapel"
-        ],
-        "2nd Floor": [
-            "Seminar Room",
-            "San Pedro Calungsod",
-            "ROTC Room"
-        ],
-        "3rd Floor": [
-            "VPAA Conference",
-            "VPAA",
-            "HS Reading Center"
-        ],
-        "4th Floor": [
-            "GS Home Economics Lab"
-        ],
-        "5th Floor": [
-            "SHS Rooms SD3–SD5"
-        ],
-        "Mezzanine Floor": [
-            "Canteen Eating Area"
-        ]
-    },
-    "Fr. Carlos Building": {
-        "Ground Floor": [
-            "ERP Room 1",
-            "Grade School Rooms 2–5"
-        ],
-        "2nd Floor": [
-            "GS Rooms 11–15"
-        ],
-        "3rd Floor": [
-            "GS Rooms 29–33"
-        ]
-    },
-    "Fr. Urbano Building": {
-        "Ground Floor": [
-            "Medical Dental Clinic",
-            "GS Guidance",
-            "Grade School Principal's Office",
-            "GS Faculty"
-        ],
-        "2nd Floor": [
-            "GS Rooms 23–28",
-            "GS Reading Center Rooms 21–22"
-        ],
-        "3rd Floor": [
-            "GS Rooms 30–45"
-        ],
-        "4th Floor": [
-            "GS Rooms 46–53"
-        ]
-    },
-    "Fr. Joseph Building": {
-        "Ground Floor": [
-            "GS Rooms 6–10"
-        ],
-        "2nd Floor": [
-            "Stock Room",
-            "GS ACA",
-            "GS Rooms 16–20"
-        ],
-        "3rd Floor": [
-            "GS MAPE Faculty",
-            "GS Rooms 34–38"
-        ]
-    },
-    "Facade Building": {
-        "Ground Floor": [
-            "Finance",
-            "Treasury",
-            "Accounting",
-            "Budget",
-            "CHRMD (HR)",
-            "ACU Canteen"
-        ],
-        "2nd Floor": [
-            "Alumni Conference Room",
-            "Alumni Office",
-            "Archive Room",
-            "CEA Room"
-        ]
-    }
-};
+// Dynamic location data from server
+const locationData = @json($buildings->mapWithKeys(function($building) {
+    return [$building->name => $building->floors->mapWithKeys(function($floor) {
+        return [$floor->name => []]; // Empty array for rooms - will be populated dynamically
+    })];
+}));
 
 console.log('Location data loaded');
 
@@ -376,15 +143,9 @@ document.getElementById('building').addEventListener('change', function() {
     console.log('Building changed to:', this.value);
     const building = this.value;
     const floorSelect = document.getElementById('floor');
-    const roomSelect = document.getElementById('room_number');
-    const otherRoomDiv = document.getElementById('otherRoomDiv');
-    const otherRoomInput = document.getElementById('other_room');
     
-    // Clear floor and room options
+    // Clear floor options
     floorSelect.innerHTML = '<option value="">Select Floor</option>';
-    roomSelect.innerHTML = '<option value="">Select Room/Office</option>';
-    otherRoomDiv.classList.add('hidden');
-    otherRoomInput.value = '';
     
     if (building && locationData[building]) {
         // Populate floor options
@@ -394,103 +155,6 @@ document.getElementById('building').addEventListener('change', function() {
             option.textContent = floor;
             floorSelect.appendChild(option);
         });
-    }
-});
-
-// Floor change handler
-document.getElementById('floor').addEventListener('change', function() {
-    const building = document.getElementById('building').value;
-    const floor = this.value;
-    const roomSelect = document.getElementById('room_number');
-    const otherRoomDiv = document.getElementById('otherRoomDiv');
-    const otherRoomInput = document.getElementById('other_room');
-    
-    // Clear room options
-    roomSelect.innerHTML = '<option value="">Select Room/Office</option>';
-    otherRoomDiv.classList.add('hidden');
-    otherRoomInput.value = '';
-    
-    if (building && floor && locationData[building] && locationData[building][floor]) {
-        // Populate room options
-        locationData[building][floor].forEach(room => {
-            const option = document.createElement('option');
-            option.value = room;
-            option.textContent = room;
-            roomSelect.appendChild(option);
-        });
-        
-        // Add "Other" option
-        const otherOption = document.createElement('option');
-        otherOption.value = 'Other';
-        otherOption.textContent = 'Other';
-        roomSelect.appendChild(otherOption);
-    }
-});
-
-// Room change handler
-document.getElementById('room_number').addEventListener('change', function() {
-    const otherRoomDiv = document.getElementById('otherRoomDiv');
-    const otherRoomInput = document.getElementById('other_room');
-    
-    if (this.value === 'Other') {
-        otherRoomDiv.classList.remove('hidden');
-        otherRoomInput.required = true;
-        // Don't set required on room_number when Other is selected
-    } else {
-        otherRoomDiv.classList.add('hidden');
-        otherRoomInput.required = false;
-        otherRoomInput.value = '';
-        // Don't set required on room_number for predefined rooms either
-    }
-});
-
-// Form submission handler
-document.getElementById('locationForm').addEventListener('submit', function(e) {
-    try {
-        console.log('Form submit event fired!');
-        
-        const roomSelect = document.getElementById('room_number');
-        const otherRoomInput = document.getElementById('other_room');
-        const finalRoomInput = document.getElementById('final_room_number');
-        
-        console.log('=== FORM SUBMISSION DEBUG ===');
-        console.log('roomSelect.value before:', roomSelect.value);
-        console.log('otherRoomInput.value before:', otherRoomInput.value);
-        
-        // Check if any room is selected
-        if (!roomSelect.value || roomSelect.value === '') {
-            e.preventDefault();
-            alert('Please select a room/office.');
-            roomSelect.focus();
-            return;
-        }
-        
-        let finalRoomValue = roomSelect.value;
-        
-        // If "Other" is selected, validate and prepare the data
-        if (roomSelect.value === 'Other') {
-            console.log('Other selected, validating...');
-            if (otherRoomInput.value.trim() === '') {
-                e.preventDefault();
-                alert('Please specify the room/office name.');
-                otherRoomInput.focus();
-                return;
-            }
-            finalRoomValue = otherRoomInput.value.trim();
-            console.log('Updated finalRoomValue to:', finalRoomValue);
-        }
-        
-        // Set the final room value in the hidden field
-        finalRoomInput.value = finalRoomValue;
-        
-        console.log('roomSelect.value after:', roomSelect.value);
-        console.log('finalRoomValue:', finalRoomValue);
-        console.log('=== END DEBUG ===');
-        
-        // Let the form submit normally with the updated data
-        
-    } catch (error) {
-        console.error('Error in form submission handler:', error);
     }
 });
 
@@ -505,21 +169,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('building').dispatchEvent(new Event('change'));
         
         if (floor) {
-            // Set floor and trigger change
+            // Set floor value
             document.getElementById('floor').value = floor;
-            document.getElementById('floor').dispatchEvent(new Event('change'));
-            
-            if (room) {
-                if (room === '{{ old("other_room") }}') {
-                    // This was a custom room
-                    document.getElementById('room_number').value = 'Other';
-                    document.getElementById('room_number').dispatchEvent(new Event('change'));
-                    document.getElementById('other_room').value = room;
-                } else {
-                    // This was a predefined room
-                    document.getElementById('room_number').value = room;
-                }
-            }
+        }
+        
+        if (room) {
+            // Set room value
+            document.getElementById('room_number').value = room;
         }
     }
 });

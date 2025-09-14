@@ -47,6 +47,139 @@
         </div>
     @endif
 
+    <!-- Building Management Section -->
+    <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+                <h2 class="text-lg md:text-xl font-semibold text-gray-900">Building Management</h2>
+            </div>
+            <button onclick="openAddBuildingModal()" class="inline-flex items-center px-3 py-2 bg-blue-800 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Building
+            </button>
+        </div>
+
+        @if($buildings->count() > 0)
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($buildings as $building)
+            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center">
+                        <div class="bg-gray-100 p-2 rounded-lg mr-3">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">{{ $building->name }}</div>
+                            <div class="text-xs text-gray-500">{{ $building->floors->count() }} floors</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        @if($building->is_active)
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                        </span>
+                        @else
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Inactive
+                        </span>
+                        @endif
+                        <a href="{{ route('buildings.show', $building) }}" class="text-blue-600 hover:text-blue-900 transition-colors duration-200" title="View Details">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </a>
+                        <button onclick="openEditBuildingModal({{ $building->id }}, '{{ $building->name }}', '{{ $building->description }}', {{ $building->is_active ? 'true' : 'false' }})" class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200" title="Edit Building">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
+                        <form action="{{ route('buildings.destroy', $building) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this building and all its floors?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 hover:text-red-900 transition-colors duration-200" title="Delete Building">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Floors List -->
+                @if($building->floors->count() > 0)
+                <div class="space-y-2">
+                    @foreach($building->floors->take(3) as $floor)
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center">
+                            <svg class="w-3 h-3 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
+                            <span class="text-gray-600">{{ $floor->name }}</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            @if($floor->is_active)
+                            <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                            @else
+                            <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+                            @endif
+                            <button onclick="openEditFloorModal({{ $building->id }}, {{ $floor->id }}, '{{ $floor->name }}', {{ $floor->floor_number ?? 'null' }}, '{{ $floor->description }}', {{ $floor->is_active ? 'true' : 'false' }})" class="text-indigo-500 hover:text-indigo-700">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <form action="{{ route('buildings.floors.destroy', [$building, $floor]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this floor?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-500 hover:text-red-700">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    @endforeach
+                    @if($building->floors->count() > 3)
+                    <div class="text-xs text-gray-500 text-center">+{{ $building->floors->count() - 3 }} more floors</div>
+                    @endif
+                </div>
+                @else
+                <div class="text-xs text-gray-500 text-center py-2">No floors added yet</div>
+                @endif
+                
+                <!-- Add Floor Button -->
+                <div class="mt-3 pt-3 border-t border-gray-100">
+                    <button onclick="openAddFloorModal({{ $building->id }})" class="w-full text-xs text-blue-600 hover:text-blue-800 transition-colors duration-200 flex items-center justify-center">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Floor
+                    </button>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @else
+        <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No buildings</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating a new building.</p>
+        </div>
+        @endif
+    </div>
+
     <!-- Search and Filter Bar -->
     <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
         <form method="GET" action="{{ route('locations.index') }}" class="flex flex-col sm:flex-row gap-4">
@@ -419,6 +552,221 @@
             hideDeleteModal();
         }
     });
+
+    // Building Management Functions
+    function openAddBuildingModal() {
+        document.getElementById('addBuildingModal').classList.remove('hidden');
+    }
+
+    function closeAddBuildingModal() {
+        document.getElementById('addBuildingModal').classList.add('hidden');
+        document.getElementById('addBuildingModal').querySelector('form').reset();
+    }
+
+    function openEditBuildingModal(id, name, description, isActive) {
+        document.getElementById('editBuildingForm').action = `/buildings/${id}`;
+        document.getElementById('edit_building_name').value = name;
+        document.getElementById('edit_building_description').value = description || '';
+        document.getElementById('edit_building_active').checked = isActive;
+        document.getElementById('editBuildingModal').classList.remove('hidden');
+    }
+
+    function closeEditBuildingModal() {
+        document.getElementById('editBuildingModal').classList.add('hidden');
+    }
+
+    function openAddFloorModal(buildingId) {
+        document.getElementById('addFloorForm').action = `/buildings/${buildingId}/floors`;
+        document.getElementById('addFloorModal').classList.remove('hidden');
+    }
+
+    function closeAddFloorModal() {
+        document.getElementById('addFloorModal').classList.add('hidden');
+        document.getElementById('addFloorModal').querySelector('form').reset();
+    }
+
+    function openEditFloorModal(buildingId, floorId, name, floorNumber, description, isActive) {
+        document.getElementById('editFloorForm').action = `/buildings/${buildingId}/floors/${floorId}`;
+        document.getElementById('edit_floor_name').value = name;
+        document.getElementById('edit_floor_number').value = floorNumber || '';
+        document.getElementById('edit_floor_description').value = description || '';
+        document.getElementById('edit_floor_active').checked = isActive;
+        document.getElementById('editFloorModal').classList.remove('hidden');
+    }
+
+    function closeEditFloorModal() {
+        document.getElementById('editFloorModal').classList.add('hidden');
+    }
 </script>
+
+<!-- Add Building Modal -->
+<div id="addBuildingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Add New Building</h3>
+                <button onclick="closeAddBuildingModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form action="{{ route('buildings.store') }}" method="POST">
+                @csrf
+                <div class="space-y-4">
+                    <div>
+                        <label for="building_name" class="block text-sm font-medium text-gray-700 mb-1">Building Name</label>
+                        <input type="text" name="name" id="building_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Main Building" required>
+                    </div>
+                    <div>
+                        <label for="building_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" id="building_description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional description"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddBuildingModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                        Add Building
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Building Modal -->
+<div id="editBuildingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Edit Building</h3>
+                <button onclick="closeEditBuildingModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="editBuildingForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit_building_name" class="block text-sm font-medium text-gray-700 mb-1">Building Name</label>
+                        <input type="text" name="name" id="edit_building_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="edit_building_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" id="edit_building_description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" value="1" id="edit_building_active" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            <span class="ml-2 text-sm text-gray-700">Active</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeEditBuildingModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                        Update Building
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Floor Modal -->
+<div id="addFloorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Add New Floor</h3>
+                <button onclick="closeAddFloorModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="addFloorForm" method="POST">
+                @csrf
+                <div class="space-y-4">
+                    <div>
+                        <label for="floor_name" class="block text-sm font-medium text-gray-700 mb-1">Floor Name</label>
+                        <input type="text" name="name" id="floor_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Ground Floor, 2nd Floor" required>
+                    </div>
+                    <div>
+                        <label for="floor_number" class="block text-sm font-medium text-gray-700 mb-1">Floor Number</label>
+                        <input type="number" name="floor_number" id="floor_number" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 0, 1, 2" min="0">
+                    </div>
+                    <div>
+                        <label for="floor_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" id="floor_description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional description"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddFloorModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                        Add Floor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Floor Modal -->
+<div id="editFloorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Edit Floor</h3>
+                <button onclick="closeEditFloorModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="editFloorForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit_floor_name" class="block text-sm font-medium text-gray-700 mb-1">Floor Name</label>
+                        <input type="text" name="name" id="edit_floor_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="edit_floor_number" class="block text-sm font-medium text-gray-700 mb-1">Floor Number</label>
+                        <input type="number" name="floor_number" id="edit_floor_number" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0">
+                    </div>
+                    <div>
+                        <label for="edit_floor_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" id="edit_floor_description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" value="1" id="edit_floor_active" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            <span class="ml-2 text-sm text-gray-700">Active</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeEditFloorModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+                        Update Floor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @endsection

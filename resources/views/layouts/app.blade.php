@@ -225,6 +225,7 @@
                     </a>
                     @endif
 
+
                     <!-- Vendors - Hide from secretary -->
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <a href="{{ route('vendors.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('vendors.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
@@ -458,8 +459,9 @@
     @yield('scripts')
 
     <script>
-        // Add mobile sidebar toggle functionality
+        // Combined sidebar and navigation functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar functionality
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -536,9 +538,8 @@
                     }
                 });
             }
-        });
 
-        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation functionality
             // Update selector to include all navigation items
             const navItems = document.querySelectorAll('a[href], button[onclick]');
             const currentPath = window.location.pathname;
@@ -679,6 +680,18 @@
 
             // Check and open dropdown for current path
             checkAndOpenDropdown();
+
+            // Lab Schedule menu functionality
+            const labScheduleButton = document.querySelector('[onclick="toggleLabScheduleMenu()"]');
+            const labScheduleMenu = document.getElementById('labScheduleMenu');
+
+            // Check if current path is lab schedule related
+            if (currentPath.includes('/lab-schedule') || currentPath.includes('/lab-history') || currentPath.includes('/lab-logging')) {
+                if (labScheduleButton && labScheduleMenu) {
+                    labScheduleButton.classList.add('nav-active');
+                    labScheduleMenu.classList.remove('hidden');
+                }
+            }
         });
 
         // Profile dropdown functionality
@@ -707,20 +720,6 @@
             }
         }
 
-        // Add this function to initialize the Lab Schedule menu state
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentPath = window.location.pathname;
-            const labScheduleButton = document.querySelector('[onclick="toggleLabScheduleMenu()"]');
-            const labScheduleMenu = document.getElementById('labScheduleMenu');
-
-            // Check if current path is lab schedule related
-            if (currentPath.includes('/lab-schedule') || currentPath.includes('/lab-history') || currentPath.includes('/lab-logging')) {
-                if (labScheduleButton && labScheduleMenu) {
-                    labScheduleButton.classList.add('nav-active');
-                    labScheduleMenu.classList.remove('hidden');
-                }
-            }
-        });
 
     </script>
 </body>

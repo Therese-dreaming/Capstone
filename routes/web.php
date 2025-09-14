@@ -88,6 +88,13 @@ Route::middleware(['auth'])->group(function () {
 		Route::resource('categories', CategoryController::class);
 		Route::resource('locations', LocationController::class);
 		Route::get('/locations-all', [LocationController::class, 'getAll'])->name('locations.getAll');
+		Route::get('/buildings/{building}', [LocationController::class, 'showBuilding'])->name('buildings.show');
+		Route::post('/buildings', [LocationController::class, 'storeBuilding'])->name('buildings.store');
+		Route::put('/buildings/{building}', [LocationController::class, 'updateBuilding'])->name('buildings.update');
+		Route::delete('/buildings/{building}', [LocationController::class, 'destroyBuilding'])->name('buildings.destroy');
+		Route::post('/buildings/{building}/floors', [LocationController::class, 'storeFloor'])->name('buildings.floors.store');
+		Route::put('/buildings/{building}/floors/{floor}', [LocationController::class, 'updateFloor'])->name('buildings.floors.update');
+		Route::delete('/buildings/{building}/floors/{floor}', [LocationController::class, 'destroyFloor'])->name('buildings.floors.destroy');
 		Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
 		Route::post('/vendors/add-new', [VendorController::class, 'addNewVendor'])->name('vendors.addNew');
 		Route::get('/vendors/get-all', [VendorController::class, 'getAllVendors'])->name('vendors.getAll');

@@ -119,27 +119,44 @@
                                 </div>
                                 <div class="flex items-center justify-between md:justify-end md:space-x-2">
                                     <div class="flex space-x-1 md:space-x-2">
-                                        <button onclick="completeAllTasks('{{ $locationId}}', '{{ $date }}'); event.stopPropagation();" 
-                                            class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 flex items-center shadow-sm">
-                                            <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span class="ml-1">All</span>
-                                        </button>
-                                        <button onclick="cancelAllTasks('{{ $locationId}}', '{{ $date }}'); event.stopPropagation();" 
-                                            class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 flex items-center shadow-sm">
-                                            <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                            <span class="ml-1">All</span>
-                                        </button>
-                                        <a href="{{ route('maintenance.editByDate', ['locationId' => $locationId, 'date' => $date]) }}" 
-                                            onclick="event.stopPropagation();"
-                                            class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 flex items-center shadow-sm">
-                                            <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </a>
+                                        @php
+                                            $userIsAssignedToAnyTask = $maintenanceItems->contains('technician_id', auth()->user()->id);
+                                        @endphp
+                                        
+                                        @if($userIsAssignedToAnyTask)
+                                            <button onclick="completeAllTasks('{{ $locationId}}', '{{ $date }}'); event.stopPropagation();" 
+                                                class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 flex items-center shadow-sm">
+                                                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span class="ml-1">All</span>
+                                            </button>
+                                        @else
+                                            <button disabled 
+                                                class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center shadow-sm">
+                                                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span class="ml-1">All</span>
+                                            </button>
+                                        @endif
+                                        
+                                        @if(auth()->user()->group_id == 1)
+                                            <button onclick="cancelAllTasks('{{ $locationId}}', '{{ $date }}'); event.stopPropagation();" 
+                                                class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 flex items-center shadow-sm">
+                                                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                                <span class="ml-1">All</span>
+                                            </button>
+                                            <a href="{{ route('maintenance.editByDate', ['locationId' => $locationId, 'date' => $date]) }}" 
+                                                onclick="event.stopPropagation();"
+                                                class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 flex items-center shadow-sm">
+                                                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </a>
+                                        @endif
                                     </div>
                                     <svg class="w-4 h-4 md:w-5 md:h-5 transform transition-transform duration-200 ml-2 text-gray-500" id="chevron-date-{{ str_replace('-', '', $date) }}-{{ $locationId}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -195,18 +212,30 @@
                                                 {{ ucfirst($maintenance->status) }}
                                             </span>
                                             <div class="flex space-x-2 mt-2">
-                                                <button onclick="markAsComplete('{{ $maintenance->id }}', '{{ $locationId}}')" 
-                                                    class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
-                                                    <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                </button>
-                                                <button onclick="cancelMaintenance('{{ $maintenance->id }}')" 
-                                                    class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
-                                                    <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
+                                                @if(auth()->user()->id == $maintenance->technician_id)
+                                                    <button onclick="markAsComplete('{{ $maintenance->id }}', '{{ $locationId}}')" 
+                                                        class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
+                                                        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </button>
+                                                @else
+                                                    <button disabled 
+                                                        class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 bg-gray-400 text-white rounded-lg cursor-not-allowed shadow-sm">
+                                                        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </button>
+                                                @endif
+                                                
+                                                @if(auth()->user()->group_id == 1)
+                                                    <button onclick="cancelMaintenance('{{ $maintenance->id }}')" 
+                                                        class="text-xs md:text-sm px-2 py-1 md:px-3 md:py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm">
+                                                        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

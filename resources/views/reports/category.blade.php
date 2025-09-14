@@ -79,7 +79,7 @@
                         Asset Distribution Charts
                     </h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Asset Count by Category Chart -->
                         <div class="bg-white rounded-xl shadow-md p-4">
                             <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
@@ -105,18 +105,33 @@
                                 <canvas id="assetValueChart"></canvas>
                             </div>
                         </div>
-
-                        <!-- Asset Distribution Pie Chart -->
+                    </div>
+                    
+                    <!-- Age Distribution Charts -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <!-- Asset Age Distribution Chart -->
                         <div class="bg-white rounded-xl shadow-md p-4">
                             <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
-                                <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                                <svg class="w-4 h-4 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Distribution
+                                Asset Age Distribution
                             </h4>
                             <div class="h-64">
-                                <canvas id="assetDistributionChart"></canvas>
+                                <canvas id="assetAgeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Assets 5+ Years Old Chart -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Assets 5+ Years Old
+                            </h4>
+                            <div class="h-64">
+                                <canvas id="oldAssetsChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -235,6 +250,8 @@
         categories: @json($categories->pluck('name')),
         assetCounts: @json($categories->map(fn($cat) => $cat->assets->count())),
         assetValues: @json($categories->map(fn($cat) => $cat->assets->sum('purchase_price'))),
+        ageDistribution: @json($ageDistribution),
+        oldAssetsData: @json($oldAssetsData),
         colors: [
             '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
             '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
@@ -381,15 +398,83 @@
         }
     });
 
-    // Asset Distribution Pie Chart
-    const assetDistributionCtx = document.getElementById('assetDistributionChart').getContext('2d');
-    new Chart(assetDistributionCtx, {
+    // Asset Age Distribution Chart (Bar Chart)
+    const assetAgeCtx = document.getElementById('assetAgeChart').getContext('2d');
+    new Chart(assetAgeCtx, {
+        type: 'bar',
+        data: {
+            labels: chartData.ageDistribution.labels,
+            datasets: [{
+                label: 'Asset Count',
+                data: chartData.ageDistribution.data,
+                backgroundColor: chartData.colors.slice(0, chartData.ageDistribution.labels.length).map(color => color + '80'),
+                borderColor: chartData.colors.slice(0, chartData.ageDistribution.labels.length),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `Assets: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#6B7280',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6B7280',
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45
+                    }
+                }
+            }
+        }
+    });
+
+    // Assets 5+ Years Old Chart (Doughnut Chart)
+    const oldAssetsCtx = document.getElementById('oldAssetsChart').getContext('2d');
+    new Chart(oldAssetsCtx, {
         type: 'doughnut',
         data: {
-            labels: chartData.categories,
+            labels: chartData.oldAssetsData.labels,
             datasets: [{
-                data: chartData.assetCounts,
-                backgroundColor: chartData.colors.slice(0, chartData.categories.length),
+                data: chartData.oldAssetsData.data,
+                backgroundColor: ['#EF4444', '#10B981'],
                 borderColor: 'white',
                 borderWidth: 3,
                 hoverOffset: 15,
@@ -423,7 +508,7 @@
                     callbacks: {
                         label: function(context) {
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
                             return `${context.label}: ${context.parsed} (${percentage}%)`;
                         }
                     }
@@ -458,8 +543,18 @@
             display: none !important;
         }
 
-        /* Hide charts section in print */
+        /* Hide all charts section in print */
         .mb-8:has(.bg-gray-50.rounded-xl.p-6:has(h3:contains("Asset Distribution Charts"))) {
+            display: none !important;
+        }
+
+        /* Hide chart containers specifically */
+        .bg-gray-50.rounded-xl.p-6:has(h3:contains("Asset Distribution Charts")) {
+            display: none !important;
+        }
+
+        /* Hide individual chart containers within the charts section */
+        .bg-gray-50.rounded-xl.p-6 .bg-white.rounded-xl.shadow-md.p-4 {
             display: none !important;
         }
 
@@ -562,6 +657,25 @@
         /* Hide Actions column in print */
         table th:last-child,
         table td:last-child {
+            display: none !important;
+        }
+
+        /* Hide pagination in print */
+        .mt-8:has(.pagination),
+        .pagination,
+        .pagination-info,
+        .pagination-links {
+            display: none !important;
+        }
+
+        /* Hide specific titles in print */
+        h3:contains("Asset Distribution Charts"),
+        h3:contains("Detailed Category Breakdown") {
+            display: none !important;
+        }
+
+        /* Hide pagination info text */
+        .text-sm.text-gray-700.leading-5 {
             display: none !important;
         }
 

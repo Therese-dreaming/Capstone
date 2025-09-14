@@ -43,7 +43,44 @@ class ReportController extends Controller
             ];
         });
 
-        return view('reports.category', compact('categories', 'categoryStats', 'totalSummary'));
+        // Calculate age distribution data
+        $allAssets = Asset::where('status', '!=', 'DISPOSED')->get();
+        $today = Carbon::now();
+        
+        $ageDistribution = [
+            'labels' => ['0-1 years', '1-2 years', '2-3 years', '3-4 years', '4-5 years', '5+ years'],
+            'data' => [0, 0, 0, 0, 0, 0]
+        ];
+        
+        foreach ($allAssets as $asset) {
+            $age = $today->diffInYears(Carbon::parse($asset->purchase_date));
+            
+            if ($age < 1) {
+                $ageDistribution['data'][0]++;
+            } elseif ($age < 2) {
+                $ageDistribution['data'][1]++;
+            } elseif ($age < 3) {
+                $ageDistribution['data'][2]++;
+            } elseif ($age < 4) {
+                $ageDistribution['data'][3]++;
+            } elseif ($age < 5) {
+                $ageDistribution['data'][4]++;
+            } else {
+                $ageDistribution['data'][5]++;
+            }
+        }
+
+        // Calculate assets 5+ years old data
+        $assets5Plus = $allAssets->filter(function($asset) use ($today) {
+            return $today->diffInYears(Carbon::parse($asset->purchase_date)) >= 5;
+        });
+        
+        $oldAssetsData = [
+            'labels' => ['Under 5 years', '5+ years old'],
+            'data' => [$allAssets->count() - $assets5Plus->count(), $assets5Plus->count()]
+        ];
+
+        return view('reports.category', compact('categories', 'categoryStats', 'totalSummary', 'ageDistribution', 'oldAssetsData'));
     }
 
     public function locationReport()
@@ -67,21 +104,72 @@ class ReportController extends Controller
                 ];
             })->values();
 
-        // Convert to collection and add pagination using LengthAwarePaginator
-        $perPage = 15;
-        $currentPage = request()->get('page', 1);
-        $total = $locationStats->count();
-        $items = $locationStats->forPage($currentPage, $perPage);
+        // Calculate age distribution data
+        $today = Carbon::now();
         
-        $locationStats = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items,
-            $total,
-            $perPage,
-            $currentPage,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+        $ageDistribution = [
+            'labels' => ['0-1 years', '1-2 years', '2-3 years', '3-4 years', '4-5 years', '5+ years'],
+            'data' => [0, 0, 0, 0, 0, 0]
+        ];
+        
+        foreach ($assets as $asset) {
+            $age = $today->diffInYears(Carbon::parse($asset->purchase_date));
+            
+            if ($age < 1) {
+                $ageDistribution['data'][0]++;
+            } elseif ($age < 2) {
+                $ageDistribution['data'][1]++;
+            } elseif ($age < 3) {
+                $ageDistribution['data'][2]++;
+            } elseif ($age < 4) {
+                $ageDistribution['data'][3]++;
+            } elseif ($age < 5) {
+                $ageDistribution['data'][4]++;
+            } else {
+                $ageDistribution['data'][5]++;
+            }
+        }
 
-        return view('reports.location', compact('locationStats', 'totalSummary'));
+        // Calculate assets 5+ years old data
+        $assets5Plus = $assets->filter(function($asset) use ($today) {
+            return $today->diffInYears(Carbon::parse($asset->purchase_date)) >= 5;
+        });
+        
+        $oldAssetsData = [
+            'labels' => ['Under 5 years', '5+ years old'],
+            'data' => [$assets->count() - $assets5Plus->count(), $assets5Plus->count()]
+        ];
+
+        // Check if this is a print request
+        $isPrint = request()->has('print') || (request()->header('User-Agent') && str_contains(request()->header('User-Agent'), 'print'));
+        
+        if ($isPrint) {
+            // For print, create a paginator with all items on one page
+            $total = $locationStats->count();
+            $locationStats = new \Illuminate\Pagination\LengthAwarePaginator(
+                $locationStats,
+                $total,
+                $total, // Show all items on one page
+                1, // Page 1
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+        } else {
+            // Convert to collection and add pagination using LengthAwarePaginator
+            $perPage = 15;
+            $currentPage = request()->get('page', 1);
+            $total = $locationStats->count();
+            $items = $locationStats->forPage($currentPage, $perPage);
+            
+            $locationStats = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $total,
+                $perPage,
+                $currentPage,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
+        }
+
+        return view('reports.location', compact('locationStats', 'totalSummary', 'ageDistribution', 'oldAssetsData'));
     }
 
     public function locationDetails($location)

@@ -37,6 +37,28 @@ class AssetController extends Controller
             $query->where('location_id', $request->location);
         }
 
+        // Add warranty filter
+        if ($request->has('warranty') && $request->warranty) {
+            $today = Carbon::now();
+            
+            switch ($request->warranty) {
+                case 'expiring_365':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(365)->format('Y-m-d'));
+                    break;
+                case 'expiring_30':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(30)->format('Y-m-d'));
+                    break;
+                case 'expired':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '<', $today->format('Y-m-d'));
+                    break;
+            }
+        }
+
         // Add date range filter
         if ($request->has('date_from') && $request->date_from) {
             $query->where('purchase_date', '>=', $request->date_from);

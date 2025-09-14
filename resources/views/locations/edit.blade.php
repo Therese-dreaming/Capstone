@@ -93,7 +93,7 @@
                         </div>
                     </div>
                     
-                    <!-- Room Dropdown -->
+                    <!-- Room Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Room/Office</label>
                         <div class="relative">
@@ -102,27 +102,9 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <select name="room_number" id="room_number" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" required>
-                                <option value="">Select Room/Office</option>
-                            </select>
+                            <input type="text" name="room_number" id="room_number" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="Enter room/office name" value="{{ old('room_number', $location->room_number) }}" required>
                         </div>
                     </div>
-
-                    <!-- Other Room Input (hidden by default) -->
-                    <div id="otherRoomDiv" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Specify Room/Office</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <input type="text" name="other_room" id="other_room" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="Enter custom room/office name" value="{{ old('other_room') }}">
-                        </div>
-                    </div>
-                    
-                    <!-- Add this hidden input after the room_number select -->
-                    <input type="hidden" name="final_room_number" id="final_room_number" value="">
                     
                     <!-- Action Buttons -->
                     <div class="flex flex-col sm:flex-row gap-3 pt-6">
@@ -367,15 +349,9 @@ const locationData = {
 document.getElementById('building').addEventListener('change', function() {
     const building = this.value;
     const floorSelect = document.getElementById('floor');
-    const roomSelect = document.getElementById('room_number');
-    const otherRoomDiv = document.getElementById('otherRoomDiv');
-    const otherRoomInput = document.getElementById('other_room');
     
-    // Clear floor and room options
+    // Clear floor options
     floorSelect.innerHTML = '<option value="">Select Floor</option>';
-    roomSelect.innerHTML = '<option value="">Select Room/Office</option>';
-    otherRoomDiv.classList.add('hidden');
-    otherRoomInput.value = '';
     
     if (building && locationData[building]) {
         // Populate floor options
@@ -385,103 +361,6 @@ document.getElementById('building').addEventListener('change', function() {
             option.textContent = floor;
             floorSelect.appendChild(option);
         });
-    }
-});
-
-// Floor change handler
-document.getElementById('floor').addEventListener('change', function() {
-    const building = document.getElementById('building').value;
-    const floor = this.value;
-    const roomSelect = document.getElementById('room_number');
-    const otherRoomDiv = document.getElementById('otherRoomDiv');
-    const otherRoomInput = document.getElementById('other_room');
-    
-    // Clear room options
-    roomSelect.innerHTML = '<option value="">Select Room/Office</option>';
-    otherRoomDiv.classList.add('hidden');
-    otherRoomInput.value = '';
-    
-    if (building && floor && locationData[building] && locationData[building][floor]) {
-        // Populate room options
-        locationData[building][floor].forEach(room => {
-            const option = document.createElement('option');
-            option.value = room;
-            option.textContent = room;
-            roomSelect.appendChild(option);
-        });
-        
-        // Add "Other" option
-        const otherOption = document.createElement('option');
-        otherOption.value = 'Other';
-        otherOption.textContent = 'Other';
-        roomSelect.appendChild(otherOption);
-    }
-});
-
-// Room change handler
-document.getElementById('room_number').addEventListener('change', function() {
-    const otherRoomDiv = document.getElementById('otherRoomDiv');
-    const otherRoomInput = document.getElementById('other_room');
-    
-    if (this.value === 'Other') {
-        otherRoomDiv.classList.remove('hidden');
-        otherRoomInput.required = true;
-        this.removeAttribute('required'); // Remove required attribute completely
-    } else {
-        otherRoomDiv.classList.add('hidden');
-        otherRoomInput.required = false;
-        otherRoomInput.value = '';
-        this.setAttribute('required', 'required'); // Add required attribute back
-    }
-});
-
-// Form submission handler
-document.getElementById('locationForm').addEventListener('submit', function(e) {
-    try {
-        console.log('Form submit event fired!');
-        
-        const roomSelect = document.getElementById('room_number');
-        const otherRoomInput = document.getElementById('other_room');
-        const finalRoomInput = document.getElementById('final_room_number');
-        
-        console.log('=== FORM SUBMISSION DEBUG ===');
-        console.log('roomSelect.value before:', roomSelect.value);
-        console.log('otherRoomInput.value before:', otherRoomInput.value);
-        
-        // Check if any room is selected
-        if (!roomSelect.value || roomSelect.value === '') {
-            e.preventDefault();
-            alert('Please select a room/office.');
-            roomSelect.focus();
-            return;
-        }
-        
-        let finalRoomValue = roomSelect.value;
-        
-        // If "Other" is selected, validate and prepare the data
-        if (roomSelect.value === 'Other') {
-            console.log('Other selected, validating...');
-            if (otherRoomInput.value.trim() === '') {
-                e.preventDefault();
-                alert('Please specify the room/office name.');
-                otherRoomInput.focus();
-                return;
-            }
-            finalRoomValue = otherRoomInput.value.trim();
-            console.log('Updated finalRoomValue to:', finalRoomValue);
-        }
-        
-        // Set the final room value in the hidden field
-        finalRoomInput.value = finalRoomValue;
-        
-        console.log('roomSelect.value after:', roomSelect.value);
-        console.log('finalRoomValue:', finalRoomValue);
-        console.log('=== END DEBUG ===');
-        
-        // Let the form submit normally with the updated data
-        
-    } catch (error) {
-        console.error('Error in form submission handler:', error);
     }
 });
 
@@ -497,25 +376,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('building').dispatchEvent(new Event('change'));
         
         if (floor) {
-            // Set floor and trigger change
+            // Set floor value
             document.getElementById('floor').value = floor;
-            document.getElementById('floor').dispatchEvent(new Event('change'));
-            
-            if (room) {
-                // Check if room exists in predefined options
-                const roomSelect = document.getElementById('room_number');
-                const roomExists = Array.from(roomSelect.options).some(option => option.value === room);
-                
-                if (roomExists) {
-                    // This is a predefined room
-                    roomSelect.value = room;
-                } else {
-                    // This is a custom room
-                    roomSelect.value = 'Other';
-                    roomSelect.dispatchEvent(new Event('change'));
-                    document.getElementById('other_room').value = room;
-                }
-            }
+        }
+        
+        if (room) {
+            // Set room value
+            document.getElementById('room_number').value = room;
         }
     }
 });

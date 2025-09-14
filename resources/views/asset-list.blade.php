@@ -40,12 +40,7 @@
             <!-- Header Section -->
             <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-3">
                 <h1 class="text-xl md:text-2xl font-bold">ALL ASSETS</h1>
-                <!-- Add search input -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-4 w-full md:w-auto">
-                    <div class="relative w-full sm:w-auto">
-                        <input type="text" id="searchInput" placeholder="Search by Serial Number" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                    </div>
-                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                         @if(auth()->user()->group_id === 4)
                             <a href="{{ route('custodian.assets.create') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">
                                 Add New Asset
@@ -157,7 +152,7 @@
             <!-- Additional Filters Section -->
             <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
                 <h3 class="text-lg font-semibold text-gray-800 mb-3">Additional Filters</h3>
-                <form method="GET" action="{{ request()->url() }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form method="GET" action="{{ request()->url() }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <!-- Preserve existing search and date parameters -->
                     @if(request('search'))
                         <input type="hidden" name="search" value="{{ request('search') }}">
@@ -167,6 +162,9 @@
                     @endif
                     @if(request('date_to'))
                         <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                    @endif
+                    @if(request('warranty'))
+                        <input type="hidden" name="warranty" value="{{ request('warranty') }}">
                     @endif
                     
                     <div>
@@ -178,7 +176,6 @@
                             <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
                             <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
                             <option value="LOST" {{ request('status') == 'LOST' ? 'selected' : '' }}>LOST</option>
-                            <option value="PENDING DEPLOYMENT" {{ request('status') == 'PENDING DEPLOYMENT' ? 'selected' : '' }}>PENDING DEPLOYMENT</option>
                         </select>
                     </div>
                     
@@ -206,6 +203,16 @@
                         </select>
                     </div>
                     
+                    <div>
+                        <label for="warranty" class="block text-sm font-medium text-gray-700 mb-1">Warranty</label>
+                        <select name="warranty" id="warranty" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <option value="">All Warranties</option>
+                            <option value="expiring_365" {{ request('warranty') == 'expiring_365' ? 'selected' : '' }}>Expiring within 365 days</option>
+                            <option value="expiring_30" {{ request('warranty') == 'expiring_30' ? 'selected' : '' }}>Expiring within 30 days</option>
+                            <option value="expired" {{ request('warranty') == 'expired' ? 'selected' : '' }}>Expired</option>
+                        </select>
+                    </div>
+                    
                     <div class="flex items-end gap-2">
                         <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +221,7 @@
                             Apply Filters
                         </button>
                         
-                        @if(request('status') || request('category') || request('location'))
+                        @if(request('status') || request('category') || request('location') || request('warranty'))
                             <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('date_from') ? (request('search') ? '&' : '?') . 'date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('search') || request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}" 
                                class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,7 +233,7 @@
                     </div>
                 </form>
                 
-                @if(request('status') || request('category') || request('location'))
+                @if(request('status') || request('category') || request('location') || request('warranty'))
                     <div class="mt-3 p-3 bg-red-50 rounded-md">
                         <p class="text-sm text-red-800">
                             <strong>Filtered by:</strong> 
@@ -251,7 +258,43 @@
                                     Location: {{ $selectedLocation->full_location }}
                                 @endif
                             @endif
+                            @if(request('warranty'))
+                                @if(request('status') || request('category') || request('location')) | @endif
+                                Warranty: {{ ucfirst(str_replace('_', ' ', request('warranty'))) }}
+                            @endif
                             ({{ $assets->total() }} assets found)
+                        </p>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Search Section -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Search Assets</h3>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div class="relative w-full sm:w-auto flex gap-2">
+                        <input type="text" id="searchInput" placeholder="Search by Serial Number" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
+                        <button id="searchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Search
+                        </button>
+                    </div>
+                    @if(request('search'))
+                        <a href="{{ request()->url() }}{{ request('date_from') ? '?date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}{{ request('status') ? (request('date_from') || request('date_to') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('date_from') || request('date_to') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('date_from') || request('date_to') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}{{ request('warranty') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') ? '&' : '?') . 'warranty=' . request('warranty') : '' }}" 
+                           class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Clear Search
+                        </a>
+                    @endif
+                </div>
+                @if(request('search'))
+                    <div class="mt-3 p-3 bg-blue-50 rounded-md">
+                        <p class="text-sm text-blue-800">
+                            <strong>Searching for:</strong> "{{ request('search') }}" ({{ $assets->total() }} assets found)
                         </p>
                     </div>
                 @endif
@@ -280,9 +323,6 @@
                                         @break
                                     @case('DISPOSED')
                                         bg-red-100 text-red-800
-                                        @break
-                                    @case('PENDING DEPLOYMENT')
-                                        bg-purple-100 text-purple-800
                                         @break
                                     @case('PULLED OUT')
                                         bg-orange-100 text-orange-800
@@ -331,50 +371,50 @@
                         </div>
                     
                     <div class="flex justify-end space-x-2">
-                        @if(auth()->user()->group_id !== 4)
-                        <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </a>
-                        @endif
                         @if(auth()->user()->group_id === 4)
+                            <!-- Custodians only see Edit button -->
                             <a href="{{ route('custodian.assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </a>
                         @else
+                            <!-- Non-custodians see all actions -->
+                            <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </a>
                             <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </a>
-                        @endif
-                        @if(auth()->user()->group_id === 1)
-                        <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                        @endif
-                        <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                            </svg>
-                        </button>
-                        @if($asset->status === 'LOST')
-                            <button onclick="confirmAssetMarkAsFound({{ $asset->id }})" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 tooltip" title="Mark as Found">
+                            @if(auth()->user()->group_id === 1)
+                            <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
-                        @else
-                            <button onclick="confirmAssetMarkAsLost({{ $asset->id }})" class="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 tooltip" title="Mark as Lost">
+                            @endif
+                            <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                                 </svg>
                             </button>
+                            @if($asset->status === 'LOST')
+                                <button onclick="confirmAssetMarkAsFound({{ $asset->id }})" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 tooltip" title="Mark as Found">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            @else
+                                <button onclick="confirmAssetMarkAsLost({{ $asset->id }})" class="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 tooltip" title="Mark as Lost">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </button>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -433,9 +473,6 @@
                                                 @case('DISPOSED')
                                                     bg-red-100 text-red-800
                                                     @break
-                                                @case('PENDING DEPLOYMENT')
-                                                    bg-purple-100 text-purple-800
-                                                    @break
                                                 @case('PULLED OUT')
                                                     bg-orange-100 text-orange-800
                                                     @break
@@ -453,50 +490,50 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->creator->name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex space-x-2">
-                                    @if(auth()->user()->group_id !== 4)
-                                    <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </a>
-                                    @endif
                                     @if(auth()->user()->group_id === 4)
+                                        <!-- Custodians only see Edit button -->
                                         <a href="{{ route('custodian.assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                         </a>
                                     @else
+                                        <!-- Non-custodians see all actions -->
+                                        <a href="{{ route('reports.asset-history', $asset->id) }}" class="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 tooltip" title="History">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('assets.edit', $asset->id) }}" class="bg-yellow-600 text-white p-1.5 rounded hover:bg-yellow-700 tooltip" title="Edit">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                         </a>
-                                    @endif
-                                    @if(auth()->user()->group_id === 1)
-                                    <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                    @endif
-                                    <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                        </svg>
-                                    </button>
-                                    @if($asset->status === 'LOST')
-                                        <button onclick="confirmAssetMarkAsFound({{ $asset->id }})" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 tooltip" title="Mark as Found">
+                                        @if(auth()->user()->group_id === 1)
+                                        <button onclick="confirmAssetDelete({{ $asset->id }})" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 tooltip" title="Delete">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
-                                    @else
-                                        <button onclick="confirmAssetMarkAsLost({{ $asset->id }})" class="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 tooltip" title="Mark as Lost">
+                                        @endif
+                                        <button onclick="confirmAssetDispose({{ $asset->id }})" class="bg-gray-600 text-white p-1.5 rounded hover:bg-gray-700 tooltip" title="Dispose">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                                             </svg>
                                         </button>
+                                        @if($asset->status === 'LOST')
+                                            <button onclick="confirmAssetMarkAsFound({{ $asset->id }})" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 tooltip" title="Mark as Found">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        @else
+                                            <button onclick="confirmAssetMarkAsLost({{ $asset->id }})" class="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 tooltip" title="Mark as Lost">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                            </button>
+                                        @endif
                                     @endif
                                 </div>
                             </td>
@@ -544,7 +581,15 @@
 
         <!-- Search Bar -->
         <div class="mb-4">
-            <input type="text" id="modalSearchInput" placeholder="Search by Serial Number" class="px-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-1 focus:ring-red-500">
+            <div class="flex gap-2">
+                <input type="text" id="modalSearchInput" placeholder="Search by Serial Number" class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
+                <button id="modalSearchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                </button>
+            </div>
         </div>
 
         <!-- Filter -->
@@ -706,9 +751,6 @@
                                             @break
                                         @case('DISPOSED')
                                             bg-red-100 text-red-800
-                                            @break
-                                        @case('PENDING DEPLOYMENT')
-                                            bg-purple-100 text-purple-800
                                             @break
                                         @case('PULLED OUT')
                                             bg-orange-100 text-orange-800
@@ -977,45 +1019,56 @@
         });
 
         const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
         const modalSearchInput = document.getElementById('modalSearchInput');
+        const modalSearchButton = document.getElementById('modalSearchButton');
 
-        // Check for search parameter in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchParam = urlParams.get('search');
-        
-        if (searchParam) {
-            // Set search input values
-            if (searchInput) searchInput.value = searchParam;
-            if (modalSearchInput) modalSearchInput.value = searchParam;
+        // Function to perform search
+        function performSearch(searchValue) {
+            const currentUrl = new URL(window.location.href);
+            
+            if (searchValue && searchValue.trim()) {
+                currentUrl.searchParams.set('search', searchValue.trim());
+            } else {
+                currentUrl.searchParams.delete('search');
+            }
+            
+            window.location.href = currentUrl.toString();
         }
 
-        // Main search input event listener
-        searchInput.addEventListener('input', function() {
-            const searchValue = this.value;
-            const currentUrl = new URL(window.location.href);
-            
-            if (searchValue) {
-                currentUrl.searchParams.set('search', searchValue);
-            } else {
-                currentUrl.searchParams.delete('search');
-            }
-            
-            window.location.href = currentUrl.toString();
-        });
+        // Main search button event listener
+        if (searchButton) {
+            searchButton.addEventListener('click', function() {
+                const searchValue = searchInput ? searchInput.value : '';
+                performSearch(searchValue);
+            });
+        }
 
-        // Modal search input event listener
-        modalSearchInput.addEventListener('input', function() {
-            const searchValue = this.value;
-            const currentUrl = new URL(window.location.href);
-            
-            if (searchValue) {
-                currentUrl.searchParams.set('search', searchValue);
-            } else {
-                currentUrl.searchParams.delete('search');
-            }
-            
-            window.location.href = currentUrl.toString();
-        });
+        // Main search input event listener (Enter key)
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch(this.value);
+                }
+            });
+        }
+
+        // Modal search button event listener
+        if (modalSearchButton) {
+            modalSearchButton.addEventListener('click', function() {
+                const searchValue = modalSearchInput ? modalSearchInput.value : '';
+                performSearch(searchValue);
+            });
+        }
+
+        // Modal search input event listener (Enter key)
+        if (modalSearchInput) {
+            modalSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch(this.value);
+                }
+            });
+        }
     });
 
     let currentAssetId = null;
