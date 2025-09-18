@@ -28,9 +28,9 @@
                     </div>
                 </div>
                 <div class="flex space-x-2">
-                    <button onclick="openAddFloorModal()" class="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white p-3 md:p-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center" title="Add Floor">
-                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    <button onclick="openBulkFloorModal()" class="bg-green-600/90 backdrop-blur-sm hover:bg-green-700/90 text-white p-3 md:p-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center group" title="Add Floors">
+                        <svg class="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </button>
                     <button onclick="openEditBuildingModal()" class="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white p-3 md:p-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center" title="Edit Building">
@@ -268,11 +268,11 @@
                     <h3 class="mt-2 text-sm font-medium text-gray-900">No floors</h3>
                     <p class="mt-1 text-sm text-gray-500">This building doesn't have any floors yet.</p>
                     <div class="mt-4">
-                        <button onclick="openAddFloorModal()" class="inline-flex items-center px-4 py-2 bg-red-800 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                        <button onclick="openBulkFloorModal()" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            Add First Floor
+                            Add Floors
                         </button>
                     </div>
                 </div>
@@ -282,46 +282,6 @@
     </div>
 </div>
 
-<!-- Add Floor Modal -->
-<div id="addFloorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Add New Floor</h3>
-                <button onclick="closeAddFloorModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <form action="{{ route('buildings.floors.store', $building) }}" method="POST">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label for="floor_name" class="block text-sm font-medium text-gray-700 mb-1">Floor Name</label>
-                        <input type="text" name="name" id="floor_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="e.g., Ground Floor, 2nd Floor" required>
-                    </div>
-                    <div>
-                        <label for="floor_number" class="block text-sm font-medium text-gray-700 mb-1">Floor Number</label>
-                        <input type="number" name="floor_number" id="floor_number" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="e.g., 0, 1, 2" min="0">
-                    </div>
-                    <div>
-                        <label for="floor_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea name="description" id="floor_description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="Optional description"></textarea>
-                    </div>
-                </div>
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeAddFloorModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-red-800 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
-                        Add Floor
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <!-- Edit Floor Modal -->
 <div id="editFloorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
@@ -479,15 +439,89 @@
     </div>
 </div>
 
-<script>
-function openAddFloorModal() {
-    document.getElementById('addFloorModal').classList.remove('hidden');
-}
+<!-- Bulk Floor Addition Modal -->
+<div id="bulkFloorModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-2 rounded-full mr-3">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Add Multiple Floors</h3>
+                    <p class="text-sm text-gray-600">Add floors to <span class="font-medium text-red-800">{{ $building->name }}</span></p>
+                </div>
+            </div>
+            <button type="button" onclick="closeBulkFloorModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="py-4">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Floor Names</label>
+                <p class="text-xs text-gray-500 mb-3">Add one floor name per line. You can use formats like "1st Floor", "Ground Floor", "B1", etc.</p>
+            </div>
+            
+            <!-- Scrollable Floor Input Area -->
+            <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div id="bulkFloorInputs" class="space-y-3">
+                    <!-- Dynamic floor inputs will be added here -->
+                </div>
+                
+                <!-- Add More Button -->
+                <button type="button" id="addMoreBulkFloors" class="mt-3 w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-green-400 hover:text-green-600 transition-colors duration-200 flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Another Floor
+                </button>
+            </div>
+            
+            <!-- Quick Add Options -->
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 class="text-sm font-medium text-blue-800 mb-2">Quick Add Options</h4>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="quick-add-bulk-btn px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs rounded-full transition-colors" data-floors="Ground Floor,1st Floor,2nd Floor,3rd Floor">
+                        4-Story Building
+                    </button>
+                    <button type="button" class="quick-add-bulk-btn px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs rounded-full transition-colors" data-floors="B1,Ground Floor,1st Floor,2nd Floor,3rd Floor">
+                        5-Story with Basement
+                    </button>
+                    <button type="button" class="quick-add-bulk-btn px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs rounded-full transition-colors" data-floors="1,2,3,4,5,6,7,8,9,10">
+                        10-Story Numbered
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div class="text-sm text-gray-500">
+                <span id="bulkFloorCount">0</span> floors ready to add
+            </div>
+            <div class="flex space-x-3">
+                <button type="button" onclick="closeBulkFloorModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg transition-colors duration-200">
+                    Cancel
+                </button>
+                <button type="button" id="saveBulkFloors" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                    <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Add Floors
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
-function closeAddFloorModal() {
-    document.getElementById('addFloorModal').classList.add('hidden');
-    document.getElementById('addFloorModal').querySelector('form').reset();
-}
+<script>
 
 function openEditFloorModal(floorId, name, floorNumber, description, isActive) {
     document.getElementById('editFloorForm').action = `/buildings/{{ $building->id }}/floors/${floorId}`;
@@ -553,6 +587,155 @@ document.getElementById('confirmDeleteFloorBtn').addEventListener('click', funct
         form.appendChild(methodField);
         document.body.appendChild(form);
         form.submit();
+    }
+});
+
+// Bulk Floor Management
+const bulkFloorModal = document.getElementById('bulkFloorModal');
+const bulkFloorInputs = document.getElementById('bulkFloorInputs');
+const bulkFloorCount = document.getElementById('bulkFloorCount');
+const addMoreBulkFloors = document.getElementById('addMoreBulkFloors');
+const saveBulkFloors = document.getElementById('saveBulkFloors');
+
+let currentBulkFloorIndex = 0;
+
+function openBulkFloorModal() {
+    bulkFloorModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Initialize with one floor input
+    clearBulkFloorInputs();
+    addBulkFloorInput();
+}
+
+function closeBulkFloorModal() {
+    bulkFloorModal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    clearBulkFloorInputs();
+}
+
+// Close modal when clicking outside
+bulkFloorModal.addEventListener('click', function(e) {
+    if (e.target === bulkFloorModal) {
+        closeBulkFloorModal();
+    }
+});
+
+// Add more floors button
+addMoreBulkFloors.addEventListener('click', function() {
+    addBulkFloorInput();
+});
+
+function addBulkFloorInput(value = '') {
+    const floorDiv = document.createElement('div');
+    floorDiv.className = 'flex items-center gap-2 bulk-floor-input-row';
+    floorDiv.innerHTML = `
+        <div class="flex-1">
+            <input type="text" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+                   placeholder="e.g., Ground Floor, 1st Floor, B1" 
+                   value="${value}">
+        </div>
+        <button type="button" class="remove-bulk-floor-btn p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Remove floor">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+        </button>
+    `;
+    
+    bulkFloorInputs.appendChild(floorDiv);
+    currentBulkFloorIndex++;
+    
+    // Add remove functionality
+    const removeBtn = floorDiv.querySelector('.remove-bulk-floor-btn');
+    removeBtn.addEventListener('click', function() {
+        floorDiv.remove();
+        updateBulkFloorCount();
+    });
+    
+    // Add input event listener for real-time count update
+    const input = floorDiv.querySelector('input');
+    input.addEventListener('input', updateBulkFloorCount);
+    
+    updateBulkFloorCount();
+    
+    // Focus on the new input
+    input.focus();
+}
+
+function clearBulkFloorInputs() {
+    bulkFloorInputs.innerHTML = '';
+    currentBulkFloorIndex = 0;
+    updateBulkFloorCount();
+}
+
+function updateBulkFloorCount() {
+    const inputs = bulkFloorInputs.querySelectorAll('input');
+    const validFloors = Array.from(inputs).filter(input => input.value.trim() !== '').length;
+    bulkFloorCount.textContent = validFloors;
+}
+
+// Quick add buttons
+document.querySelectorAll('.quick-add-bulk-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const floors = this.dataset.floors.split(',');
+        clearBulkFloorInputs();
+        floors.forEach(floor => addBulkFloorInput(floor.trim()));
+    });
+});
+
+// Save bulk floors functionality
+saveBulkFloors.addEventListener('click', function() {
+    const inputs = bulkFloorInputs.querySelectorAll('input');
+    const newFloors = Array.from(inputs)
+        .map(input => input.value.trim())
+        .filter(value => value !== '');
+    
+    if (newFloors.length === 0) {
+        alert('Please add at least one floor');
+        return;
+    }
+    
+    // Get existing floor names for duplicate check
+    const existingFloors = @json($building->floors->pluck('name')->toArray());
+    const duplicates = newFloors.filter(floor => existingFloors.includes(floor));
+    
+    if (duplicates.length > 0) {
+        if (!confirm(`The following floors already exist: ${duplicates.join(', ')}. Do you want to continue adding the remaining floors?`)) {
+            return;
+        }
+    }
+    
+    // Create form to submit bulk floors
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route("buildings.floors.bulk-store", $building) }}';
+    
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = '_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    form.appendChild(csrfToken);
+    
+    // Add floor names as hidden inputs
+    newFloors.forEach((floor, index) => {
+        if (!existingFloors.includes(floor)) {
+            const floorInput = document.createElement('input');
+            floorInput.type = 'hidden';
+            floorInput.name = `floors[${index}][name]`;
+            floorInput.value = floor;
+            form.appendChild(floorInput);
+        }
+    });
+    
+    document.body.appendChild(form);
+    form.submit();
+});
+
+// Escape key to close modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !bulkFloorModal.classList.contains('hidden')) {
+        closeBulkFloorModal();
     }
 });
 </script>

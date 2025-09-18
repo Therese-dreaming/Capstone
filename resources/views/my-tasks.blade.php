@@ -77,11 +77,24 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button class="p-2 rounded-full hover:bg-blue-100 transition-colors duration-200 text-blue-600">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                    </svg>
-                                </button>
+                                <div class="relative">
+                                    <button onclick="toggleMaintenanceDropdown({{ $task->id }})" class="p-2 rounded-full hover:bg-blue-100 transition-colors duration-200 text-blue-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                        </svg>
+                                    </button>
+                                    <div id="maintenance-dropdown-{{ $task->id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                        <div class="py-1">
+                                            <a href="{{ route('maintenance.upcoming') }}?maintenance_id={{ $task->id }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                                <svg class="w-4 h-4 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                View Maintenance Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         @endforeach
@@ -165,11 +178,23 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button class="p-2 rounded-full hover:bg-green-100 transition-colors duration-200 text-green-600">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                    </svg>
-                                </button>
+                                <div class="relative">
+                                    <button onclick="toggleRepairDropdown({{ $request->id }})" class="p-2 rounded-full hover:bg-green-100 transition-colors duration-200 text-green-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                        </svg>
+                                    </button>
+                                    <div id="repair-dropdown-{{ $request->id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                        <div class="py-1">
+                                            <a href="{{ route('repair.status') }}?search={{ $request->ticket_number }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                                <svg class="w-4 h-4 mr-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                                </svg>
+                                                View Repair Status
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         @endforeach
@@ -251,4 +276,59 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Function to toggle maintenance dropdown
+    function toggleMaintenanceDropdown(taskId) {
+        const dropdown = document.getElementById(`maintenance-dropdown-${taskId}`);
+        const isHidden = dropdown.classList.contains('hidden');
+        
+        // Close all other dropdowns first
+        closeAllDropdowns();
+        
+        // Toggle the clicked dropdown
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+        }
+    }
+
+    // Function to toggle repair dropdown
+    function toggleRepairDropdown(requestId) {
+        const dropdown = document.getElementById(`repair-dropdown-${requestId}`);
+        const isHidden = dropdown.classList.contains('hidden');
+        
+        // Close all other dropdowns first
+        closeAllDropdowns();
+        
+        // Toggle the clicked dropdown
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+        }
+    }
+
+    // Function to close all dropdowns
+    function closeAllDropdowns() {
+        const allDropdowns = document.querySelectorAll('[id^="maintenance-dropdown-"], [id^="repair-dropdown-"]');
+        allDropdowns.forEach(dropdown => {
+            dropdown.classList.add('hidden');
+        });
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const isDropdownButton = event.target.closest('button[onclick*="toggleMaintenanceDropdown"], button[onclick*="toggleRepairDropdown"]');
+        const isDropdownContent = event.target.closest('[id^="maintenance-dropdown-"], [id^="repair-dropdown-"]');
+        
+        if (!isDropdownButton && !isDropdownContent) {
+            closeAllDropdowns();
+        }
+    });
+
+    // Close dropdowns when pressing Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeAllDropdowns();
+        }
+    });
+</script>
 @endsection

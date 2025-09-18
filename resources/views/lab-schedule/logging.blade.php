@@ -423,7 +423,7 @@
     }
 
     // Function to handle lab selection
-    function selectLab(element) {
+    async function selectLab(element) {
         // Check if purpose is selected first
         if (!selectedPurpose) {
             showStatus('error', 'Please select a purpose first before choosing a laboratory');
@@ -433,6 +433,21 @@
         // Check if "Other" is selected but no text is provided
         if (selectedPurpose === 'other' && !document.getElementById('otherPurposeText').value.trim()) {
             showStatus('error', 'Please specify the purpose before proceeding');
+            return;
+        }
+
+        // Check if user has an ongoing lab session
+        const hasOngoingSession = await checkUserOngoingSession();
+        if (hasOngoingSession) {
+            showStatus('error', 'You have an ongoing lab session. Please complete it before selecting another laboratory.');
+            return;
+        }
+
+        // Check if the selected lab is available
+        const labNumber = element.dataset.value;
+        const isLabAvailable = await checkSpecificLabAvailability(labNumber);
+        if (!isLabAvailable) {
+            showStatus('error', 'This laboratory is currently unavailable. Please select another laboratory.');
             return;
         }
 
@@ -643,6 +658,36 @@
         stopRFIDListener();
     });
 
+    // Function to check if user has an ongoing lab session
+    async function checkUserOngoingSession() {
+        try {
+            const response = await fetch('/lab-schedule/check-user-ongoing-session', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+            const data = await response.json();
+            return data.hasOngoingSession || false;
+        } catch (error) {
+            console.error('Error checking user ongoing session:', error);
+            return false;
+        }
+    }
+
+    // Function to check specific lab availability
+    async function checkSpecificLabAvailability(labNumber) {
+        try {
+            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`);
+            const data = await response.json();
+            return data.status !== 'ongoing';
+        } catch (error) {
+            console.error('Error checking specific lab availability:', error);
+            return true; // Default to available if error occurs
+        }
+    }
+
     // Add this function to check lab availability
     async function checkLabAvailability(labNumber) {
         try {
@@ -712,11 +757,59 @@
         }
     }
 
+    // Function to disable/enable lab cards based on user's ongoing session
+    async function updateLabCardsBasedOnUserSession() {
+        const hasOngoingSession = await checkUserOngoingSession();
+        const labCards = document.querySelectorAll('.lab-card');
+        
+        labCards.forEach(card => {
+            if (hasOngoingSession) {
+                // Disable lab selection
+                card.style.pointerEvents = 'none';
+                card.style.opacity = '0.5';
+                card.querySelector('.relative').classList.add('cursor-not-allowed');
+                card.querySelector('.relative').classList.remove('cursor-pointer');
+                
+                // Add a visual indicator
+                let disabledIndicator = card.querySelector('.disabled-indicator');
+                if (!disabledIndicator) {
+                    disabledIndicator = document.createElement('div');
+                    disabledIndicator.className = 'disabled-indicator absolute inset-0 bg-gray-900 bg-opacity-50 rounded-xl flex items-center justify-center z-10';
+                    disabledIndicator.innerHTML = `
+                        <div class="text-white text-center">
+                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                            </svg>
+                            <p class="text-sm font-medium">Complete your ongoing session first</p>
+                        </div>
+                    `;
+                    card.querySelector('.relative').appendChild(disabledIndicator);
+                }
+            } else {
+                // Enable lab selection
+                card.style.pointerEvents = 'auto';
+                card.style.opacity = '1';
+                card.querySelector('.relative').classList.add('cursor-pointer');
+                card.querySelector('.relative').classList.remove('cursor-not-allowed');
+                
+                // Remove disabled indicator
+                const disabledIndicator = card.querySelector('.disabled-indicator');
+                if (disabledIndicator) {
+                    disabledIndicator.remove();
+                }
+            }
+        });
+    }
+
     // Initial load
     document.addEventListener('DOMContentLoaded', () => {
         fetchLabsStatus(); // Fetch immediately when page loads
+        updateLabCardsBasedOnUserSession(); // Check user session status
 
         // Update every 5 seconds
-        setInterval(fetchLabsStatus, 5000);
+        setInterval(() => {
+            fetchLabsStatus();
+            updateLabCardsBasedOnUserSession();
+        }, 5000);
     });
 </script>

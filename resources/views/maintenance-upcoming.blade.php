@@ -337,6 +337,53 @@
         const form = document.getElementById('cancelForm');
         form.action = `{{ url('maintenance') }}/${locationId}/date/${date}/cancel-all`;
         document.getElementById('cancellationModal').classList.remove('hidden');
-    } 
+    }
+
+    // Auto-expand specific maintenance when coming from my-tasks
+    @if(isset($highlightMaintenanceId) && $highlightMaintenanceId)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Find the maintenance item with the specified ID
+        @foreach($maintenances as $maintenance)
+            @if($maintenance->id == $highlightMaintenanceId)
+                // Auto-expand the location section
+                const locationContent = document.getElementById('location-{{ $maintenance->location_id }}');
+                const locationChevron = document.getElementById('chevron-{{ $maintenance->location_id }}');
+                
+                if (locationContent && locationChevron) {
+                    locationContent.classList.remove('hidden');
+                    locationChevron.classList.add('rotate-180');
+                }
+
+                // Auto-expand the date section
+                const dateKey = '{{ \Carbon\Carbon::parse($maintenance->scheduled_date)->format("Ymd") }}';
+                const dateContent = document.getElementById(`date-${dateKey}-{{ $maintenance->location_id }}`);
+                const dateChevron = document.getElementById(`chevron-date-${dateKey}-{{ $maintenance->location_id }}`);
+                
+                if (dateContent && dateChevron) {
+                    dateContent.classList.remove('hidden');
+                    dateChevron.classList.add('rotate-180');
+                }
+
+                // Scroll to the maintenance item and highlight it
+                setTimeout(() => {
+                    const maintenanceElement = dateContent;
+                    if (maintenanceElement) {
+                        maintenanceElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Add a temporary highlight effect
+                        const parentCard = maintenanceElement.closest('.bg-white');
+                        if (parentCard) {
+                            parentCard.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+                            setTimeout(() => {
+                                parentCard.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+                            }, 3000);
+                        }
+                    }
+                }, 500);
+                @break
+            @endif
+        @endforeach
+    });
+    @endif 
 </script>
 @endsection

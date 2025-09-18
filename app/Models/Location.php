@@ -17,6 +17,11 @@ class Location extends Model
         return $this->hasMany(Asset::class);
     }
 
+    public function maintenances()
+    {
+        return $this->hasMany(Maintenance::class);
+    }
+
     // Helper method to get full location display name
     public function getFullLocationAttribute()
     {

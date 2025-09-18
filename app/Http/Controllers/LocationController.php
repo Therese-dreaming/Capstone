@@ -119,10 +119,36 @@ class LocationController extends Controller
             return back()->withErrors(['error' => 'Cannot delete location that has assets assigned to it.']);
         }
 
-        $location->delete();
+        // Check if location has maintenance records
+        if ($location->maintenances()->count() > 0) {
+            return back()->withErrors(['error' => 'Cannot delete location that has maintenance records associated with it. Please remove or reassign the maintenance records first.']);
+        }
 
-        return redirect()->route('locations.index')
-            ->with('success', 'Location deleted successfully.');
+        try {
+            $location->delete();
+            return redirect()->route('locations.index')
+                ->with('success', 'Location deleted successfully.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle any other foreign key constraint violations
+            if ($e->getCode() == 23000) {
+                return back()->withErrors(['error' => 'Cannot delete location because it is referenced by other records in the system.']);
+            }
+            
+            // Re-throw if it's a different error
+            throw $e;
+        }
+    }
+
+    public function checkRelations(Location $location)
+    {
+        $assetsCount = $location->assets()->count();
+        $maintenancesCount = $location->maintenances()->count();
+        
+        return response()->json([
+            'hasRelations' => $assetsCount > 0 || $maintenancesCount > 0,
+            'assetsCount' => $assetsCount,
+            'maintenancesCount' => $maintenancesCount,
+        ]);
     }
 
     public function getAll()
@@ -212,6 +238,50 @@ class LocationController extends Controller
 
         return redirect()->route('locations.index')
             ->with('success', 'Floor added successfully.');
+    }
+
+    public function bulkStoreFloors(Request $request, Building $building)
+    {
+        $request->validate([
+            'floors' => 'required|array|min:1',
+            'floors.*.name' => 'required|string|max:255',
+        ]);
+
+        $createdFloors = [];
+        $duplicateFloors = [];
+        $existingFloorNames = $building->floors()->pluck('name')->toArray();
+
+        foreach ($request->floors as $floorData) {
+            $floorName = trim($floorData['name']);
+            
+            // Skip if floor already exists
+            if (in_array($floorName, $existingFloorNames)) {
+                $duplicateFloors[] = $floorName;
+                continue;
+            }
+
+            // Create the floor
+            $building->floors()->create([
+                'name' => $floorName,
+                'floor_number' => null, // Can be set later if needed
+                'description' => null,
+                'is_active' => true,
+            ]);
+
+            $createdFloors[] = $floorName;
+        }
+
+        $message = '';
+        if (count($createdFloors) > 0) {
+            $message = count($createdFloors) . ' floor(s) added successfully.';
+        }
+        
+        if (count($duplicateFloors) > 0) {
+            if ($message) $message .= ' ';
+            $message .= count($duplicateFloors) . ' floor(s) were skipped (already exist).';
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function updateFloor(Request $request, Building $building, Floor $floor)

@@ -310,7 +310,9 @@ class RepairRequestController extends Controller
             });
         }
 
-        $requests = $query->oldest()->paginate(9)->withQueryString();
+        $requests = $query->orderBy('urgency_level', 'asc')
+                          ->orderBy('created_at', 'desc')
+                          ->paginate(9)->withQueryString();
 
         // Compute ongoing counts per technician (repairs: not completed/cancelled/pulled_out; maintenance: scheduled)
         $maintenanceOngoing = \App\Models\Maintenance::select('technician_id', DB::raw('COUNT(*) as count'))

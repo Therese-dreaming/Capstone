@@ -60,7 +60,7 @@
                     @endif
                     <div class="flex flex-col md:flex-row gap-3">
                         <div class="relative">
-                            <input type="text" id="ticketSearch" placeholder="Search Ticket No." class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 w-full md:w-64">
+                            <input type="text" id="ticketSearch" placeholder="Search Ticket No." value="{{ request('search', '') }}" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 w-full md:w-64">
                         </div>
                         <select id="statusFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white">
                             <option value="">All Status</option>
@@ -1141,6 +1141,24 @@
                     const urgencyFilter = document.getElementById('urgencyFilter');
                     const dateFrom = document.getElementById('dateFrom');
                     const dateTo = document.getElementById('dateTo');
+
+                    // Auto-trigger search if there's a search parameter (from my-tasks)
+                    if (searchInput && searchInput.value.trim() !== '') {
+                        // Trigger the filter function after a short delay to ensure DOM is ready
+                        setTimeout(() => {
+                            filterCards();
+                            // Scroll to the first matching result if any
+                            const visibleCards = document.querySelectorAll('.repair-card:not(.hidden)');
+                            if (visibleCards.length > 0) {
+                                visibleCards[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                // Add a temporary highlight effect
+                                visibleCards[0].classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+                                setTimeout(() => {
+                                    visibleCards[0].classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+                                }, 3000);
+                            }
+                        }, 500);
+                    }
                     const cards = document.querySelectorAll('#requestsCards > div.bg-white');
                     const showAssignedCheckbox = document.getElementById('showAssigned');
 

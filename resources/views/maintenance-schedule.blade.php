@@ -147,6 +147,15 @@
                                 Add Task
                             </button>
                         </div>
+                        
+                        <!-- Select All Button -->
+                        <div class="mb-4 flex justify-end">
+                            <button type="button" id="selectAllBtn" onclick="toggleSelectAll()" 
+                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 shadow-md">
+                                Select All
+                            </button>
+                        </div>
+                        
                         <div class="task-container space-y-3 max-h-[300px] overflow-y-auto pr-2">
                             @foreach($maintenanceTasks as $task)
                             <div class="flex items-center bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="toggleCheckbox(this)">
@@ -318,6 +327,11 @@
         }
         sched.addEventListener('change', syncTargetMin);
         window.addEventListener('DOMContentLoaded', syncTargetMin);
+        
+        // Initialize Select All button state on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            updateSelectAllButton();
+        });
 
          function addExcludedAsset() {
             const select = document.getElementById('assetSelect');
@@ -453,6 +467,7 @@
         function toggleCheckbox(container) {
             const checkbox = container.querySelector('input[type="checkbox"]');
             checkbox.checked = !checkbox.checked;
+            updateSelectAllButton();
         }
 
         function addNewTask(event) {
@@ -498,6 +513,7 @@
                     `;
                         tasksContainer.insertBefore(newTaskElement, tasksContainer.firstChild);
                         newTaskInput.value = '';
+                        updateSelectAllButton(); // Update button state after adding new task
                         showNotification(data.message, 'success');
                     } else {
                         showNotification(data.message || 'Failed to add task', 'error');
@@ -551,6 +567,38 @@
 
         function hideSuccessModal() {
             document.getElementById('successModal').classList.add('hidden');
+        }
+
+        // Select All/Deselect All functionality
+        function toggleSelectAll() {
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const checkboxes = document.querySelectorAll('.task-container input[type="checkbox"][name="maintenance_tasks[]"]');
+            const checkedBoxes = document.querySelectorAll('.task-container input[type="checkbox"][name="maintenance_tasks[]"]:checked');
+            
+            // If all checkboxes are checked, deselect all; otherwise, select all
+            const shouldSelectAll = checkedBoxes.length !== checkboxes.length;
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = shouldSelectAll;
+            });
+            
+            // Update button text based on current state
+            selectAllBtn.textContent = shouldSelectAll ? 'Deselect All' : 'Select All';
+        }
+
+        // Update Select All button text when individual checkboxes are clicked
+        function updateSelectAllButton() {
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const checkboxes = document.querySelectorAll('.task-container input[type="checkbox"][name="maintenance_tasks[]"]');
+            const checkedBoxes = document.querySelectorAll('.task-container input[type="checkbox"][name="maintenance_tasks[]"]:checked');
+            
+            if (checkedBoxes.length === 0) {
+                selectAllBtn.textContent = 'Select All';
+            } else if (checkedBoxes.length === checkboxes.length) {
+                selectAllBtn.textContent = 'Deselect All';
+            } else {
+                selectAllBtn.textContent = 'Select All';
+            }
         }
 
     </script>

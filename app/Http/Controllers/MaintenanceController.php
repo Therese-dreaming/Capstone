@@ -140,7 +140,7 @@ class MaintenanceController extends Controller
         }
     }
 
-    public function upcoming()
+    public function upcoming(Request $request)
     {
         $query = Maintenance::where('status', 'scheduled');
 
@@ -154,7 +154,10 @@ class MaintenanceController extends Controller
             ->orderBy('scheduled_date')
             ->get();
 
-        return view('maintenance-upcoming', compact('maintenances'));
+        // Get the maintenance_id from query parameter if provided
+        $highlightMaintenanceId = $request->get('maintenance_id');
+
+        return view('maintenance-upcoming', compact('maintenances', 'highlightMaintenanceId'));
     }
 
     public function complete($id)
