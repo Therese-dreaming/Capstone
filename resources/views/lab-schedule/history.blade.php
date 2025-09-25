@@ -133,7 +133,7 @@
                     </div>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
                         {{ strtolower($log->status) === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                        {{ $log->status }}
+                        {{ ucfirst($log->status) }}
                     </span>
                 </div>
                 
@@ -152,7 +152,7 @@
                     </div>
                     <div>
                         <span class="text-gray-500">Purpose:</span>
-                        <div class="font-medium text-gray-900">{{ $log->purpose ?? '-' }}</div>
+                        <div class="font-medium text-gray-900">{{ $log->purpose ? ucfirst($log->purpose) : '-' }}</div>
                     </div>
                     <div>
                         <span class="text-gray-500">Time Out:</span>
@@ -207,7 +207,7 @@
                                 <div class="text-sm text-gray-500">{{ $log->user->position }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->laboratory }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->purpose ?? '-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->purpose ? ucfirst($log->purpose) : '-' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $log->time_in->format('M d, Y h:i A') }}
                             </td>
@@ -220,7 +220,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ strtolower($log->status) === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                    {{ $log->status }}
+                                    {{ ucfirst($log->status) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

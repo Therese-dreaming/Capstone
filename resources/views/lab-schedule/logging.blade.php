@@ -37,7 +37,7 @@
             <!-- Laboratory Selection -->
             <div class="mb-6">
                 <!-- Purpose Selection -->
-                <div class="mb-6">
+                <div class="mb-6" id="purposeSection">
                     <label class="block text-sm font-medium text-gray-700 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                         <div class="flex items-center">
                             <div class="bg-red-100 p-2 rounded-lg mr-3">
@@ -165,13 +165,13 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="labCards">
                     @forelse($laboratories as $lab)
                     <div class="lab-card cursor-pointer transform transition-all duration-300 hover:scale-105" data-value="{{ $lab->number }}" onclick="selectLab(this)">
-                        <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300">
+                        <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 shadow-md p-4 group transition-all duration-300">
                             <!-- Active State Indicator -->
                             <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
 
                             <!-- Checkmark Icon (Visible when active) -->
                             <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
-                                <div class="bg-red-600 p-1 rounded-full">
+                                <div class="bg-green-600 p-1 rounded-full">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
@@ -191,7 +191,11 @@
                             <!-- Status Indicator -->
                             <div class="flex items-center gap-2 text-sm text-gray-500 relative">
                                 <div class="flex items-center">
-                                    <span class="inline-block w-3 h-3 rounded-full mr-2 bg-green-500"></span>
+                                    <span class="status-icon mr-2">
+                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </span>
                                     <span class="status-text font-medium">Available</span>
                                 </div>
                             </div>
@@ -363,7 +367,7 @@
 <div id="tapCardModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
     <div class="relative bg-white rounded-xl shadow-xl mx-auto p-8 max-w-md w-full transform transition-all duration-300 scale-95">
         <!-- Exit Button -->
-        <button onclick="closeTapCardModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200">
+        <button id="tapCloseBtn" onclick="closeTapCardModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -375,12 +379,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
             </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-3">Ready to Scan</h3>
-            <p class="text-gray-600 mb-6">Please tap your RFID card to record your attendance.</p>
-            <div class="animate-pulse flex justify-center">
+            <h3 id="tapModalTitle" class="text-xl font-bold text-gray-900 mb-3">Ready to Scan</h3>
+            <p id="tapModalText" class="text-gray-600 mb-6">Please tap your RFID card to record your attendance.</p>
+            <!-- Waiting animation -->
+            <div id="tapWaiting" class="animate-pulse flex justify-center">
                 <div class="h-3 w-3 bg-red-600 rounded-full mx-1"></div>
                 <div class="h-3 w-3 bg-red-600 rounded-full mx-1 animation-delay-200"></div>
                 <div class="h-3 w-3 bg-red-600 rounded-full mx-1 animation-delay-400"></div>
+            </div>
+            <!-- Loading (Verifying) state -->
+            <div id="tapLoading" class="hidden mt-4 flex items-center justify-center">
+                <div class="h-6 w-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                <span class="ml-3 text-sm text-gray-700">Verifying your RFID...</span>
             </div>
         </div>
     </div>
@@ -424,17 +434,7 @@
 
     // Function to handle lab selection
     async function selectLab(element) {
-        // Check if purpose is selected first
-        if (!selectedPurpose) {
-            showStatus('error', 'Please select a purpose first before choosing a laboratory');
-            return;
-        }
-
-        // Check if "Other" is selected but no text is provided
-        if (selectedPurpose === 'other' && !document.getElementById('otherPurposeText').value.trim()) {
-            showStatus('error', 'Please specify the purpose before proceeding');
-            return;
-        }
+        // For tap-in: require purpose. For tap-out (lab unavailable by same user), purpose is not required.
 
         // Check if user has an ongoing lab session
         const hasOngoingSession = await checkUserOngoingSession();
@@ -443,39 +443,75 @@
             return;
         }
 
-        // Check if the selected lab is available
+        // Reset purpose section visual state on each lab selection
+        const purposeSection = document.getElementById('purposeSection');
+        if (purposeSection) purposeSection.classList.remove('opacity-50');
+
         const labNumber = element.dataset.value;
-        const isLabAvailable = await checkSpecificLabAvailability(labNumber);
-        if (!isLabAvailable) {
-            showStatus('error', 'This laboratory is currently unavailable. Please select another laboratory.');
-            return;
+        const availability = await getLabAvailabilityDetail(labNumber);
+        let canOpenModal = true;
+
+        // If lab is available, proceed with purpose requirement (tap-in)
+        if (availability.status !== 'ongoing') {
+            if (!selectedPurpose) {
+                showStatus('error', 'Please select a purpose first before choosing a laboratory');
+                canOpenModal = false;
+            } else if (selectedPurpose === 'other' && !document.getElementById('otherPurposeText').value.trim()) {
+                showStatus('error', 'Please specify the purpose before proceeding');
+                canOpenModal = false;
+            }
+        } else {
+            // Lab is unavailable: allow tap-out attempt without purpose
+            // Hide purpose section visually
+            if (purposeSection) purposeSection.classList.add('opacity-50');
         }
 
         // Remove active state from all cards
         document.querySelectorAll('.lab-card').forEach(card => {
             card.querySelector('.absolute').classList.remove('opacity-50');
             card.querySelector('.active-checkmark').classList.remove('opacity-100');
-            card.querySelector('.border-2').classList.remove('border-red-500');
+            const borderEl = card.querySelector('.border-2');
+            borderEl.classList.remove('border-red-500');
+            borderEl.classList.remove('border-green-500');
         });
 
         // Add active state to selected card
         element.querySelector('.absolute').classList.add('opacity-50');
         element.querySelector('.active-checkmark').classList.add('opacity-100');
-        element.querySelector('.border-2').classList.add('border-red-500');
+        element.querySelector('.border-2').classList.add('border-green-500');
 
         // Update selected lab
         selectedLab = element.dataset.value;
-        document.getElementById('selectedLabText').textContent = `Selected: ${selectedLab}`;
+        const selectedLabTextEl = document.getElementById('selectedLabText');
+        selectedLabTextEl.textContent = `Selected: ${selectedLab}`;
+        selectedLabTextEl.className = 'text-sm font-medium text-green-700 bg-green-50 px-3 py-1 rounded-full';
 
-        // Show tap card modal
-        document.getElementById('tapCardModal').classList.remove('hidden');
-        startRFIDListener();
+        // Show tap card modal only if allowed
+        if (canOpenModal) {
+            const modalEl = document.getElementById('tapCardModal');
+            modalEl.classList.remove('hidden');
+            modalEl.style.display = 'flex';
+            // Ensure modal starts in non-loading state
+            if (typeof setTapModalLoading === 'function') {
+                setTapModalLoading(false);
+            }
+            startRFIDListener();
+        }
     }
 
     // Function to close tap card modal and reset selection
-    function closeTapCardModal() {
-        document.getElementById('tapCardModal').classList.add('hidden');
+    function closeTapCardModal(force = false) {
+        if (isProcessing && !force) return; // Prevent closing while verifying unless forced
+        const modalEl = document.getElementById('tapCardModal');
+        if (modalEl) {
+            modalEl.classList.add('hidden');
+            modalEl.style.display = 'none';
+        }
         stopRFIDListener();
+        // Reset modal visual state
+        if (typeof setTapModalLoading === 'function') {
+            setTapModalLoading(false);
+        }
         
         // Reset lab selection
         resetLabSelection();
@@ -519,40 +555,51 @@
     function startRFIDListener() {
         if (window.RFIDListener) return; // Prevent multiple listeners
 
-        window.RFIDListener = document.addEventListener('keypress', async function(e) {
+        let rfidNumber = '';
+        let lastKeyTime = Date.now();
+        let collectingRFID = false;
+
+        // Keep reference to the inner collector so we can remove it on stop
+        window.RFIDCollectHandler = function collectKeys(e) {
+            const currentTime = Date.now();
+            if (currentTime - lastKeyTime > 100) { // Reset if too much time between keys
+                rfidNumber = e.key;
+            } else {
+                rfidNumber += e.key;
+            }
+            lastKeyTime = currentTime;
+
+            // Check if we have a complete RFID number (usually 10 digits)
+            if (rfidNumber.length >= 10) {
+                // Switch modal to verifying state immediately
+                if (typeof setTapModalLoading === 'function') {
+                    setTapModalLoading(true);
+                }
+                document.removeEventListener('keypress', window.RFIDCollectHandler);
+                handleRFIDScan(rfidNumber);
+                collectingRFID = false;
+            }
+        };
+
+        window.RFIDListener = function handleFirstKey(e) {
             if (isProcessing) return;
-
-            let rfidNumber = '';
-            let lastKeyTime = Date.now();
-            let collectingRFID = false;
-
             if (!collectingRFID) {
                 collectingRFID = true;
                 rfidNumber = e.key;
-
-                // Collect RFID number
-                document.addEventListener('keypress', function collectKeys(e) {
-                    const currentTime = Date.now();
-                    if (currentTime - lastKeyTime > 100) { // Reset if too much time between keys
-                        rfidNumber = e.key;
-                    } else {
-                        rfidNumber += e.key;
-                    }
-                    lastKeyTime = currentTime;
-
-                    // Check if we have a complete RFID number (usually 10 digits)
-                    if (rfidNumber.length >= 10) {
-                        document.removeEventListener('keypress', collectKeys);
-                        handleRFIDScan(rfidNumber);
-                        collectingRFID = false;
-                    }
-                });
+                lastKeyTime = Date.now();
+                document.addEventListener('keypress', window.RFIDCollectHandler);
             }
-        });
+        };
+
+        document.addEventListener('keypress', window.RFIDListener);
     }
 
     // Function to stop RFID listener
     function stopRFIDListener() {
+        if (window.RFIDCollectHandler) {
+            document.removeEventListener('keypress', window.RFIDCollectHandler);
+            window.RFIDCollectHandler = null;
+        }
         if (window.RFIDListener) {
             document.removeEventListener('keypress', window.RFIDListener);
             window.RFIDListener = null;
@@ -561,21 +608,33 @@
 
     // Function to handle RFID scan
     async function handleRFIDScan(rfidNumber) {
-        if (!selectedLab || !selectedPurpose || isProcessing) return;
+        // Only require a lab selection; purpose may be omitted for tap-out when lab is ongoing
+        if (!selectedLab || isProcessing) return;
         isProcessing = true;
 
-        // Get the purpose text
-        let purposeText = selectedPurpose;
-        if (selectedPurpose === 'other') {
-            purposeText = document.getElementById('otherPurposeText').value.trim();
-            if (!purposeText) {
-                showStatus('error', 'Please specify the purpose before proceeding');
-                isProcessing = false;
-                return;
+        // Determine if lab is currently ongoing to treat as tap-out (skip purpose)
+        const availability = await getLabAvailabilityDetail(selectedLab);
+        let purposeText = null;
+        if (availability.status !== 'ongoing') {
+            purposeText = selectedPurpose;
+            if (selectedPurpose === 'other') {
+                purposeText = document.getElementById('otherPurposeText').value.trim();
+                if (!purposeText) {
+                    showStatus('error', 'Please specify the purpose before proceeding');
+                    isProcessing = false;
+                    // Turn off loading since we didn't call the server
+                    if (typeof setTapModalLoading === 'function') {
+                        setTapModalLoading(false);
+                    }
+                    return;
+                }
             }
         }
 
         try {
+            if (typeof setTapModalLoading === 'function') {
+                setTapModalLoading(true);
+            }
             const response = await fetch('/lab-schedule/rfid-attendance', {
                 method: 'POST',
                 headers: {
@@ -585,13 +644,21 @@
                 body: JSON.stringify({
                     rfid_number: rfidNumber,
                     laboratory: selectedLab,
-                    purpose: purposeText
+                    ...(purposeText ? { purpose: purposeText } : {})
                 })
             });
 
-            const data = await response.json();
+            // Attempt to parse JSON regardless of status; fall back to text
+            const ct = response.headers.get('content-type') || '';
+            let data;
+            if (ct.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = { success: false, message: text || 'Unexpected response from server' };
+            }
 
-            if (data.success) {
+            if (response.ok && data.success) {
                 // Update attendance information
                 document.getElementById('facultyName').textContent = data.faculty_name;
                 document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
@@ -625,17 +692,34 @@
                 const attendanceInfo = document.getElementById('attendanceInfo');
                 attendanceInfo.classList.remove('hidden', 'opacity-0');
 
-                // Show success message
+                // Show success message and close modal
                 showStatus('success', data.message);
+                closeTapCardModal(true);
+                stopRFIDListener();
             } else {
-                showStatus('error', data.message || 'Failed to process RFID');
+                // Show error message first, then close modal after a delay
+                const statusMsg = (data && data.message) ? data.message :
+                    (!response.ok ? `Request failed (${response.status})` : 'Failed to process RFID');
+                showStatus('error', statusMsg);
+                stopRFIDListener();
+                
+                // Close modal after 2 seconds to allow user to see the error message
+                setTimeout(() => {
+                    closeTapCardModal(true);
+                }, 2000);
             }
         } catch (error) {
+            // Show error message first, then close modal after a delay
             showStatus('error', 'Error processing RFID scan');
             console.error('Error:', error);
+            stopRFIDListener();
+            
+            // Close modal after 2 seconds to allow user to see the error message
+            setTimeout(() => {
+                closeTapCardModal(true);
+            }, 2000);
         } finally {
             isProcessing = false;
-            closeTapCardModal();
         }
     }
 
@@ -646,11 +730,14 @@
         statusIndicator.textContent = message;
         statusIndicator.classList.remove('hidden', 'opacity-0', 'scale-95');
 
-        // Hide status after 3 seconds
+        // For error messages, show them longer (5 seconds) to ensure visibility
+        const hideDelay = type === 'error' ? 5000 : 3000;
+        
+        // Hide status after specified delay
         setTimeout(() => {
             statusIndicator.classList.add('opacity-0', 'scale-95');
             setTimeout(() => statusIndicator.classList.add('hidden'), 300);
-        }, 3000);
+        }, hideDelay);
     }
 
     // Clean up event listeners when the page is unloaded
@@ -658,20 +745,52 @@
         stopRFIDListener();
     });
 
+    // Toggle loading state in the Tap modal
+    function setTapModalLoading(loading) {
+        const closeBtn = document.getElementById('tapCloseBtn');
+        const waiting = document.getElementById('tapWaiting');
+        const loadingDiv = document.getElementById('tapLoading');
+        const title = document.getElementById('tapModalTitle');
+        const text = document.getElementById('tapModalText');
+
+        if (loading) {
+            if (closeBtn) {
+                closeBtn.setAttribute('disabled', '');
+                closeBtn.classList.add('opacity-50', 'pointer-events-none');
+            }
+            if (waiting) waiting.classList.add('hidden');
+            if (loadingDiv) loadingDiv.classList.remove('hidden');
+            if (title) title.textContent = 'Verifying';
+            if (text) text.textContent = 'Please wait while we verify your RFID...';
+        } else {
+            if (closeBtn) {
+                closeBtn.removeAttribute('disabled');
+                closeBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+            if (waiting) waiting.classList.remove('hidden');
+            if (loadingDiv) loadingDiv.classList.add('hidden');
+            if (title) title.textContent = 'Ready to Scan';
+            if (text) text.textContent = 'Please tap your RFID card to record your attendance.';
+        }
+    }
+
     // Function to check if user has an ongoing lab session
     async function checkUserOngoingSession() {
         try {
             const response = await fetch('/lab-schedule/check-user-ongoing-session', {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'Accept': 'application/json'
                 }
             });
-            const data = await response.json();
-            return data.hasOngoingSession || false;
+            // If the route does not exist (404) or any non-OK status, treat as no ongoing session
+            if (!response.ok) {
+                return false;
+            }
+            const data = await response.json().catch(() => ({ hasOngoingSession: false }));
+            return Boolean(data.hasOngoingSession);
         } catch (error) {
-            console.error('Error checking user ongoing session:', error);
+            // Fail-safe: do not block UI if the endpoint is unavailable
             return false;
         }
     }
@@ -679,35 +798,77 @@
     // Function to check specific lab availability
     async function checkSpecificLabAvailability(labNumber) {
         try {
-            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`);
+            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!response.ok) return true; // assume available on error
+            const ct = response.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) return true;
             const data = await response.json();
-            return data.status !== 'ongoing';
+            return (data && data.status) ? data.status !== 'ongoing' : true;
         } catch (error) {
             console.error('Error checking specific lab availability:', error);
             return true; // Default to available if error occurs
         }
     }
 
-    // Add this function to check lab availability
+            // Add this function to check lab availability
     async function checkLabAvailability(labNumber) {
         try {
-            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`);
+            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const ct = response.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) throw new Error('Non-JSON response');
             const data = await response.json();
 
-            const statusDot = document.querySelector(`[data-value="${labNumber}"] .rounded-full`);
+            const statusIconWrapper = document.querySelector(`[data-value="${labNumber}"] .status-icon`);
             const statusText = document.querySelector(`[data-value="${labNumber}"] .status-text`);
+            const container = document.querySelector(`[data-value="${labNumber}"] .relative`);
+
+            if (!statusIconWrapper) return;
 
             if (data.status === 'ongoing') {
-                statusDot.classList.remove('bg-green-500');
-                statusDot.classList.add('bg-red-500');
+                statusIconWrapper.innerHTML = `
+                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                `;
                 statusText.textContent = 'Unavailable';
+                if (container) {
+                    container.classList.add('bg-red-100', 'border-red-600', 'opacity-80');
+                    container.classList.remove('bg-white', 'border-gray-200');
+                }
             } else {
-                statusDot.classList.remove('bg-red-500');
-                statusDot.classList.add('bg-green-500');
+                statusIconWrapper.innerHTML = `
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>`;
                 statusText.textContent = 'Available';
+                if (container) {
+                    container.classList.add('bg-white', 'border-gray-200');
+                    container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80');
+                }
             }
         } catch (error) {
             console.error('Error checking lab availability:', error);
+        }
+    }
+
+    // Helper to get current lab availability
+    async function getLabAvailabilityDetail(labNumber) {
+        try {
+            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!response.ok) return { status: 'available' };
+            const ct = response.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) return { status: 'available' };
+            const data = await response.json();
+            return data && data.status ? data : { status: 'available' };
+        } catch (e) {
+            return { status: 'available' };
         }
     }
 
@@ -718,29 +879,39 @@
             const labNumber = card.dataset.value;
             checkLabAvailability(labNumber);
         });
-
-        // Check availability every 30 seconds
-        setInterval(() => {
-            labCards.forEach(card => {
-                const labNumber = card.dataset.value;
-                checkLabAvailability(labNumber);
-            });
-        }, 30000);
     });
 
     function updateLabStatus(labNumber, status) {
         const labCard = document.querySelector(`[data-value="${labNumber}"]`);
         if (!labCard) return;
 
-        const statusDot = labCard.querySelector('.rounded-full');
+        const statusIconWrapper = labCard.querySelector('.status-icon');
         const statusText = labCard.querySelector('.status-text');
+        const container = labCard.querySelector('.relative');
+
+        if (!statusIconWrapper) return;
 
         if (status === 'on-going') {
-            statusDot.className = 'inline-block w-3 h-3 rounded-full mr-2 bg-red-500';
+            statusIconWrapper.innerHTML = `
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            `;
             statusText.textContent = 'Unavailable';
+            if (container) {
+                container.classList.add('bg-red-100', 'border-red-600', 'opacity-80');
+                container.classList.remove('bg-white', 'border-gray-200');
+            }
         } else {
-            statusDot.className = 'inline-block w-3 h-3 rounded-full mr-2 bg-green-500';
+            statusIconWrapper.innerHTML = `
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>`;
             statusText.textContent = 'Available';
+            if (container) {
+                container.classList.add('bg-white', 'border-gray-200');
+                container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80');
+            }
         }
     }
 

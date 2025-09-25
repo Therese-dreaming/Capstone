@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\LabLog;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class LabScheduleController extends Controller
 {
@@ -14,11 +15,10 @@ class LabScheduleController extends Controller
     {
         try {
 
-            // Validate request
+            // Validate request (purpose required only for time-in)
             $request->validate([
                 'rfid_number' => 'required|string',
-                'laboratory' => 'required|string',
-                'purpose' => 'required|string'
+                'laboratory' => 'required|string'
             ]);
 
             // Find user by RFID number
@@ -33,7 +33,27 @@ class LabScheduleController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid RFID card or unauthorized user'
-                ], 401);
+                ]);
+            }
+            // Safety cooldown: prevent any tap within 5 minutes (300 seconds) of the user's last action
+            $recentLog = LabLog::where('user_id', $user->id)
+                ->orderByRaw('COALESCE(time_out, time_in) DESC')
+                ->first();
+
+            if ($recentLog) {
+                $lastActionAt = $recentLog->time_out ?: $recentLog->time_in;
+                if ($lastActionAt) {
+                    // Signed elapsed seconds since last action; negative if lastActionAt is in the future
+                    $elapsedSeconds = Carbon::parse($lastActionAt)->diffInSeconds(now(), false);
+                    if ($elapsedSeconds < 300) {
+                        $remainingSeconds = 300 - max(0, $elapsedSeconds);
+                        $remainingMinutes = (int) ceil($remainingSeconds / 60);
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Please wait {$remainingMinutes} minute(s) before tapping again."
+                        ], 429);
+                    }
+                }
             }
 
             // Check if user has any ongoing session in any laboratory
@@ -49,7 +69,7 @@ class LabScheduleController extends Controller
                 ->latest('time_in')
                 ->first();
 
-            // If there's an ongoing session in the current laboratory
+            // If there's an ongoing session in the current laboratory by this user
             if ($ongoingLog) {
                 // This is a time-out action
                 $ongoingLog->update([
@@ -68,7 +88,7 @@ class LabScheduleController extends Controller
                 ]);
             }
             
-            // If there's an ongoing session in another laboratory
+            // If there's an ongoing session in another laboratory for this user
             if ($anyOngoingLog && $anyOngoingLog->laboratory != $request->laboratory) {
                 return response()->json([
                     'success' => false,
@@ -76,7 +96,25 @@ class LabScheduleController extends Controller
                 ], 400);
             }
 
-            // This is a time-in action
+            // Prevent time-in if another user currently occupies the lab
+            $labOngoingByOther = LabLog::where('laboratory', $request->laboratory)
+                ->where('status', 'on-going')
+                ->where('user_id', '!=', $user->id)
+                ->first();
+            if ($labOngoingByOther) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This laboratory is currently unavailable. Only the same user who tapped in can tap out.'
+                ], 403);
+            }
+
+            // This is a time-in action (require purpose here)
+            if (!$request->filled('purpose')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Purpose is required for time in.'
+                ], 422);
+            }
             $labLog = new LabLog([
                 'user_id' => $user->id,
                 'laboratory' => $request->laboratory,
@@ -229,6 +267,25 @@ class LabScheduleController extends Controller
         return response()->json($statuses);
     }
 
+    // Public endpoint: returns whether the CURRENT authenticated user has an ongoing session.
+    // If unauthenticated (e.g., public RFID logging), returns false so the UI can proceed.
+    public function checkUserOngoingSession()
+    {
+        try {
+            if (!auth()->check()) {
+                return response()->json(['hasOngoingSession' => false]);
+            }
+
+            $has = LabLog::where('user_id', auth()->id())
+                ->where('status', 'on-going')
+                ->exists();
+
+            return response()->json(['hasOngoingSession' => $has]);
+        } catch (\Exception $e) {
+            return response()->json(['hasOngoingSession' => false]);
+        }
+    }
+
     public function logging()
     {
         $laboratories = \App\Models\Laboratory::orderBy('number')->get();
@@ -236,6 +293,56 @@ class LabScheduleController extends Controller
         return view('lab-schedule.logging', [
             'laboratories' => $laboratories
         ]);
+    }
+
+    // Manual logout tools
+    public function manualLogoutPage(Request $request)
+    {
+        // Basic guard: only authenticated users or admins should access; adjust as needed
+        // if (!auth()->check()) { return redirect()->route('login'); }
+
+        $query = LabLog::with('user')
+            ->where('status', 'on-going')
+            ->orderBy('time_in', 'desc');
+
+        // Optional filters
+        if ($request->laboratory) {
+            $query->where('laboratory', $request->laboratory);
+        }
+        if ($request->user_id) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        $ongoingLogs = $query->paginate(10)->withQueryString();
+
+        $laboratories = \App\Models\Laboratory::orderBy('number')->pluck('number');
+
+        return view('lab-schedule.manual-logout', [
+            'ongoingLogs' => $ongoingLogs,
+            'laboratories' => $laboratories
+        ]);
+    }
+
+    public function manualLogoutSubmit(Request $request)
+    {
+        $request->validate([
+            'log_id' => 'required|exists:lab_logs,id',
+            'time_out' => 'required|date'
+        ]);
+
+        $log = LabLog::with('user')->findOrFail($request->log_id);
+
+        // Ensure time_out is after time_in
+        $proposedTimeOut = now()->parse($request->time_out);
+        if ($proposedTimeOut->lessThanOrEqualTo($log->time_in)) {
+            return back()->withErrors(['time_out' => 'Time out must be after time in.'])->withInput();
+        }
+
+        $log->time_out = $proposedTimeOut;
+        $log->status = 'completed';
+        $log->save();
+
+        return redirect()->route('lab.manualLogout')->with('status', 'Manual logout recorded for '.$log->user->name.' in Laboratory '.$log->laboratory.'.');
     }
 
     public function history(Request $request)

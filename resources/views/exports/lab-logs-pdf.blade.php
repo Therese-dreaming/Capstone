@@ -67,11 +67,12 @@
     <table>
         <thead>
             <tr>
-                <th class="whitespace-nowrap">Date & Time</th>
+                <th class="whitespace-nowrap">Date</th>
                 <th>Faculty</th>
                 <th>Laboratory</th>
                 <th>Purpose</th>
-                <th class="whitespace-nowrap">Type</th>
+                <th class="whitespace-nowrap">Time In</th>
+                <th class="whitespace-nowrap">Time Out</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -79,11 +80,7 @@
             @forelse($logs as $log)
                 <tr>
                     <td class="whitespace-nowrap">
-                        @if($log->time_out)
-                            {{ \Carbon\Carbon::parse($log->time_out)->format('m/d/Y h:i A') }}
-                        @else
-                            {{ \Carbon\Carbon::parse($log->time_in)->format('m/d/Y h:i A') }}
-                        @endif
+                        {{ $log->time_in ? \Carbon\Carbon::parse($log->time_in)->format('m/d/Y') : ($log->time_out ? \Carbon\Carbon::parse($log->time_out)->format('m/d/Y') : 'N/A') }}
                     </td>
                     <td>
                         {{ $log->user->name ?? 'N/A' }}
@@ -91,13 +88,14 @@
                         <small>{{ $log->user->position ?? 'N/A' }}</small>
                     </td>
                     <td>{{ $log->laboratory ?? 'N/A' }}</td>
-                    <td>{{ $log->purpose ?? 'N/A' }}</td>
-                    <td class="whitespace-nowrap">{{ $log->time_out ? 'Time Out' : 'Time In' }}</td>
+                    <td>{{ $log->purpose ? ucfirst($log->purpose) : 'N/A' }}</td>
+                    <td class="whitespace-nowrap">{{ $log->time_in ? \Carbon\Carbon::parse($log->time_in)->format('h:i A') : '-' }}</td>
+                    <td class="whitespace-nowrap">{{ $log->time_out ? \Carbon\Carbon::parse($log->time_out)->format('h:i A') : '-' }}</td>
                     <td>{{ ucfirst($log->status ?? 'N/A') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align: center;">No records found</td>
+                    <td colspan="7" style="text-align: center;">No records found</td>
                 </tr>
             @endforelse
         </tbody>

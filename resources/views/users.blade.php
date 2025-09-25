@@ -144,7 +144,7 @@
     <!-- User Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         @foreach($users as $user)
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100">
+        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100 h-full flex flex-col">
             <!-- User Header -->
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-4 md:p-6 border-b border-gray-200">
                 <div class="flex items-center">
@@ -168,7 +168,7 @@
             </div>
             
             <!-- User Details -->
-            <div class="p-4 md:p-6 space-y-3 md:space-y-4">
+            <div class="p-4 md:p-6 space-y-3 md:space-y-4 flex-1">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                     <div class="bg-gray-50 p-3 rounded-lg">
                         <p class="text-xs font-medium text-gray-500 mb-1">Department</p>

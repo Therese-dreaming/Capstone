@@ -146,6 +146,7 @@
                             <option value="Junior High School" {{ old('department') == 'Junior High School' ? 'selected' : '' }}>Junior High School</option>
                             <option value="Senior High School" {{ old('department') == 'Senior High School' ? 'selected' : '' }}>Senior High School</option>
                             <option value="College" {{ old('department') == 'College' ? 'selected' : '' }}>College</option>
+                            <option value="ICTC" {{ old('department') == 'ICTC' ? 'selected' : '' }}>ICTC</option>
                             <option value="School of Graduate Studies" {{ old('department') == 'School of Graduate Studies' ? 'selected' : '' }}>School of Graduate Studies</option>
                         </select>
                     </div>

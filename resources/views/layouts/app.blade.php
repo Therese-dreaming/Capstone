@@ -380,7 +380,7 @@
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <!-- Lab Schedule -->
                     <div class="space-y-1.5">
-                        <button onclick="toggleLabScheduleMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab-schedule.*') || request()->routeIs('lab-history') || request()->routeIs('lab-logging') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                        <button onclick="toggleLabScheduleMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab-schedule.*') || request()->routeIs('lab-history') || request()->routeIs('lab-logging') || request()->routeIs('lab.manualLogout') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
@@ -398,6 +398,9 @@
                                 Lab History
                             </a>
                             @endif
+                            <a href="{{ route('lab.manualLogout') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('lab.manualLogout') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
+                                Manual Logout
+                            </a>
                             @if(auth()->check() && !in_array(auth()->user()->group_id, [2,3,4]))
                             <a href="{{ route('laboratories.index') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('laboratories.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
                                 Laboratories
@@ -644,17 +647,23 @@
             navItems.forEach(item => {
                 if (!item.closest('#profileMenu')) { // Exclude profile menu items
                     item.addEventListener('click', function(e) {
-                                      // Don't prevent default for menu items
-              if (this.tagName === 'BUTTON') {
+                        // Handle only our toggleXMenu buttons; ignore others
+                        if (this.tagName === 'BUTTON') {
                             if (this.id !== 'profileDropdown') {
-                                e.preventDefault();
-                                const menuId = this.getAttribute('onclick').match(/toggle(\w+)Menu/)[1].toLowerCase() + 'Menu';
-                                const menu = document.getElementById(menuId);
-                                const isHidden = menu.classList.contains('hidden');
-                                menu.classList.toggle('hidden');
-                                this.classList.toggle('nav-active');
-                                this.classList.toggle('bg-red-700');
-                                localStorage.setItem(menuId, isHidden ? 'open' : 'closed');
+                                const onclickAttr = this.getAttribute('onclick') || '';
+                                const match = onclickAttr.match(/toggle(\w+)Menu/);
+                                if (match && match[1]) {
+                                    e.preventDefault();
+                                    const menuId = match[1].toLowerCase() + 'Menu';
+                                    const menu = document.getElementById(menuId);
+                                    if (menu) {
+                                        const isHidden = menu.classList.contains('hidden');
+                                        menu.classList.toggle('hidden');
+                                        this.classList.toggle('nav-active');
+                                        this.classList.toggle('bg-red-700');
+                                        localStorage.setItem(menuId, isHidden ? 'open' : 'closed');
+                                    }
+                                }
                             }
                         } else if (this.getAttribute('href') !== '#') {
                             setActiveState(this);
@@ -694,22 +703,24 @@
             }
         });
 
-        // Profile dropdown functionality
+        // Profile dropdown functionality (guard for unauthenticated pages)
         const profileDropdown = document.getElementById('profileDropdown');
         const profileMenu = document.getElementById('profileMenu');
 
-        // Toggle dropdown when clicking the profile button
-        profileDropdown.addEventListener('click', (e) => {
-            e.stopPropagation();
-            profileMenu.classList.toggle('hidden');
-        });
+        if (profileDropdown && profileMenu) {
+            // Toggle dropdown when clicking the profile button
+            profileDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+                profileMenu.classList.toggle('hidden');
+            });
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!profileDropdown.contains(e.target)) {
-                profileMenu.classList.add('hidden');
-            }
-        });
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!profileDropdown.contains(e.target)) {
+                    profileMenu.classList.add('hidden');
+                }
+            });
+        }
 
         function toggleLabScheduleMenu() {
             const menu = document.getElementById('labScheduleMenu');
