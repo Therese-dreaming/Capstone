@@ -149,10 +149,21 @@ class MaintenanceController extends Controller
             $query->where('technician_id', auth()->id());
         }
 
-        $maintenances = $query->with('location')
+        $maintenances = $query->with(['location', 'technician'])
             ->orderBy('location_id')
             ->orderBy('scheduled_date')
             ->get();
+
+        // Load excluded assets for each maintenance record
+        foreach ($maintenances as $maintenance) {
+            if (!empty($maintenance->excluded_assets)) {
+                $maintenance->excludedAssetModels = Asset::whereIn('id', $maintenance->excluded_assets)
+                    ->select('id', 'serial_number', 'name')
+                    ->get();
+            } else {
+                $maintenance->excludedAssetModels = collect();
+            }
+        }
 
         // Get the maintenance_id from query parameter if provided
         $highlightMaintenanceId = $request->get('maintenance_id');

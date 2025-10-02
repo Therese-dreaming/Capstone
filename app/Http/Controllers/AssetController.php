@@ -20,9 +20,14 @@ class AssetController extends Controller
         $query = Asset::with(['category', 'location', 'vendor', 'creator']);
 
         // Apply filters if they exist
-        if ($request->has('search')) {
+        if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where('serial_number', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%")
+                  ->orWhere('specification', 'like', "%{$search}%");
+            });
         }
 
         if ($request->has('status') && $request->status) {
@@ -67,6 +72,9 @@ class AssetController extends Controller
         if ($request->has('date_to') && $request->date_to) {
             $query->where('purchase_date', '<=', $request->date_to);
         }
+
+        // Order by created_at descending (recently added first)
+        $query->orderBy('created_at', 'desc');
 
         // Get the assets with pagination
         $assets = $query->paginate(10)->withQueryString();
@@ -187,16 +195,17 @@ class AssetController extends Controller
                 'warranty_period' => 'required|date|after_or_equal:purchase_date',
                 'purchase_price' => 'required|numeric|min:0',
                 'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'acquisition_document' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf|max:2048',
+                'quantity' => 'nullable|integer|min:1|max:100',
             ]);
 
-            // For non-registered assets, force status to PULLED OUT
-            if ($isFromNonRegistered) {
-                $validated['status'] = 'PULLED OUT';
-            }
+            // For non-registered assets, use the dynamic status passed from repair request
+            // Don't override the status - it should already be set correctly based on repair status
 
             // Ensure the category exists
             $category = Category::findOrFail($validated['category_id']);
 
+            // Upload once; reuse for bulk
             if ($request->hasFile('photo')) {
                 $photoPath = $request->file('photo')->store('assets', 'public');
                 $validated['photo'] = $photoPath;
@@ -208,60 +217,80 @@ class AssetController extends Controller
                 $validated['acquisition_document'] = $acquisitionPath;
             }
 
-            // Create the asset first
-            $validated['created_by'] = auth()->id();
-            $asset = Asset::create($validated);
-
-            // Create asset history record for the new asset
-            $historyRemarks = $isFromNonRegistered 
-                ? 'Asset registered from non-registered pulled out status. Previously pulled out for repair.'
-                : 'New asset added to the system';
-                
-            AssetHistory::create([
-                'asset_id' => $asset->id,
-                'change_type' => 'CREATED',
-                'old_value' => null,
-                'new_value' => $isFromNonRegistered ? 'Asset registered from non-registered status' : 'Asset created',
-                'remarks' => $historyRemarks,
-                'changed_by' => auth()->id()
-            ]);
-
-            // If this is a non-registered asset being registered, link the repair history
+            // Determine quantity (default 1). Lock to 1 when from non-registered flow
+            $quantity = (int) ($validated['quantity'] ?? $request->input('quantity', 1));
             if ($isFromNonRegistered) {
-                $this->linkNonRegisteredAssetHistory($asset, $request);
+                $quantity = 1;
             }
+            if ($quantity < 1) { $quantity = 1; }
+            if ($quantity > 100) { $quantity = 100; }
 
-            // Create QR code directory if it doesn't exist
-            Storage::disk('public')->makeDirectory('qrcodes');
+            $validated['created_by'] = auth()->id();
 
-            // Generate QR code with proper data
-            $qrCode = new QrCode(json_encode([
-                'id' => $asset->id,
-                'serial_number' => $asset->serial_number
-            ]));
+            $createdAssets = [];
+            for ($i = 0; $i < $quantity; $i++) {
+                // Create each asset
+                $asset = Asset::create($validated);
 
-            $writer = new PngWriter();
-            $result = $writer->write($qrCode);
+                // Create asset history record for the new asset
+                $historyRemarks = $isFromNonRegistered 
+                    ? 'Asset registered from repair request with status: ' . $validated['status'] . '. Automatically linked to repair request.'
+                    : 'New asset added to the system';
+                    
+                AssetHistory::create([
+                    'asset_id' => $asset->id,
+                    'change_type' => 'CREATED',
+                    'old_value' => null,
+                    'new_value' => $isFromNonRegistered ? 'Asset registered from non-registered status' : 'Asset created',
+                    'remarks' => $historyRemarks,
+                    'changed_by' => auth()->id()
+                ]);
 
-            $qrPath = 'qrcodes/asset-' . $asset->id . '.png';
+                // If this is a non-registered asset being registered, link the repair history
+                if ($isFromNonRegistered) {
+                    $this->linkNonRegisteredAssetHistory($asset, $request);
+                }
 
-            // Ensure the QR code is stored properly
-            if (Storage::disk('public')->put($qrPath, $result->getString())) {
-                $asset->update(['qr_code' => $qrPath]);
-            } else {
-                throw new \Exception('Failed to store QR code');
+                // Create QR code directory if it doesn't exist
+                Storage::disk('public')->makeDirectory('qrcodes');
+
+                // Generate QR code with proper data
+                $qrCode = new QrCode(json_encode([
+                    'id' => $asset->id,
+                    'serial_number' => $asset->serial_number
+                ]));
+
+                $writer = new PngWriter();
+                $result = $writer->write($qrCode);
+
+                $qrPath = 'qrcodes/asset-' . $asset->id . '.png';
+
+                // Ensure the QR code is stored properly
+                if (Storage::disk('public')->put($qrPath, $result->getString())) {
+                    $asset->update(['qr_code' => $qrPath]);
+                } else {
+                    throw new \Exception('Failed to store QR code');
+                }
+
+                $createdAssets[] = $asset->id;
             }
 
             if ($request->wantsJson()) {
                 $message = $isFromNonRegistered 
-                    ? 'Asset registered successfully from non-registered status'
-                    : 'Asset added successfully';
-                return response()->json(['success' => true, 'message' => $message]);
+                    ? 'Asset registered successfully with status: ' . $validated['status'] . ' and linked to repair request'
+                    : (count($createdAssets) > 1 ? (count($createdAssets) . ' assets added successfully') : 'Asset added successfully');
+                return response()->json(['success' => true, 'message' => $message, 'created_ids' => $createdAssets]);
             }
 
             $successMessage = $isFromNonRegistered 
-                ? 'Asset has been registered successfully from non-registered pulled out status'
-                : 'Asset has been added successfully';
+                ? 'Asset has been registered successfully with status: ' . $validated['status'] . ' and automatically linked to the repair request'
+                : (count($createdAssets) > 1 ? (count($createdAssets) . ' assets have been added successfully') : 'Asset has been added successfully');
+
+            // If this is from a repair request, redirect back to the repair details page
+            if ($isFromNonRegistered && $request->has('repair_request_id') && $request->repair_request_id) {
+                return redirect()->route('repair.show', $request->repair_request_id)
+                    ->with('success', $successMessage);
+            }
 
             return redirect()->route($this->getRedirectRoute())
                 ->with('success', $successMessage);
@@ -287,15 +316,61 @@ class AssetController extends Controller
         // Check if this is coming from a non-registered asset context
         $fromNonRegistered = $request->has('from_non_registered') && $request->from_non_registered;
         $status = $request->get('status', '');
+        $repairRequestId = $request->get('repair_request_id', '');
         
-        return view('add-asset', compact('categories', 'vendors', 'locations', 'fromNonRegistered', 'status'));
+        return view('add-asset', compact('categories', 'vendors', 'locations', 'fromNonRegistered', 'status', 'repairRequestId'));
     }
 
     public function qrList(Request $request)
     {
-        $query = Asset::with(['category', 'location', 'vendor']);
+        $query = Asset::with(['category', 'location', 'vendor', 'creator']);
 
-        // Apply date range filter if provided
+        // Apply filters if they exist
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%")
+                  ->orWhere('specification', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('category') && $request->category) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->has('location') && $request->location) {
+            $query->where('location_id', $request->location);
+        }
+
+        // Add warranty filter
+        if ($request->has('warranty') && $request->warranty) {
+            $today = Carbon::now();
+            
+            switch ($request->warranty) {
+                case 'expiring_365':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(365)->format('Y-m-d'));
+                    break;
+                case 'expiring_30':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(30)->format('Y-m-d'));
+                    break;
+                case 'expired':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '<', $today->format('Y-m-d'));
+                    break;
+            }
+        }
+
+        // Add date range filter
         if ($request->has('date_from') && $request->date_from) {
             $query->where('purchase_date', '>=', $request->date_from);
         }
@@ -304,34 +379,67 @@ class AssetController extends Controller
             $query->where('purchase_date', '<=', $request->date_to);
         }
 
-        // Apply other filters
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('serial_number', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%");
-            });
-        }
+        // Order by created_at descending (recently added first)
+        $query->orderBy('created_at', 'desc');
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
+        // Get the assets with pagination
+        $assets = $query->paginate(10)->withQueryString();
 
-        if ($request->has('category')) {
-            $query->where('category_id', $request->category);
-        }
-
-        $assets = $query->orderBy('purchase_date', 'desc')->get();
-        
-        // Get filter options for the form
+        // Get filter data
         $categories = Category::all();
+        $locations = Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
         
-        return view('qr-list', compact('assets', 'categories'));
+        return view('qr-list', compact('assets', 'categories', 'locations'));
     }
 
     public function previewQrCodes(Request $request)
     {
-        $query = Asset::with(['category', 'location', 'vendor']);
+        $query = Asset::with(['category', 'location', 'vendor', 'creator']);
+
+        // Apply filters if they exist
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%")
+                  ->orWhere('specification', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('category') && $request->category) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->has('location') && $request->location) {
+            $query->where('location_id', $request->location);
+        }
+
+        // Add warranty filter
+        if ($request->has('warranty') && $request->warranty) {
+            $today = Carbon::now();
+            
+            switch ($request->warranty) {
+                case 'expiring_365':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(365)->format('Y-m-d'));
+                    break;
+                case 'expiring_30':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(30)->format('Y-m-d'));
+                    break;
+                case 'expired':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '<', $today->format('Y-m-d'));
+                    break;
+            }
+        }
 
         // Apply date range filter if provided
         if ($request->has('date_from') && $request->date_from) {
@@ -344,11 +452,16 @@ class AssetController extends Controller
 
         // If specific items are selected, use those
         if ($request->has('selected_items') && $request->selected_items) {
-            $selectedIds = json_decode($request->selected_items);
-            $query->whereIn('id', $selectedIds);
+            $selectedItems = json_decode($request->selected_items);
+            
+            // If "all" is selected, don't add any additional where clause (use all filtered items)
+            if ($selectedItems !== 'all') {
+                $query->whereIn('id', $selectedItems);
+            }
+            // If $selectedItems === 'all', we use all items that match the current filters
         }
 
-        $assets = $query->orderBy('purchase_date', 'desc')->get();
+        $assets = $query->orderBy('created_at', 'desc')->get();
 
         $pdf = PDF::loadView('pdf.qr-codes', compact('assets'));
         return $pdf->stream('qr-codes-preview.pdf');
@@ -356,7 +469,52 @@ class AssetController extends Controller
 
     public function exportQrCodes(Request $request)
     {
-        $query = Asset::with(['category', 'location', 'vendor']);
+        $query = Asset::with(['category', 'location', 'vendor', 'creator']);
+
+        // Apply filters if they exist
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('serial_number', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('model', 'like', "%{$search}%")
+                  ->orWhere('specification', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('category') && $request->category) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->has('location') && $request->location) {
+            $query->where('location_id', $request->location);
+        }
+
+        // Add warranty filter
+        if ($request->has('warranty') && $request->warranty) {
+            $today = Carbon::now();
+            
+            switch ($request->warranty) {
+                case 'expiring_365':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(365)->format('Y-m-d'));
+                    break;
+                case 'expiring_30':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '>', $today->format('Y-m-d'))
+                          ->where('warranty_period', '<=', $today->copy()->addDays(30)->format('Y-m-d'));
+                    break;
+                case 'expired':
+                    $query->whereNotNull('warranty_period')
+                          ->where('warranty_period', '<', $today->format('Y-m-d'));
+                    break;
+            }
+        }
 
         // Apply date range filter if provided
         if ($request->has('date_from') && $request->date_from) {
@@ -369,11 +527,16 @@ class AssetController extends Controller
 
         // If specific items are selected, use those
         if ($request->has('selected_items') && $request->selected_items) {
-            $selectedIds = json_decode($request->selected_items);
-            $query->whereIn('id', $selectedIds);
+            $selectedItems = json_decode($request->selected_items);
+            
+            // If "all" is selected, don't add any additional where clause (use all filtered items)
+            if ($selectedItems !== 'all') {
+                $query->whereIn('id', $selectedItems);
+            }
+            // If $selectedItems === 'all', we use all items that match the current filters
         }
 
-        $assets = $query->orderBy('purchase_date', 'desc')->get();
+        $assets = $query->orderBy('created_at', 'desc')->get();
 
         $filename = 'asset-qrcodes-' . now()->format('Y-m-d') . '.pdf';
         $pdf = PDF::loadView('pdf.qr-codes', compact('assets'));
@@ -971,37 +1134,9 @@ class AssetController extends Controller
     private function linkNonRegisteredAssetHistory(Asset $asset, Request $request)
     {
         try {
-            \Log::info('Starting to link non-registered asset history', [
-                'asset_id' => $asset->id,
-                'asset_name' => $asset->name,
-                'asset_location' => $asset->location->building . ' - ' . $asset->location->floor . ' - ' . $asset->location->room_number,
-                'search_criteria' => [
-                    'equipment_name' => $asset->name,
-                    'status' => 'PULLED OUT',
-                    'has_ticket' => true,
-                    'note' => 'Ignoring repair request location, using asset registration location'
-                ]
-            ]);
-
-            // Find the non-registered asset that matches this equipment name
-            // Ignore the repair request location since it might be informal/incorrect
-            // Use the asset registration location instead
-            // This ensures repair history is linked regardless of location mismatches
-            $nonRegisteredAsset = \App\Models\NonRegisteredAsset::where('equipment_name', $asset->name)
-                ->where('status', 'PULLED OUT')
-                ->whereNotNull('ticket_number')
-                ->latest('pulled_out_at')
-                ->first();
-
-            \Log::info('Non-registered asset search result', [
-                'found' => $nonRegisteredAsset ? true : false,
-                'non_registered_asset_id' => $nonRegisteredAsset ? $nonRegisteredAsset->id : null,
-                'ticket_number' => $nonRegisteredAsset ? $nonRegisteredAsset->ticket_number : null
-            ]);
-
-            if ($nonRegisteredAsset && $nonRegisteredAsset->ticket_number) {
-                // Find the repair request
-                $repairRequest = \App\Models\RepairRequest::where('ticket_number', $nonRegisteredAsset->ticket_number)->first();
+            // Direct approach: Use the repair_request_id passed from the frontend
+            if ($request->has('repair_request_id') && $request->repair_request_id) {
+                $repairRequest = \App\Models\RepairRequest::find($request->repair_request_id);
                 
                 if ($repairRequest) {
                     // Create repair history record for the new asset
@@ -1009,51 +1144,28 @@ class AssetController extends Controller
                         'asset_id' => $asset->id,
                         'change_type' => 'REPAIR',
                         'old_value' => $repairRequest->ticket_number, // Store ticket number in old_value for easy access
-                        'new_value' => 'pulled_out',
-                        'remarks' => $nonRegisteredAsset->remarks ?? 'Asset was previously non-registered and pulled out for repair',
+                        'new_value' => 'linked_to_repair',
+                        'remarks' => 'Asset registered and linked to repair request: ' . $repairRequest->ticket_number . '. Equipment: ' . $repairRequest->equipment,
                         'changed_by' => auth()->id()
-                    ]);
-
-                    \Log::info('Created repair history record', [
-                        'history_id' => $repairHistory->id,
-                        'asset_id' => $repairHistory->asset_id,
-                        'change_type' => $repairHistory->change_type
-                    ]);
-
-                    // Create status change record showing the asset was pulled out
-                    $statusHistory = AssetHistory::create([
-                        'asset_id' => $asset->id,
-                        'change_type' => 'STATUS',
-                        'old_value' => 'IN USE',
-                        'new_value' => 'PULLED OUT',
-                        'remarks' => "Asset pulled out for repair on " . $nonRegisteredAsset->pulled_out_at->format('M d, Y') . ". Ticket: {$repairRequest->ticket_number}",
-                        'changed_by' => auth()->id()
-                    ]);
-
-                    \Log::info('Created status history record', [
-                        'history_id' => $statusHistory->id,
-                        'asset_id' => $statusHistory->asset_id,
-                        'change_type' => $statusHistory->change_type
-                    ]);
-
-                    // Update the non-registered asset to link it to the new asset
-                    $nonRegisteredAsset->update([
-                        'linked_asset_id' => $asset->id,
-                        'linked_at' => now()
                     ]);
 
                     // Update the repair request to link it to the new asset
                     $repairRequest->update([
-                        'serial_number' => $asset->serial_number,
-                        'status' => 'pulled_out' // Ensure status reflects the asset is now registered but still pulled out
+                        'serial_number' => $asset->serial_number
+                        // Don't change the repair status - keep it as is (completed, in_progress, etc.)
                     ]);
 
-                    \Log::info('Successfully linked non-registered asset history to new asset', [
-                        'asset_id' => $asset->id,
-                        'non_registered_asset_id' => $nonRegisteredAsset->id,
-                        'ticket_number' => $repairRequest->ticket_number,
-                        'repair_request_updated' => true
-                    ]);
+                    // Find and update any related non-registered asset record if it exists
+                    $nonRegisteredAsset = \App\Models\NonRegisteredAsset::where('ticket_number', $repairRequest->ticket_number)
+                        ->where('equipment_name', $asset->name)
+                        ->first();
+                        
+                    if ($nonRegisteredAsset) {
+                        $nonRegisteredAsset->update([
+                            'linked_asset_id' => $asset->id,
+                            'linked_at' => now()
+                        ]);
+                    }
                 }
             }
         } catch (\Exception $e) {

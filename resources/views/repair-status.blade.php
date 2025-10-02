@@ -27,69 +27,78 @@
     @endif
 
     <!-- Page Header with Background Design -->
-    <div class="mb-6 md:mb-8">
-        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4">
-                        <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">Repair Request Status</h1>
-                        <p class="text-red-100 text-sm md:text-lg">Track and manage repair requests</p>
-                    </div>
+    <div class="mb-4 sm:mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-3 sm:p-4 md:p-6 text-white">
+            <div class="flex items-center">
+                <div class="bg-white/20 p-2 sm:p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4 flex-shrink-0">
+                    <svg class="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2 truncate">Repair Request Status</h1>
+                    <p class="text-red-100 text-xs sm:text-sm md:text-lg">Track and manage repair requests</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Main Container -->
-    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+    <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
         <!-- Header Section -->
-        <div class="mb-6">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-                <h2 class="text-xl md:text-2xl font-bold text-gray-800">Request Status</h2>
-                <div class="flex flex-col md:flex-row gap-4 items-center">
+        <div class="mb-4 sm:mb-6">
+            <div class="flex flex-col gap-4 mb-4 sm:mb-6">
+                <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Request Status</h2>
+                
+                <!-- Filters Section -->
+                <div class="space-y-4">
                     @if(auth()->user()->group_id == 2)
                     <div class="flex items-center gap-3">
-                        <label for="showAssigned" class="text-sm font-semibold text-gray-700">Show My Requests Only</label>
-                        <input type="checkbox" id="showAssigned" class="h-5 w-5 text-red-600 rounded border-gray-300 focus:ring-red-500 focus:ring-2">
+                        <label for="showAssigned" class="text-xs sm:text-sm font-semibold text-gray-700">Show My Requests Only</label>
+                        <input type="checkbox" id="showAssigned" class="h-4 w-4 sm:h-5 sm:w-5 text-red-600 rounded border-gray-300 focus:ring-red-500 focus:ring-2">
                     </div>
                     @endif
-                    <div class="flex flex-col md:flex-row gap-3">
-                        <div class="relative">
-                            <input type="text" id="ticketSearch" placeholder="Search Ticket No." value="{{ request('search', '') }}" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 w-full md:w-64">
+                    
+                    <!-- Search and Filters Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                        <div class="sm:col-span-2 lg:col-span-1">
+                            <input type="text" id="ticketSearch" placeholder="Search Ticket No." value="{{ request('search', '') }}" class="px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 w-full text-sm sm:text-base">
                         </div>
-                        <select id="statusFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white">
-                            <option value="">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                            <option value="pulled_out">Pulled Out</option>
-                            <option value="disposed">Disposed</option>
-                        </select>
-                        <select id="urgencyFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white">
-                            <option value="">All Urgency Levels</option>
-                            <option value="1">Level 1 - Highest</option>
-                            <option value="2">Level 2 - Medium</option>
-                            <option value="3">Level 3 - Low</option>
-                        </select>
-                        <div class="flex gap-2">
-                            <input type="date" id="dateFrom" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
-                            <input type="date" id="dateTo" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                        <div>
+                            <select id="statusFilter" class="px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white w-full text-sm sm:text-base">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="pulled_out">Pulled Out</option>
+                                <option value="disposed">Disposed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="urgencyFilter" class="px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 bg-white w-full text-sm sm:text-base">
+                                <option value="">All Urgency</option>
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-1">
+                            <input type="date" id="dateFrom" class="px-2 py-2 sm:px-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-xs sm:text-sm">
+                            <input type="date" id="dateTo" class="px-2 py-2 sm:px-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-xs sm:text-sm">
                         </div>
                         
                         <!-- Update Urgency Levels Button (Admin Only) -->
                         @if(auth()->user()->group_id == 1)
-                        <button id="updateUrgencyBtn" class="px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200 font-medium flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Update Urgency
-                        </button>
+                        <div class="sm:col-span-2 lg:col-span-1">
+                            <button id="updateUrgencyBtn" class="px-3 py-2 sm:px-4 sm:py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200 font-medium flex items-center justify-center w-full text-sm sm:text-base">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span class="hidden sm:inline">Update Urgency</span>
+                                <span class="sm:hidden">Update</span>
+                            </button>
+                        </div>
                         @endif
                     </div>
                 </div>
@@ -113,29 +122,29 @@
         </div>
         @else
         <!-- Cards for all screen sizes -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="requestsCards">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" id="requestsCards">
             @foreach($requests as $request)
-            <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 border border-gray-200 hover:shadow-xl transition-all duration-200">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 border border-gray-200 hover:shadow-xl transition-all duration-200">
                 <!-- Header with Date and Status -->
-                <div class="flex justify-between items-start">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-2">
                     <div class="space-y-1">
-                        <div class="font-bold text-lg text-red-800">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y') }}</div>
-                        <div class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($request->created_at)->format('g:i A') }}</div>
+                        <div class="font-bold text-base sm:text-lg text-red-800">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y') }}</div>
+                        <div class="text-xs sm:text-sm text-gray-500">{{ \Carbon\Carbon::parse($request->created_at)->format('g:i A') }}</div>
                     </div>
-                    <div class="flex flex-col items-end gap-2">
+                    <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2">
                         <!-- Urgency Level Badge -->
                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap
                             @if($request->urgency_level == 1) bg-red-100 text-red-800 border border-red-200
                             @elseif($request->urgency_level == 2) bg-orange-100 text-orange-800 border border-orange-200
                             @else bg-blue-100 text-blue-800 border border-blue-200 @endif">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            Level {{ $request->urgency_level ?? 3 }}
+                            <span class="hidden sm:inline">Level </span>{{ $request->urgency_level ?? 3 }}
                         </span>
                         
                         <!-- Status Badge -->
-                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap
+                        <span class="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold whitespace-nowrap
                             @if($request->status === 'completed') bg-green-100 text-green-800
                             @elseif($request->status === 'cancelled') bg-red-100 text-red-800
                             @elseif($request->status === 'in_progress') bg-blue-100 text-blue-800
@@ -143,9 +152,11 @@
                             @elseif($request->status === 'disposed') bg-red-100 text-red-800
                             @else bg-gray-100 text-gray-800 @endif">
                             @if($request->status === 'in_progress')
-                                In Progress
+                                <span class="hidden sm:inline">In Progress</span>
+                                <span class="sm:hidden">Progress</span>
                             @elseif($request->status === 'pulled_out')
-                                Pulled Out
+                                <span class="hidden sm:inline">Pulled Out</span>
+                                <span class="sm:hidden">Pulled</span>
                             @else
                                 {{ ucfirst($request->status) }}
                             @endif
@@ -154,33 +165,33 @@
                 </div>
 
                 <!-- Request Details -->
-                <div class="space-y-3">
-                    <div class="text-sm">
+                <div class="space-y-2 sm:space-y-3">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Ticket No.:</span> 
-                        <span class="text-gray-900">{{ $request->ticket_number ?? 'N/A' }}</span>
+                        <span class="text-gray-900 break-words">{{ $request->ticket_number ?? 'N/A' }}</span>
                     </div>
                     
-                    <div class="text-sm">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Item:</span>
                         @if($request->asset && $request->asset->name !== $request->equipment)
-                            <div class="text-gray-500 text-xs mt-1">Original: {{ $request->equipment }}</div>
-                            <div class="text-red-600 font-medium">Current: {{ $request->asset->name }}</div>
+                            <div class="text-gray-500 text-xs mt-1 break-words">Original: {{ $request->equipment }}</div>
+                            <div class="text-red-600 font-medium break-words">Current: {{ $request->asset->name }}</div>
                         @else
-                            <span class="text-gray-900">{{ $request->equipment }}</span>
+                            <span class="text-gray-900 break-words">{{ $request->equipment }}</span>
                         @endif
                     </div>
                     
-                    <div class="text-sm">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Location:</span> 
-                        <span class="text-gray-900">{{ $request->building }} - {{ $request->floor }} - {{ $request->room }}</span>
+                        <span class="text-gray-900 break-words">{{ $request->building }} - {{ $request->floor }} - {{ $request->room }}</span>
                     </div>
                     
-                    <div class="text-sm">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Technician:</span> 
-                        <span class="text-gray-900">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</span>
+                        <span class="text-gray-900 break-words">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</span>
                     </div>
                     
-                    <div class="text-sm">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Time Started:</span> 
                         @if($request->time_started)
                             <div class="text-gray-900">{{ \Carbon\Carbon::parse($request->time_started)->format('M j, Y') }}</div>
@@ -190,15 +201,15 @@
                         @endif
                     </div>
                     
-                    <div class="text-sm">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Issue:</span> 
-                        <div class="mt-1 text-gray-600 bg-gray-50 p-3 rounded-lg">{{ $request->issue }}</div>
+                        <div class="mt-1 text-gray-600 bg-gray-50 p-2 sm:p-3 rounded-lg break-words text-xs sm:text-sm">{{ $request->issue }}</div>
                     </div>
                     
-                    <div class="text-sm">
+                    <div class="text-xs sm:text-sm">
                         <span class="font-semibold text-gray-700">Asset:</span>
                         @if($request->asset)
-                            <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:text-red-800 hover:underline transition-colors duration-200">{{ $request->asset->serial_number }}</a>
+                            <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:text-red-800 hover:underline transition-colors duration-200 break-words">{{ $request->asset->serial_number }}</a>
                         @else
                             <span class="text-gray-500">-</span>
                         @endif
@@ -206,7 +217,7 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex flex-wrap gap-2 mt-auto pt-4 border-t border-gray-200">
+                <div class="flex flex-wrap gap-1 sm:gap-2 mt-auto pt-3 sm:pt-4 border-t border-gray-200">
                     @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
                     <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-2 rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200" title="Edit">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,36 +296,36 @@
     </div>
 
     <!-- Update Modal -->
-    <div id="updateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center"
+    <div id="updateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4"
     style="z-index: 60;">
-        <div class="p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
+        <div class="p-4 sm:p-5 border w-full max-w-sm sm:max-w-md shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
+            <div class="mt-2 sm:mt-3">
                 <!-- Header -->
-                <div class="bg-red-800 text-white p-4 rounded-t-lg -mt-3 -mx-3 mb-4">
-                    <h3 class="text-lg font-semibold">Update Request</h3>
-                    <p class="text-red-100 text-sm">Modify the request details below</p>
+                <div class="bg-red-800 text-white p-3 sm:p-4 rounded-t-lg -mt-2 sm:-mt-3 -mx-4 sm:-mx-5 mb-3 sm:mb-4">
+                    <h3 class="text-base sm:text-lg font-semibold">Update Request</h3>
+                    <p class="text-red-100 text-xs sm:text-sm">Modify the request details below</p>
                 </div>
 
                 <!-- Form Content -->
-                <form id="updateForm" method="POST" class="space-y-4">
+                <form id="updateForm" method="POST" class="space-y-3 sm:space-y-4">
                     @csrf
                     @method('PUT')
 
                     <!-- Display Location (Read-only) -->
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold" for="location_display">
+                    <div class="space-y-1 sm:space-y-2">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold" for="location_display">
                             Location
                         </label>
-                        <p id="location_display" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 select-text"></p>
+                        <p id="location_display" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 select-text text-xs sm:text-sm break-words"></p>
                     </div>
 
                     <!-- Technician Selection (Conditional) -->
                     @if(auth()->user()->group_id == 1)
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold" for="technician_id">
+                    <div class="space-y-1 sm:space-y-2">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold" for="technician_id">
                             Technician Assignment
                         </label>
-                        <select id="technician_id" name="technician_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                        <select id="technician_id" name="technician_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-xs sm:text-sm">
                             <option value="">Select a technician...</option>
                             @foreach($technicians as $technician)
                             <option value="{{ $technician->id }}"
@@ -325,25 +336,25 @@
                             </option>
                             @endforeach
                         </select>
-                        <p id="updateTechnicianOngoingHint" class="mt-1 text-sm text-gray-500 hidden">Repairs: <span id="updateTechnicianRepairsCount">0</span> • Maintenance: <span id="updateTechnicianMaintenanceCount">0</span> • Total: <span id="updateTechnicianOngoingCount">0</span></p>
+                        <p id="updateTechnicianOngoingHint" class="mt-1 text-xs sm:text-sm text-gray-500 hidden">Repairs: <span id="updateTechnicianRepairsCount">0</span> • Maintenance: <span id="updateTechnicianMaintenanceCount">0</span> • Total: <span id="updateTechnicianOngoingCount">0</span></p>
                     </div>
                     @else
                     {{-- Display Technician for non-Admins --}}
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold">
+                    <div class="space-y-1 sm:space-y-2">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold">
                             Assigned Technician
                         </label>
-                         <p id="technician_display" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 select-text"></p>
+                         <p id="technician_display" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 select-text text-xs sm:text-sm break-words"></p>
                         <input type="hidden" name="technician_id" id="technician_id_hidden">
                     </div>
                     @endif
 
                     <!-- Status Selection -->
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold" for="status">
+                    <div class="space-y-1 sm:space-y-2">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold" for="status">
                             Request Status
                         </label>
-                        <select id="status" name="status" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                        <select id="status" name="status" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-xs sm:text-sm">
                             <option value="pending" class="text-gray-800">Pending</option>
                             <option value="in_progress" class="text-blue-800">In Progress</option>
                             <option value="completed" class="text-green-800">Completed</option>
@@ -355,11 +366,11 @@
 
                     <!-- Urgency Level Selection (Admin Only) -->
                     @if(auth()->user()->group_id == 1)
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold" for="urgency_level">
+                    <div class="space-y-1 sm:space-y-2">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold" for="urgency_level">
                             Urgency Level
                         </label>
-                        <select id="urgency_level" name="urgency_level" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                        <select id="urgency_level" name="urgency_level" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-xs sm:text-sm">
                             <option value="1" class="text-red-800">Level 1 - Highest (Ongoing Class/Event)</option>
                             <option value="2" class="text-orange-800">Level 2 - Medium (Over 1 Week Old)</option>
                             <option value="3" class="text-blue-800">Level 3 - Low (New Request)</option>
@@ -369,19 +380,19 @@
                     @endif
 
                     <!-- Issue Textarea -->
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 text-sm font-semibold" for="issue">
+                    <div class="space-y-1 sm:space-y-2">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold" for="issue">
                             Issue
                         </label>
-                        <textarea id="issue" name="issue" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 resize-none" placeholder="Enter the issue description..."></textarea>
+                        <textarea id="issue" name="issue" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 resize-none text-xs sm:text-sm" placeholder="Enter the issue description..."></textarea>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                        <button type="button" onclick="closeUpdateModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
+                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeUpdateModal()" class="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
                             Cancel
                         </button>
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-800 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
+                        <button type="submit" class="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-white bg-red-800 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
                             Update Request
                         </button>
                     </div>
@@ -391,23 +402,23 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50" style="z-index: 60;">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4" style="z-index: 60;">
+        <div class="p-4 sm:p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
+            <div class="mt-2 sm:mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100">
+                    <svg class="h-5 w-5 sm:h-6 sm:w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Confirm Delete</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to delete this request?</p>
+                <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 mt-3 sm:mt-4">Confirm Delete</h3>
+                <div class="mt-2 px-2 sm:px-7 py-3">
+                    <p class="text-xs sm:text-sm text-gray-500">Are you sure you want to delete this request?</p>
                 </div>
-                <div class="flex justify-center gap-4 mt-4">
-                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-4">
+                    <button onclick="closeDeleteModal()" class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
                         Cancel
                     </button>
-                    <button onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    <button onclick="executeDelete()" class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white text-sm sm:text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
                         Delete
                     </button>
                 </div>
@@ -417,14 +428,14 @@
 
     <!-- Cancel Modal -->
     <div id="cancelModal" 
-     class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center"
+     class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4"
      style="z-index: 60;">
-    <div class="p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
+    <div class="p-4 sm:p-5 border w-full max-w-sm sm:max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-2 sm:mt-3">
                 <!-- Header -->
-                <div class="bg-red-800 text-white p-4 rounded-t-lg -mt-3 -mx-3 mb-4">
-                    <h3 class="text-lg font-semibold">Cancel Request</h3>
-                    <p class="text-red-100 text-sm">Provide a reason for cancellation</p>
+                <div class="bg-red-800 text-white p-3 sm:p-4 rounded-t-lg -mt-2 sm:-mt-3 -mx-4 sm:-mx-5 mb-3 sm:mb-4">
+                    <h3 class="text-base sm:text-lg font-semibold">Cancel Request</h3>
+                    <p class="text-red-100 text-xs sm:text-sm">Provide a reason for cancellation</p>
                 </div>
 
                 <form id="cancelForm" method="POST">
@@ -434,18 +445,18 @@
                     <input type="hidden" name="date_finished" id="cancelDateFinished">
                     <input type="hidden" name="time_finished" id="cancelTimeFinished">
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-semibold mb-2" for="cancel_remarks">
+                    <div class="mb-3 sm:mb-4">
+                        <label class="block text-gray-700 text-xs sm:text-sm font-semibold mb-2" for="cancel_remarks">
                             Cancellation Reason
                         </label>
-                        <textarea name="remarks" id="cancel_remarks" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" placeholder="Enter reason for cancellation..." required></textarea>
+                        <textarea name="remarks" id="cancel_remarks" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-xs sm:text-sm" placeholder="Enter reason for cancellation..." required></textarea>
                     </div>
 
-                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                        <button type="button" onclick="closeCancelModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
+                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeCancelModal()" class="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200">
                             Cancel
                         </button>
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
+                        <button type="submit" class="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
                             Confirm
                         </button>
                     </div>
@@ -455,27 +466,27 @@
     </div>
 
     <!-- Start Repair Confirmation Modal -->
-    <div id="startRepairModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center"
+    <div id="startRepairModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4"
     style="z-index: 60;">
-        <div class="top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-4 sm:p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
+            <div class="mt-2 sm:mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100">
+                    <svg class="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Start Repair</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to start this repair?</p>
+                <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 mt-3 sm:mt-4">Start Repair</h3>
+                <div class="mt-2 px-2 sm:px-7 py-3">
+                    <p class="text-xs sm:text-sm text-gray-500">Are you sure you want to start this repair?</p>
                 </div>
-                <div class="flex justify-center gap-4 mt-4">
-                    <button onclick="closeStartRepairModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-4">
+                    <button onclick="closeStartRepairModal()" class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
                         No
                     </button>
-                    <button type="button" id="confirmStartRepairBtn" onclick="confirmStartRepair()" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center">
+                    <button type="button" id="confirmStartRepairBtn" onclick="confirmStartRepair()" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm sm:text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center justify-center">
                         <span class="mr-2">Yes</span>
-                        <svg class="animate-spin h-5 w-5 text-white hidden" id="startRepairSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white hidden" id="startRepairSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -1146,7 +1157,9 @@
                     if (searchInput && searchInput.value.trim() !== '') {
                         // Trigger the filter function after a short delay to ensure DOM is ready
                         setTimeout(() => {
-                            filterCards();
+                            if (typeof filterCards === 'function') {
+                                filterCards();
+                            }
                             // Scroll to the first matching result if any
                             const visibleCards = document.querySelectorAll('.repair-card:not(.hidden)');
                             if (visibleCards.length > 0) {
@@ -1164,11 +1177,16 @@
 
                     // Function to filter cards
                     function filterCards() {
-                        const searchTerm = searchInput.value.toLowerCase().trim();
-                        const selectedStatus = statusFilter.value.toLowerCase();
-                        const selectedUrgency = urgencyFilter.value;
-                        const fromDate = dateFrom.value ? new Date(dateFrom.value) : null;
-                        const toDate = dateTo.value ? new Date(dateTo.value) : null;
+                        // Return early if no cards exist
+                        if (!cards || cards.length === 0) {
+                            return;
+                        }
+
+                        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                        const selectedStatus = statusFilter ? statusFilter.value.toLowerCase() : '';
+                        const selectedUrgency = urgencyFilter ? urgencyFilter.value : '';
+                        const fromDate = dateFrom && dateFrom.value ? new Date(dateFrom.value) : null;
+                        const toDate = dateTo && dateTo.value ? new Date(dateTo.value) : null;
                         const showAssignedOnly = showAssignedCheckbox ? showAssignedCheckbox.checked : false;
                         const currentUser = '{{ auth()->user()->name }}';
 
@@ -1254,6 +1272,10 @@
 
                     // Function to update pagination info
                     function updatePaginationInfo() {
+                        if (!cards || cards.length === 0) {
+                            return;
+                        }
+                        
                         const visibleCards = Array.from(cards).filter(card => card.style.display !== 'none');
                         const totalVisible = visibleCards.length;
                         
@@ -1298,7 +1320,9 @@
                     }
 
                     // Initial filter
-                    filterCards();
+                    if (typeof filterCards === 'function') {
+                        filterCards();
+                    }
 
                     // Auto-hide session messages after 5 seconds
                     const sessionError = document.getElementById('session-error');

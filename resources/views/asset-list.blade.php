@@ -272,9 +272,9 @@
             <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
                 <h3 class="text-lg font-semibold text-gray-800 mb-3">Search Assets</h3>
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <div class="relative w-full sm:w-auto flex gap-2">
-                        <input type="text" id="searchInput" placeholder="Search by Serial Number" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
-                        <button id="searchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                    <div class="relative w-full flex gap-2">
+                        <input type="text" id="searchInput" placeholder="Search assets..." class="flex-1 min-w-0 sm:min-w-[400px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
+                        <button id="searchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center whitespace-nowrap">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
@@ -582,8 +582,8 @@
         <!-- Search Bar -->
         <div class="mb-4">
             <div class="flex gap-2">
-                <input type="text" id="modalSearchInput" placeholder="Search by Serial Number" class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
-                <button id="modalSearchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                <input type="text" id="modalSearchInput" placeholder="Search assets..." class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
+                <button id="modalSearchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center whitespace-nowrap">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>

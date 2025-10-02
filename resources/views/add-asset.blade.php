@@ -50,15 +50,23 @@
             @csrf
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             
+            <!-- Hidden field for repair request ID when linking from repair details -->
+            @if($fromNonRegistered ?? false && !empty($repairRequestId ?? ''))
+            <input type="hidden" name="repair_request_id" value="{{ $repairRequestId }}">
+            @endif
+            
             <!-- Non-Registered Asset Context Warning -->
             @if($fromNonRegistered ?? false)
+            @php
+                $contextStatus = request('status', 'PULLED OUT');
+            @endphp
             <div class="mb-6 flex items-center p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <svg class="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                    <span class="text-sm md:text-base text-blue-700 font-medium">Registering Non-Registered Asset</span>
-                    <p class="text-xs text-blue-600 mt-1">This asset was previously pulled out for repair and is now being registered in the main asset system. The status will be automatically set to "PULLED OUT" and cannot be changed.</p>
+                    <span class="text-sm md:text-base text-blue-700 font-medium">Registering Asset from Repair Request</span>
+                    <p class="text-xs text-blue-600 mt-1">This asset is being registered from a repair request and will be automatically linked. The status will be set to "{{ $contextStatus }}" based on the repair request status and cannot be changed.</p>
                 </div>
             </div>
             @endif
@@ -93,34 +101,61 @@
                                 @enderror
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                                <input type="number" name="quantity" min="1" max="100" value="{{ ($fromNonRegistered ?? false) ? 1 : (old('quantity', 1)) }}" {{ ($fromNonRegistered ?? false) ? 'readonly' : '' }}
+                                       class="w-full px-4 py-3 border @error('quantity') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                                @error('quantity')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1 text-xs text-gray-500">Create multiple identical assets. Each will get a unique serial number and QR code.</p>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                                <select name="location_id" required 
-                                        class="w-full px-4 py-3 border @error('location_id') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
-                                    <option value="">Select Location</option>
-                                    @foreach($locations as $location)
-                                    <option value="{{ $location->id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
-                                        {{ $location->full_location }}
-                                    </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative">
+                                    <input type="text" id="locationSearch" 
+                                           class="w-full px-4 py-3 border @error('location_id') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
+                                           placeholder="Type to search location (e.g., 401, Computer Lab, Gabriel)"
+                                           autocomplete="off"
+                                           value="{{ old('location_id') ? $locations->firstWhere('id', old('location_id'))?->full_location : '' }}">
+                                    <input type="hidden" name="location_id" id="locationId" value="{{ old('location_id') }}" required>
+                                    <!-- Autocomplete dropdown -->
+                                    <div id="locationAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
+                                        <!-- Suggestions will be populated here -->
+                                    </div>
+                                </div>
                                 @error('location_id')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
-                                <p class="mt-1 text-xs text-gray-500">If your location is not listed, please contact the administrator to add it.</p>
+                                <p class="mt-1 text-xs text-gray-500">Type to search and select a location. If not listed, contact the administrator.</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                                 @if($fromNonRegistered ?? false)
-                                    <!-- Status is locked to PULLED OUT for non-registered assets -->
+                                    @php
+                                        $dynamicStatus = request('status', 'PULLED OUT');
+                                        $statusColor = match($dynamicStatus) {
+                                            'WORKING' => 'bg-green-100 text-green-800',
+                                            'UNDER REPAIR' => 'bg-blue-100 text-blue-800',
+                                            'PULLED OUT' => 'bg-yellow-100 text-yellow-800',
+                                            default => 'bg-gray-100 text-gray-800'
+                                        };
+                                        $statusDescription = match($dynamicStatus) {
+                                            'WORKING' => 'Status set based on completed repair',
+                                            'UNDER REPAIR' => 'Status set based on ongoing repair',
+                                            'PULLED OUT' => 'Status set because asset was pulled out for repair',
+                                            default => 'Status set based on repair request status'
+                                        };
+                                    @endphp
+                                    <!-- Status is locked based on repair request status -->
                                     <div class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
                                         <div class="flex items-center justify-between">
-                                            <span class="font-medium">PULLED OUT</span>
-                                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Locked</span>
+                                            <span class="font-medium">{{ $dynamicStatus }}</span>
+                                            <span class="text-xs {{ $statusColor }} px-2 py-1 rounded-full">Auto-Set</span>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1">Status locked because this asset was previously pulled out for repair</p>
+                                        <p class="text-xs text-gray-500 mt-1">{{ $statusDescription }}</p>
                                     </div>
-                                    <input type="hidden" name="status" value="PULLED OUT">
+                                    <input type="hidden" name="status" value="{{ $dynamicStatus }}">
                                     <input type="hidden" name="from_non_registered" value="1">
                                 @else
                                     <select name="status" required 
@@ -514,6 +549,7 @@
         initializeImagePreview();
         initializeAcquisitionDocument();
         initializeVendorAutocomplete();
+        initializeLocationAutocomplete();
     });
 
     // Initialize image preview functionality
@@ -646,13 +682,18 @@
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({
                 name: name
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 // Add new vendor to the dropdown
@@ -678,7 +719,8 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            showNotification('Failed to add vendor. Please try again.', 'error');
+            const errorMessage = error.message || (error.errors ? Object.values(error.errors).flat().join(', ') : 'Failed to add vendor. Please try again.');
+            showNotification(errorMessage, 'error');
         });
 
         return false;
@@ -768,12 +810,24 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch vendors');
+            }
+            return response.json();
+        })
         .then(vendors => {
-            displayVendorSuggestions(vendors, query);
+            // Ensure vendors is an array
+            if (Array.isArray(vendors)) {
+                displayVendorSuggestions(vendors, query);
+            } else {
+                console.error('Invalid vendor data received:', vendors);
+                displayVendorSuggestions([], query);
+            }
         })
         .catch(error => {
             console.error('Error searching vendors:', error);
+            displayVendorSuggestions([], query);
         });
     }
 
@@ -827,6 +881,153 @@
 
         vendorAutocomplete.classList.add('hidden');
         vendorAutocomplete.querySelectorAll('.suggestion-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
+
+    // Initialize location autocomplete functionality
+    function initializeLocationAutocomplete() {
+        const locationInput = document.getElementById('locationSearch');
+        const locationAutocomplete = document.getElementById('locationAutocomplete');
+        const locationIdInput = document.getElementById('locationId');
+
+        if (!locationInput || !locationAutocomplete || !locationIdInput) {
+            return;
+        }
+
+        // All locations data from server
+        const allLocations = @json($locations->map(function($loc) {
+            return ['id' => $loc->id, 'name' => $loc->full_location];
+        })->values());
+
+        let searchTimeout;
+
+        locationInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length === 0) {
+                hideLocationAutocomplete();
+                locationIdInput.value = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                filterLocations(query, allLocations);
+            }, 200);
+        });
+
+        // Handle keyboard navigation
+        locationInput.addEventListener('keydown', function(e) {
+            const suggestions = locationAutocomplete.querySelectorAll('.location-suggestion-item');
+            const activeSuggestion = locationAutocomplete.querySelector('.location-suggestion-item.active');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!activeSuggestion) {
+                    suggestions[0]?.classList.add('active');
+                } else {
+                    const nextSuggestion = activeSuggestion.nextElementSibling;
+                    if (nextSuggestion) {
+                        activeSuggestion.classList.remove('active');
+                        nextSuggestion.classList.add('active');
+                        nextSuggestion.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (activeSuggestion) {
+                    const prevSuggestion = activeSuggestion.previousElementSibling;
+                    if (prevSuggestion) {
+                        activeSuggestion.classList.remove('active');
+                        prevSuggestion.classList.add('active');
+                        prevSuggestion.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        activeSuggestion.classList.remove('active');
+                    }
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeSuggestion) {
+                    activeSuggestion.click();
+                }
+            } else if (e.key === 'Escape') {
+                hideLocationAutocomplete();
+            }
+        });
+
+        // Hide autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!locationInput.contains(e.target) && !locationAutocomplete.contains(e.target)) {
+                hideLocationAutocomplete();
+            }
+        });
+    }
+
+    function filterLocations(query, allLocations) {
+        const locationAutocomplete = document.getElementById('locationAutocomplete');
+        if (!locationAutocomplete) return;
+
+        // Filter locations that match the query
+        const matches = allLocations.filter(loc => 
+            loc.name.toLowerCase().includes(query)
+        );
+
+        displayLocationSuggestions(matches);
+    }
+
+    function displayLocationSuggestions(locations) {
+        const locationAutocomplete = document.getElementById('locationAutocomplete');
+        if (!locationAutocomplete) return;
+
+        locationAutocomplete.innerHTML = '';
+        
+        if (locations.length === 0) {
+            locationAutocomplete.innerHTML = `
+                <div class="px-3 py-2 text-sm text-gray-500">
+                    No locations found. Try a different search term.
+                </div>
+            `;
+        } else {
+            locations.slice(0, 50).forEach(location => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'location-suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0';
+                suggestionItem.textContent = location.name;
+                suggestionItem.dataset.locationId = location.id;
+                suggestionItem.addEventListener('click', () => selectLocation(location));
+                locationAutocomplete.appendChild(suggestionItem);
+            });
+
+            if (locations.length > 50) {
+                const moreItem = document.createElement('div');
+                moreItem.className = 'px-3 py-2 text-xs text-gray-400 italic';
+                moreItem.textContent = `+ ${locations.length - 50} more results. Refine your search.`;
+                locationAutocomplete.appendChild(moreItem);
+            }
+        }
+        
+        locationAutocomplete.classList.remove('hidden');
+    }
+
+    function selectLocation(location) {
+        const locationInput = document.getElementById('locationSearch');
+        const locationIdInput = document.getElementById('locationId');
+        
+        if (!locationInput || !locationIdInput) return;
+
+        locationInput.value = location.name;
+        locationIdInput.value = location.id;
+        
+        hideLocationAutocomplete();
+    }
+
+    function hideLocationAutocomplete() {
+        const locationAutocomplete = document.getElementById('locationAutocomplete');
+        if (!locationAutocomplete) return;
+
+        locationAutocomplete.classList.add('hidden');
+        locationAutocomplete.querySelectorAll('.location-suggestion-item').forEach(item => {
             item.classList.remove('active');
         });
     }
@@ -1030,6 +1231,15 @@
 
     .suggestion-item:hover {
         background-color: #f9fafb;
+    }
+
+    .location-suggestion-item.active {
+        background-color: #dbeafe;
+        font-weight: 500;
+    }
+
+    .location-suggestion-item:hover {
+        background-color: #f3f4f6;
     }
 
 </style>

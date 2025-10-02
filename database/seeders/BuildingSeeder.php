@@ -68,20 +68,34 @@ class BuildingSeeder extends Seeder
         ];
 
         foreach ($buildings as $buildingName => $floors) {
-            $building = Building::create([
-                'name' => $buildingName,
-                'description' => "Building: {$buildingName}",
-                'is_active' => true,
-            ]);
+            $building = Building::firstOrCreate(
+                ['name' => $buildingName],
+                [
+                    'description' => "Building: {$buildingName}",
+                    'is_active' => true,
+                ]
+            );
 
             foreach ($floors as $index => $floorName) {
-                Floor::create([
-                    'building_id' => $building->id,
-                    'name' => $floorName,
-                    'floor_number' => $index === 0 ? 0 : ($index === 1 ? 2 : $index), // Handle special cases
-                    'description' => "Floor: {$floorName}",
-                    'is_active' => true,
-                ]);
+                // Map floor_number: Ground=0, 2nd=2, 3rd=3, 4th=4, etc.; Mezzanine/null stays null
+                $floorNumber = null;
+                if (strtolower($floorName) === 'ground floor') {
+                    $floorNumber = 0;
+                } elseif (preg_match('/^(\d+)[a-z]{2} Floor$/i', $floorName, $m)) {
+                    $floorNumber = (int) $m[1];
+                }
+
+                Floor::firstOrCreate(
+                    [
+                        'building_id' => $building->id,
+                        'name' => $floorName,
+                    ],
+                    [
+                        'floor_number' => $floorNumber,
+                        'description' => "Floor: {$floorName}",
+                        'is_active' => true,
+                    ]
+                );
             }
         }
     }

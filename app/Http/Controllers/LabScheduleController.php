@@ -35,7 +35,7 @@ class LabScheduleController extends Controller
                     'message' => 'Invalid RFID card or unauthorized user'
                 ]);
             }
-            // Safety cooldown: prevent any tap within 5 minutes (300 seconds) of the user's last action
+            // Safety cooldown: prevent any tap within 2 minutes (120 seconds) of the user's last action
             $recentLog = LabLog::where('user_id', $user->id)
                 ->orderByRaw('COALESCE(time_out, time_in) DESC')
                 ->first();
@@ -45,8 +45,8 @@ class LabScheduleController extends Controller
                 if ($lastActionAt) {
                     // Signed elapsed seconds since last action; negative if lastActionAt is in the future
                     $elapsedSeconds = Carbon::parse($lastActionAt)->diffInSeconds(now(), false);
-                    if ($elapsedSeconds < 300) {
-                        $remainingSeconds = 300 - max(0, $elapsedSeconds);
+                    if ($elapsedSeconds < 120) {
+                        $remainingSeconds = 120 - max(0, $elapsedSeconds);
                         $remainingMinutes = (int) ceil($remainingSeconds / 60);
                         return response()->json([
                             'success' => false,

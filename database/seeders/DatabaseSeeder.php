@@ -12,6 +12,8 @@ class DatabaseSeeder extends Seeder
             GroupSeeder::class,
             CreateDefaultUserSeeder::class,
             CategorySeeder::class,
+            BuildingSeeder::class,
+            LocationSeeder::class,
         ]);
     }
 }

@@ -137,7 +137,7 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
-                            Register Asset
+                            Register & Link Asset
                         </a>
                     </div>
                 </div>
@@ -562,7 +562,42 @@
                         registerUrl.searchParams.set('remarks', request.remarks || '');
                         // Add non-registered asset context
                         registerUrl.searchParams.set('from_non_registered', '1');
-                        registerUrl.searchParams.set('status', 'PULLED OUT');
+                        
+                        // Set asset status based on repair request status
+                        let assetStatus = 'PULLED OUT'; // Default status
+                        
+                        // Normalize status for comparison (handle case variations and spaces)
+                        const normalizedStatus = (request.status || '').toLowerCase().replace(/[_\s]/g, '');
+                        
+                        switch(normalizedStatus) {
+                            case 'completed':
+                                assetStatus = 'WORKING';
+                                break;
+                            case 'pulledout':
+                                assetStatus = 'PULLED OUT';
+                                break;
+                            case 'cancelled':
+                            case 'canceled':
+                                assetStatus = 'WORKING'; // Assume it was working if cancelled
+                                break;
+                            case 'inprogress':
+                            case 'ongoing':
+                            case 'assigned':
+                                assetStatus = 'UNDER REPAIR';
+                                break;
+                            case 'pending':
+                            case 'open':
+                            case 'new':
+                                assetStatus = 'UNDER REPAIR';
+                                break;
+                            default:
+                                assetStatus = 'PULLED OUT';
+                        }
+                        
+                        registerUrl.searchParams.set('status', assetStatus);
+                        // Add repair request ID for automatic linking
+                        registerUrl.searchParams.set('repair_request_id', request.id || '');
+                        registerUrl.searchParams.set('auto_link_repair', '1');
                         registerAssetBtn.href = registerUrl.toString();
                     } else {
                         // Asset is registered - show asset information
@@ -656,5 +691,23 @@
 
     window.showImageModal = showImageModal;
     window.closeImageModal = closeImageModal;
+
+    // Check if there's a success message (indicating asset was just registered)
+    // and refresh the repair details to show the linked asset
+    @if(session('success'))
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the repair ID from the URL
+        const urlParts = window.location.pathname.split('/');
+        const repairId = urlParts[urlParts.length - 1];
+        
+        if (repairId && !isNaN(repairId)) {
+            // Small delay to ensure the success message is visible first
+            setTimeout(function() {
+                console.log('Refreshing repair details after successful asset registration');
+                loadRepairDetails(repairId);
+            }, 1000);
+        }
+    });
+    @endif
 </script>
 @endsection

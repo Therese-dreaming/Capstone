@@ -60,13 +60,17 @@
                 <div class="space-y-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Select Location</label>
-                        <select name="location_id" 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
-                            <option value="">Select a location...</option>
-                            @foreach($locations as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                            @endforeach
-                        </select>
+                        <div class="relative">
+                            <input type="text" id="maintenanceLocationSearch" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
+                                   placeholder="Type to search location..."
+                                   autocomplete="off">
+                            <input type="hidden" name="location_id" id="maintenanceLocationId" required>
+                            <!-- Autocomplete dropdown -->
+                            <div id="maintenanceLocationAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
+                                <!-- Suggestions will be populated here -->
+                            </div>
+                        </div>
                         @error('location_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -259,8 +263,157 @@
     </div>
 
     <script>
-        document.querySelector('select[name="location_id"]').addEventListener('change', function() {
-            const locationId = this.value;
+        // Initialize location autocomplete
+        function initializeMaintenanceLocationAutocomplete() {
+            const locationInput = document.getElementById('maintenanceLocationSearch');
+            const locationAutocomplete = document.getElementById('maintenanceLocationAutocomplete');
+            const locationIdInput = document.getElementById('maintenanceLocationId');
+
+            if (!locationInput || !locationAutocomplete || !locationIdInput) {
+                return;
+            }
+
+            // All locations data from server
+            const allLocations = @json($locations->map(function($name, $id) {
+                return ['id' => $id, 'name' => $name];
+            })->values());
+
+            let searchTimeout;
+
+            locationInput.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length === 0) {
+                    hideMaintenanceLocationAutocomplete();
+                    locationIdInput.value = '';
+                    triggerLocationChange('');
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    filterMaintenanceLocations(query, allLocations);
+                }, 200);
+            });
+
+            // Handle keyboard navigation
+            locationInput.addEventListener('keydown', function(e) {
+                const suggestions = locationAutocomplete.querySelectorAll('.maintenance-location-suggestion-item');
+                const activeSuggestion = locationAutocomplete.querySelector('.maintenance-location-suggestion-item.active');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!activeSuggestion) {
+                        suggestions[0]?.classList.add('active');
+                    } else {
+                        const nextSuggestion = activeSuggestion.nextElementSibling;
+                        if (nextSuggestion && nextSuggestion.classList.contains('maintenance-location-suggestion-item')) {
+                            activeSuggestion.classList.remove('active');
+                            nextSuggestion.classList.add('active');
+                            nextSuggestion.scrollIntoView({ block: 'nearest' });
+                        }
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (activeSuggestion) {
+                        const prevSuggestion = activeSuggestion.previousElementSibling;
+                        if (prevSuggestion && prevSuggestion.classList.contains('maintenance-location-suggestion-item')) {
+                            activeSuggestion.classList.remove('active');
+                            prevSuggestion.classList.add('active');
+                            prevSuggestion.scrollIntoView({ block: 'nearest' });
+                        } else {
+                            activeSuggestion.classList.remove('active');
+                        }
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (activeSuggestion) {
+                        activeSuggestion.click();
+                    }
+                } else if (e.key === 'Escape') {
+                    hideMaintenanceLocationAutocomplete();
+                }
+            });
+
+            // Hide autocomplete when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!locationInput.contains(e.target) && !locationAutocomplete.contains(e.target)) {
+                    hideMaintenanceLocationAutocomplete();
+                }
+            });
+        }
+
+        function filterMaintenanceLocations(query, allLocations) {
+            const locationAutocomplete = document.getElementById('maintenanceLocationAutocomplete');
+            if (!locationAutocomplete) return;
+
+            const matches = allLocations.filter(loc => 
+                loc.name.toLowerCase().includes(query)
+            );
+
+            displayMaintenanceLocationSuggestions(matches);
+        }
+
+        function displayMaintenanceLocationSuggestions(locations) {
+            const locationAutocomplete = document.getElementById('maintenanceLocationAutocomplete');
+            if (!locationAutocomplete) return;
+
+            locationAutocomplete.innerHTML = '';
+            
+            if (locations.length === 0) {
+                locationAutocomplete.innerHTML = `
+                    <div class="px-3 py-2 text-sm text-gray-500">
+                        No locations found. Try a different search term.
+                    </div>
+                `;
+            } else {
+                locations.slice(0, 50).forEach(location => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'maintenance-location-suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0';
+                    suggestionItem.textContent = location.name;
+                    suggestionItem.dataset.locationId = location.id;
+                    suggestionItem.addEventListener('click', () => selectMaintenanceLocation(location));
+                    locationAutocomplete.appendChild(suggestionItem);
+                });
+
+                if (locations.length > 50) {
+                    const moreItem = document.createElement('div');
+                    moreItem.className = 'px-3 py-2 text-xs text-gray-400 italic';
+                    moreItem.textContent = `+ ${locations.length - 50} more results. Refine your search.`;
+                    locationAutocomplete.appendChild(moreItem);
+                }
+            }
+            
+            locationAutocomplete.classList.remove('hidden');
+        }
+
+        function selectMaintenanceLocation(location) {
+            const locationInput = document.getElementById('maintenanceLocationSearch');
+            const locationIdInput = document.getElementById('maintenanceLocationId');
+            
+            if (!locationInput || !locationIdInput) return;
+
+            locationInput.value = location.name;
+            locationIdInput.value = location.id;
+            
+            hideMaintenanceLocationAutocomplete();
+            
+            // Trigger location change to load assets
+            triggerLocationChange(location.id);
+        }
+
+        function hideMaintenanceLocationAutocomplete() {
+            const locationAutocomplete = document.getElementById('maintenanceLocationAutocomplete');
+            if (!locationAutocomplete) return;
+
+            locationAutocomplete.classList.add('hidden');
+            locationAutocomplete.querySelectorAll('.maintenance-location-suggestion-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        function triggerLocationChange(locationId) {
             const assetSelect = document.getElementById('assetSelect');
 
             if (!locationId) {
@@ -302,6 +455,11 @@
                 console.error('Error:', error);
                 assetSelect.innerHTML = '<option value="">Error loading assets</option>';
             });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMaintenanceLocationAutocomplete();
         });
 
         document.querySelector('select[name="technician_id"]').addEventListener('change', function() {
@@ -385,7 +543,8 @@
             const excludedAssets = Array.from(document.getElementById('selectedAssetsList').children)
                 .map(div => div.querySelector('span').textContent.trim());
             
-            const location = form.location_id.options[form.location_id.selectedIndex]?.text || 'Not selected';
+            // Get location from the autocomplete input (not a select element)
+            const location = document.getElementById('maintenanceLocationSearch').value || 'Not selected';
             const selectedTasks = Array.from(form.querySelectorAll('input[name="maintenance_tasks[]"]:checked'))
                 .map(checkbox => checkbox.value);
             const date = form.scheduled_date.value ? new Date(form.scheduled_date.value).toLocaleDateString('en-US', {

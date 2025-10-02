@@ -85,6 +85,10 @@ Route::middleware(['auth'])->group(function () {
 	// Repair Status route
 	Route::get('/repair-status', [RepairRequestController::class, 'status'])->name('repair.status');
 
+	// Vendor routes - accessible by authenticated users who can create assets (Admin and Custodian)
+	Route::post('/vendors/add-new', [VendorController::class, 'addNewVendor'])->name('vendors.addNew');
+	Route::get('/vendors/get-all', [VendorController::class, 'getAllVendors'])->name('vendors.getAll');
+
 	// Admin-only routes (group_id = 1)
 	Route::middleware([\App\Http\Middleware\CheckRole::class.':1'])->group(function () {
 		Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -102,8 +106,6 @@ Route::middleware(['auth'])->group(function () {
 		Route::put('/buildings/{building}/floors/{floor}', [LocationController::class, 'updateFloor'])->name('buildings.floors.update');
 		Route::delete('/buildings/{building}/floors/{floor}', [LocationController::class, 'destroyFloor'])->name('buildings.floors.destroy');
 		Route::get('/vendors', [VendorController::class, 'index'])->name('vendors.index');
-		Route::post('/vendors/add-new', [VendorController::class, 'addNewVendor'])->name('vendors.addNew');
-		Route::get('/vendors/get-all', [VendorController::class, 'getAllVendors'])->name('vendors.getAll');
 		Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
 		Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
 		

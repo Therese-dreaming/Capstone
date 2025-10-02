@@ -38,75 +38,229 @@
 
     <!-- Main Content Container -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <!-- Filter Section -->
-        <div class="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Filter Assets</h2>
-                @if(request('date_from') || request('date_to'))
-                    <div class="flex items-center space-x-2">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                            </svg>
-                            Filtered
-                        </span>
-                        <a href="{{ route('qr.list') }}" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center flex items-center">
-                            Clear filters
-                        </a>
-                    </div>
+        <!-- Date Range Filter Section -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Date Range Filter</h3>
+            <form method="GET" action="{{ route('qr.list') }}" class="flex flex-col sm:flex-row gap-4 items-end">
+                <!-- Preserve existing search parameters -->
+                @if(request('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
                 @endif
-            </div>
-            
-            <form method="GET" action="{{ route('qr.list') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                @if(request('category'))
+                    <input type="hidden" name="category" value="{{ request('category') }}">
+                @endif
+                @if(request('location'))
+                    <input type="hidden" name="location" value="{{ request('location') }}">
+                @endif
+                @if(request('warranty'))
+                    <input type="hidden" name="warranty" value="{{ request('warranty') }}">
+                @endif
+                
+                <div class="flex-1">
+                    <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
                     <input type="date" 
                            id="date_from" 
                            name="date_from" 
                            value="{{ request('date_from') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
                 </div>
                 
-                <div>
-                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                <div class="flex-1">
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
                     <input type="date" 
                            id="date_to" 
                            name="date_to" 
                            value="{{ request('date_to') }}"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
                 </div>
                 
-                <div class="flex items-end">
+                <div class="flex gap-2">
                     <button type="submit" 
-                            class="w-full bg-red-800 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center font-semibold">
+                            class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                         </svg>
-                        Apply Filter
+                        Filter
                     </button>
+                    
+                    @if(request('date_from') || request('date_to'))
+                        <a href="{{ route('qr.list') }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('status') ? (request('search') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('search') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('search') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}{{ request('warranty') ? (request('search') || request('status') || request('category') || request('location') ? '&' : '?') . 'warranty=' . request('warranty') : '' }}" 
+                           class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Clear Date
+                        </a>
+                    @endif
                 </div>
             </form>
             
             @if(request('date_from') || request('date_to'))
-                <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div class="mt-3 p-3 bg-red-50 rounded-md">
+                    <p class="text-sm text-red-800">
+                        <strong>Filtered by:</strong> 
+                        @if(request('date_from'))
+                            From {{ \Carbon\Carbon::parse(request('date_from'))->format('M d, Y') }}
+                        @endif
+                        @if(request('date_from') && request('date_to'))
+                            to
+                        @endif
+                        @if(request('date_to'))
+                            {{ \Carbon\Carbon::parse(request('date_to'))->format('M d, Y') }}
+                        @endif
+                        ({{ $assets->total() }} assets found)
+                    </p>
+                </div>
+            @endif
+        </div>
+
+        <!-- Additional Filters Section -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Additional Filters</h3>
+            <form method="GET" action="{{ route('qr.list') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <!-- Preserve existing search and date parameters -->
+                @if(request('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+                @if(request('date_from'))
+                    <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                @endif
+                @if(request('date_to'))
+                    <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                @endif
+                
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <option value="">All Status</option>
+                        <option value="IN USE" {{ request('status') == 'IN USE' ? 'selected' : '' }}>IN USE</option>
+                        <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
+                        <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
+                        <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
+                        <option value="LOST" {{ request('status') == 'LOST' ? 'selected' : '' }}>LOST</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select name="category" id="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <select name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <option value="">All Locations</option>
+                        @foreach($locations as $location)
+                            <option value="{{ $location->id }}" {{ request('location') == $location->id ? 'selected' : '' }}>
+                                {{ $location->full_location }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="warranty" class="block text-sm font-medium text-gray-700 mb-1">Warranty</label>
+                    <select name="warranty" id="warranty" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <option value="">All Warranties</option>
+                        <option value="expiring_365" {{ request('warranty') == 'expiring_365' ? 'selected' : '' }}>Expiring within 365 days</option>
+                        <option value="expiring_30" {{ request('warranty') == 'expiring_30' ? 'selected' : '' }}>Expiring within 30 days</option>
+                        <option value="expired" {{ request('warranty') == 'expired' ? 'selected' : '' }}>Expired</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                         </svg>
-                        <p class="text-sm text-blue-800">
-                            <strong>Showing assets:</strong> 
-                            @if(request('date_from'))
-                                from {{ \Carbon\Carbon::parse(request('date_from'))->format('M d, Y') }}
+                        Apply Filters
+                    </button>
+                    
+                    @if(request('status') || request('category') || request('location') || request('warranty'))
+                        <a href="{{ route('qr.list') }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('date_from') ? (request('search') ? '&' : '?') . 'date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('search') || request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}" 
+                           class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Clear Filters
+                        </a>
+                    @endif
+                </div>
+            </form>
+            
+            @if(request('status') || request('category') || request('location') || request('warranty'))
+                <div class="mt-3 p-3 bg-red-50 rounded-md">
+                    <p class="text-sm text-red-800">
+                        <strong>Filtered by:</strong> 
+                        @if(request('status'))
+                            Status: {{ request('status') }}
+                        @endif
+                        @if(request('category'))
+                            @php
+                                $selectedCategory = $categories->firstWhere('id', request('category'));
+                            @endphp
+                            @if($selectedCategory)
+                                @if(request('status')) | @endif
+                                Category: {{ $selectedCategory->name }}
                             @endif
-                            @if(request('date_from') && request('date_to'))
-                                to
+                        @endif
+                        @if(request('location'))
+                            @php
+                                $selectedLocation = $locations->firstWhere('id', request('location'));
+                            @endphp
+                            @if($selectedLocation)
+                                @if(request('status') || request('category')) | @endif
+                                Location: {{ $selectedLocation->full_location }}
                             @endif
-                            @if(request('date_to'))
-                                {{ \Carbon\Carbon::parse(request('date_to'))->format('M d, Y') }}
-                            @endif
-                            <span class="ml-2 font-semibold">({{ $assets->count() }} assets found)</span>
-                        </p>
-                    </div>
+                        @endif
+                        @if(request('warranty'))
+                            @if(request('status') || request('category') || request('location')) | @endif
+                            Warranty: {{ ucfirst(str_replace('_', ' ', request('warranty'))) }}
+                        @endif
+                        ({{ $assets->total() }} assets found)
+                    </p>
+                </div>
+            @endif
+        </div>
+
+        <!-- Search Section -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Search Assets</h3>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div class="relative w-full flex gap-2">
+                    <input type="text" id="searchInput" placeholder="Search assets..." class="flex-1 min-w-0 sm:min-w-[400px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
+                    <button id="searchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center whitespace-nowrap">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Search
+                    </button>
+                </div>
+                @if(request('search'))
+                    <a href="{{ route('qr.list') }}{{ request('date_from') ? '?date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}{{ request('status') ? (request('date_from') || request('date_to') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('date_from') || request('date_to') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('date_from') || request('date_to') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}{{ request('warranty') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') ? '&' : '?') . 'warranty=' . request('warranty') : '' }}" 
+                       class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Clear Search
+                    </a>
+                @endif
+            </div>
+            @if(request('search'))
+                <div class="mt-3 p-3 bg-blue-50 rounded-md">
+                    <p class="text-sm text-blue-800">
+                        <strong>Searching for:</strong> "{{ request('search') }}" ({{ $assets->total() }} assets found)
+                    </p>
                 </div>
             @endif
         </div>
@@ -116,11 +270,20 @@
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-gray-800">Select Assets for QR Generation</h3>
                 <div class="flex items-center space-x-4">
-                    <label class="flex items-center">
-                        <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <span class="ml-2 text-sm text-gray-700">Select All</span>
-                    </label>
-                    <span class="text-sm text-gray-500" id="selectedCount">0 selected</span>
+                    <div class="flex items-center space-x-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">Select All ({{ $assets->total() }} items)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="selectPage" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <span class="ml-2 text-sm text-gray-700">Select Page ({{ $assets->count() }} items)</span>
+                        </label>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-500" id="selectedCount">0 selected</span>
+                        <button id="clearSelection" class="text-sm text-red-600 hover:text-red-800 hidden">Clear All</button>
+                    </div>
                 </div>
             </div>
 
@@ -188,6 +351,11 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Pagination -->
+                <div class="mt-6">
+                    {{ $assets->links() }}
+                </div>
             @else
                 <div class="text-center py-12">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,6 +397,21 @@
     @if(request('date_to'))
         <input type="hidden" name="date_to" value="{{ request('date_to') }}">
     @endif
+    @if(request('search'))
+        <input type="hidden" name="search" value="{{ request('search') }}">
+    @endif
+    @if(request('status'))
+        <input type="hidden" name="status" value="{{ request('status') }}">
+    @endif
+    @if(request('category'))
+        <input type="hidden" name="category" value="{{ request('category') }}">
+    @endif
+    @if(request('location'))
+        <input type="hidden" name="location" value="{{ request('location') }}">
+    @endif
+    @if(request('warranty'))
+        <input type="hidden" name="warranty" value="{{ request('warranty') }}">
+    @endif
     <input type="hidden" name="selected_items" id="selectedItemsInput">
 </form>
 
@@ -240,67 +423,239 @@
     @if(request('date_to'))
         <input type="hidden" name="date_to" value="{{ request('date_to') }}">
     @endif
+    @if(request('search'))
+        <input type="hidden" name="search" value="{{ request('search') }}">
+    @endif
+    @if(request('status'))
+        <input type="hidden" name="status" value="{{ request('status') }}">
+    @endif
+    @if(request('category'))
+        <input type="hidden" name="category" value="{{ request('category') }}">
+    @endif
+    @if(request('location'))
+        <input type="hidden" name="location" value="{{ request('location') }}">
+    @endif
+    @if(request('warranty'))
+        <input type="hidden" name="warranty" value="{{ request('warranty') }}">
+    @endif
     <input type="hidden" name="selected_items" id="previewItemsInput">
 </form>
 
 <script>
-    // Select All functionality
+    // Global selected items storage (persists across pagination)
+    let globalSelectedItems = new Set();
+    const totalItems = {{ $assets->total() }};
+    let selectAllMode = false;
+
+    // Initialize from localStorage if exists
+    const storedSelection = localStorage.getItem('qr_selected_items');
+    const storedSelectAllMode = localStorage.getItem('qr_select_all_mode');
+    
+    if (storedSelection) {
+        globalSelectedItems = new Set(JSON.parse(storedSelection));
+    }
+    
+    if (storedSelectAllMode === 'true') {
+        selectAllMode = true;
+    }
+
+    // Select All functionality (works across all pages)
     document.getElementById('selectAll').addEventListener('change', function() {
-        const checkboxes = document.getElementsByName('selected_items[]');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
+        if (this.checked) {
+            // Select all items across all pages
+            selectAllMode = true;
+            globalSelectedItems.clear();
+            
+            // Add all current page items
+            const checkboxes = document.getElementsByName('selected_items[]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                globalSelectedItems.add(checkbox.value);
+            });
+            
+            localStorage.setItem('qr_select_all_mode', 'true');
+        } else {
+            // Deselect all
+            selectAllMode = false;
+            globalSelectedItems.clear();
+            
+            const checkboxes = document.getElementsByName('selected_items[]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            localStorage.setItem('qr_select_all_mode', 'false');
+        }
+        
         updateSelectedCount();
+        updateSelectAllState();
+        saveSelection();
     });
 
     document.getElementById('selectAllHeader').addEventListener('change', function() {
+        document.getElementById('selectAll').checked = this.checked;
+        document.getElementById('selectAll').dispatchEvent(new Event('change'));
+    });
+
+    // Select Page functionality (selects only current page items but persists through pagination)
+    document.getElementById('selectPage').addEventListener('change', function() {
+        const checkboxes = document.getElementsByName('selected_items[]');
+        
+        if (this.checked) {
+            // Select all items on current page
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                globalSelectedItems.add(checkbox.value);
+            });
+        } else {
+            // Deselect all items on current page
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                globalSelectedItems.delete(checkbox.value);
+            });
+        }
+        
+        // Exit select all mode if it was active
+        if (selectAllMode) {
+            selectAllMode = false;
+            localStorage.setItem('qr_select_all_mode', 'false');
+        }
+        
+        updateSelectedCount();
+        updateSelectAllState();
+        saveSelection();
+    });
+
+    // Clear selection button
+    document.getElementById('clearSelection').addEventListener('click', function() {
+        selectAllMode = false;
+        globalSelectedItems.clear();
+        
         const checkboxes = document.getElementsByName('selected_items[]');
         checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
+            checkbox.checked = false;
         });
-        document.getElementById('selectAll').checked = this.checked;
+        
+        document.getElementById('selectAll').checked = false;
+        document.getElementById('selectAllHeader').checked = false;
+        document.getElementById('selectPage').checked = false;
+        
         updateSelectedCount();
+        updateSelectAllState();
+        saveSelection();
+        localStorage.setItem('qr_select_all_mode', 'false');
     });
 
     // Individual checkbox change
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('asset-checkbox')) {
+            const itemId = e.target.value;
+            
+            if (e.target.checked) {
+                globalSelectedItems.add(itemId);
+            } else {
+                globalSelectedItems.delete(itemId);
+                selectAllMode = false; // If user unchecks an item, we're no longer in "select all" mode
+                localStorage.setItem('qr_select_all_mode', 'false');
+            }
+            
             updateSelectedCount();
             updateSelectAllState();
+            saveSelection();
         }
     });
 
     function updateSelectedCount() {
-        const selectedItems = Array.from(document.getElementsByName('selected_items[]'))
-            .filter(checkbox => checkbox.checked);
-        document.getElementById('selectedCount').textContent = `${selectedItems.length} selected`;
+        let count;
+        if (selectAllMode) {
+            count = totalItems;
+        } else {
+            count = globalSelectedItems.size;
+        }
+        
+        document.getElementById('selectedCount').textContent = `${count} selected`;
+        
+        // Show/hide clear button
+        const clearButton = document.getElementById('clearSelection');
+        if (count > 0) {
+            clearButton.classList.remove('hidden');
+        } else {
+            clearButton.classList.add('hidden');
+        }
     }
 
     function updateSelectAllState() {
-        const checkboxes = document.getElementsByName('selected_items[]');
-        const checkedBoxes = Array.from(checkboxes).filter(checkbox => checkbox.checked);
         const selectAll = document.getElementById('selectAll');
         const selectAllHeader = document.getElementById('selectAllHeader');
+        const selectPage = document.getElementById('selectPage');
+        const currentPageCheckboxes = document.getElementsByName('selected_items[]');
+        const currentPageChecked = Array.from(currentPageCheckboxes).filter(cb => cb.checked);
         
-        if (checkedBoxes.length === 0) {
-            selectAll.checked = false;
-            selectAllHeader.checked = false;
-        } else if (checkedBoxes.length === checkboxes.length) {
+        if (selectAllMode) {
             selectAll.checked = true;
             selectAllHeader.checked = true;
+            selectPage.checked = true; // All pages selected means current page is also selected
         } else {
-            selectAll.checked = false;
-            selectAllHeader.checked = false;
+            // Update Select All checkbox
+            if (currentPageChecked.length === 0) {
+                selectAll.checked = false;
+                selectAllHeader.checked = false;
+            } else if (currentPageChecked.length === currentPageCheckboxes.length && globalSelectedItems.size === totalItems) {
+                selectAll.checked = true;
+                selectAllHeader.checked = true;
+            } else {
+                selectAll.checked = false;
+                selectAllHeader.checked = false;
+            }
+            
+            // Update Select Page checkbox
+            if (currentPageChecked.length === currentPageCheckboxes.length && currentPageCheckboxes.length > 0) {
+                selectPage.checked = true;
+            } else {
+                selectPage.checked = false;
+            }
         }
+    }
+
+    function saveSelection() {
+        localStorage.setItem('qr_selected_items', JSON.stringify([...globalSelectedItems]));
+    }
+
+    // Initialize page state
+    function initializePageState() {
+        const checkboxes = document.getElementsByName('selected_items[]');
+        
+        if (selectAllMode) {
+            // If in select all mode, check all current page items
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                globalSelectedItems.add(checkbox.value);
+            });
+        } else {
+            // Check items that are in our global selection
+            checkboxes.forEach(checkbox => {
+                if (globalSelectedItems.has(checkbox.value)) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+        
+        updateSelectedCount();
+        updateSelectAllState();
     }
 
     // Preview functionality
     document.getElementById('previewBtn').addEventListener('click', function() {
-        const selectedItems = Array.from(document.getElementsByName('selected_items[]'))
-            .filter(checkbox => checkbox.checked)
-            .map(checkbox => checkbox.value);
+        let selectedItems;
+        
+        if (selectAllMode) {
+            // If in select all mode, we need to tell the backend to select all items matching current filters
+            selectedItems = 'all';
+        } else {
+            selectedItems = [...globalSelectedItems];
+        }
 
-        if (selectedItems.length === 0) {
+        if (selectedItems.length === 0 && selectedItems !== 'all') {
             showNotification('Please select items to preview', 'warning');
             return;
         }
@@ -311,11 +666,16 @@
 
     // Export functionality
     document.getElementById('exportBtn').addEventListener('click', function() {
-        const selectedItems = Array.from(document.getElementsByName('selected_items[]'))
-            .filter(checkbox => checkbox.checked)
-            .map(checkbox => checkbox.value);
+        let selectedItems;
+        
+        if (selectAllMode) {
+            // If in select all mode, we need to tell the backend to select all items matching current filters
+            selectedItems = 'all';
+        } else {
+            selectedItems = [...globalSelectedItems];
+        }
 
-        if (selectedItems.length === 0) {
+        if (selectedItems.length === 0 && selectedItems !== 'all') {
             showNotification('Please select items to export', 'warning');
             return;
         }
@@ -384,7 +744,28 @@
         }, 3000);
     }
 
-    // Initialize selected count
-    updateSelectedCount();
+    // Initialize page state
+    initializePageState();
+    
+    // Search functionality
+    document.getElementById('searchButton').addEventListener('click', function() {
+        const searchValue = document.getElementById('searchInput').value;
+        const currentUrl = new URL(window.location.href);
+        
+        if (searchValue.trim()) {
+            currentUrl.searchParams.set('search', searchValue);
+        } else {
+            currentUrl.searchParams.delete('search');
+        }
+        
+        window.location.href = currentUrl.toString();
+    });
+    
+    // Allow search on Enter key
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('searchButton').click();
+        }
+    });
 </script>
 @endsection

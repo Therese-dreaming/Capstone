@@ -370,7 +370,7 @@ async function searchAdditionalAsset(button) {
 
         // Auto-fill all asset details
         serialInput.value = originalSerialNumber;
-        const parentDiv = issueDiv.closest('.space-y-4');
+        const parentDiv = button.closest('.space-y-3, .space-y-4');
         parentDiv.querySelector('.asset_name').value = data.name || '';
         parentDiv.querySelector('.asset_category').value = data.category?.name || '';
         parentDiv.querySelector('.asset_location').value = data.location || '';
@@ -388,7 +388,7 @@ async function searchAdditionalAsset(button) {
         messageDiv.classList.remove('hidden');
 
         // Clear asset details on error
-        const parentDiv = issueDiv.closest('.space-y-4');
+        const parentDiv = button.closest('.space-y-3, .space-y-4');
         parentDiv.querySelector('.asset_name').value = '';
         parentDiv.querySelector('.asset_category').value = '';
         parentDiv.querySelector('.asset_location').value = '';
