@@ -218,6 +218,16 @@
 
                 <!-- Action Buttons -->
                 <div class="flex flex-wrap gap-1 sm:gap-2 mt-auto pt-3 sm:pt-4 border-t border-gray-200">
+                    <!-- View Details Button - Available to all users with proper access control -->
+                    @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()) || auth()->user()->group_id == 3 || auth()->user()->group_id == 4)
+                    <a href="{{ route('repair.show', $request->id) }}" class="bg-green-600 text-white p-2 rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 inline-block" title="View Details">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </a>
+                    @endif
+                    
                     @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
                     <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-2 rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200" title="Edit">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -107,7 +107,7 @@
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</p>
                             <p class="location text-gray-900 text-sm font-semibold mt-2">
-                                <!-- Location will be populated by JavaScript -->
+                                <!-- Original caller's location will be populated by JavaScript -->
                             </p>
                         </div>
                     </div>
@@ -129,6 +129,15 @@
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Serial Number</p>
                             <p class="serial-number text-gray-900 text-sm font-semibold mt-2"></p>
+                        </div>
+                    </div>
+                    <!-- Current Location (only shown when asset is linked) -->
+                    <div class="current-location-container hidden">
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Current Location (Asset)</p>
+                            <p class="current-location text-green-800 text-sm font-semibold mt-2">
+                                <!-- Asset's current location will be populated by JavaScript -->
+                            </p>
                         </div>
                     </div>
                     <div class="bg-gray-50 p-4 rounded-lg register-asset-container hidden">
@@ -379,6 +388,8 @@
             })
             .then(data => {
                 console.log('Received data:', data);
+                console.log('Asset data:', data.asset);
+                console.log('Creator data:', data.creator);
                 if (data) {
                     const request = data;
                     const clone = template.content.cloneNode(true);
@@ -399,14 +410,53 @@
                     clone.querySelector('.created-date').textContent = 'Created: ' + formatDate(request.created_at);
                     clone.querySelector('.updated-date').textContent = 'Last Updated: ' + formatDate(request.updated_at);
 
-                    // Set basic information
-                    clone.querySelector('.caller-name').textContent = request.caller_name || 'N/A';
+                    // Set basic information - use creator's full name if available, otherwise use caller_name
+                    let callerName = 'N/A';
+                    if (request.creator && request.creator.name) {
+                        callerName = request.creator.name;
+                    } else if (request.creator && (request.creator.first_name || request.creator.last_name)) {
+                        callerName = `${request.creator.first_name || ''} ${request.creator.last_name || ''}`.trim();
+                    } else if (request.caller_name) {
+                        callerName = request.caller_name;
+                    }
+                    clone.querySelector('.caller-name').textContent = callerName;
                     
-                    // Set location with building, floor, and room
-                    const locationText = request.building && request.floor && request.room 
-                        ? `${request.building} - ${request.floor} - ${request.room}`
-                        : (request.location || 'N/A');
-                    clone.querySelector('.location').textContent = locationText;
+                    // Set original caller's location (always show the repair request location)
+                    let originalLocationText = 'N/A';
+                    if (request.building && request.floor && request.room) {
+                        // Use repair request location with building, floor, and room
+                        originalLocationText = `${request.building} - ${request.floor} - ${request.room}`;
+                        console.log('Original location (building/floor/room):', originalLocationText);
+                    } else if (request.location) {
+                        // Use repair request location
+                        originalLocationText = request.location;
+                        console.log('Original location (direct):', originalLocationText);
+                    }
+                    clone.querySelector('.location').textContent = originalLocationText;
+                    
+                    // Set current location (asset location) - only show if asset is linked
+                    const currentLocationContainer = clone.querySelector('.current-location-container');
+                    console.log('Location debug - Asset exists:', !!request.asset);
+                    console.log('Location debug - Asset location object:', request.asset?.location);
+                    
+                    if (request.asset && request.asset.location && 
+                        (request.asset.location.building || request.asset.location.floor || request.asset.location.room_number)) {
+                        // Show current location section
+                        currentLocationContainer.classList.remove('hidden');
+                        
+                        // Construct asset's current location
+                        const building = request.asset.location.building || '';
+                        const floor = request.asset.location.floor || '';
+                        const room = request.asset.location.room_number || '';
+                        const currentLocationText = [building, floor, room].filter(part => part.trim()).join(' - ');
+                        
+                        clone.querySelector('.current-location').textContent = currentLocationText;
+                        console.log('Current location (asset):', currentLocationText);
+                    } else {
+                        // Hide current location section if no asset is linked
+                        currentLocationContainer.classList.add('hidden');
+                        console.log('No asset linked - hiding current location section');
+                    }
                     
                     clone.querySelector('.equipment').textContent = request.equipment || 'N/A';
                     clone.querySelector('.serial-number').textContent = request.serial_number || 'N/A';
@@ -602,18 +652,20 @@
                     } else {
                         // Asset is registered - show asset information
                         registerAssetContainer.classList.remove('hidden');
+                        
                         registerAssetContainer.innerHTML = `
-                            <p class="text-xs font-medium text-green-600 uppercase tracking-wide mb-3">Asset Registered</p>
+                            <p class="text-xs font-medium text-green-600 uppercase tracking-wide mb-3">Asset Registered & Linked</p>
                             <div class="bg-green-50 border border-green-200 rounded-lg p-3">
                                 <div class="flex items-center text-green-800">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span class="font-medium">Asset has been registered in the system</span>
+                                    <span class="font-medium">Asset has been registered and linked to this repair request</span>
                                 </div>
                                 <div class="mt-2 text-sm text-green-700">
                                     <p><strong>Serial Number:</strong> ${request.serial_number}</p>
-                                    <p><strong>Status:</strong> ${formatStatus(request.status)}</p>
+                                    <p><strong>Asset Status:</strong> ${request.asset && request.asset.status ? request.asset.status : formatStatus(request.status)}</p>
+                                    <p class="text-xs text-green-600 mt-1"><em>Current location is displayed above in the "Current Location (Asset)" section</em></p>
                                 </div>
                             </div>
                         `;

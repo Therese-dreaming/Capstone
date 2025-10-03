@@ -990,13 +990,25 @@ class RepairRequestController extends Controller
 
     public function show($id)
     {
+        $repairRequest = RepairRequest::findOrFail($id);
+        
+        // Access control: Secretaries/Technicians (group_id=2) can only view requests assigned to them
+        if (auth()->user()->group_id == 2 && $repairRequest->technician_id != auth()->id()) {
+            abort(403, 'You can only view repair requests assigned to you.');
+        }
+        
         return view('repair-details');
     }
 
     public function getData($id)
     {
-        $request = RepairRequest::with(['asset', 'technician'])
+        $request = RepairRequest::with(['asset.location', 'technician', 'creator'])
             ->findOrFail($id);
+            
+        // Access control: Secretaries/Technicians (group_id=2) can only view requests assigned to them
+        if (auth()->user()->group_id == 2 && $request->technician_id != auth()->id()) {
+            return response()->json(['error' => 'You can only view repair requests assigned to you.'], 403);
+        }
 
         return response()->json($request);
     }
