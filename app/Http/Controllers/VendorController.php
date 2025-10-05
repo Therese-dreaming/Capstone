@@ -13,8 +13,18 @@ class VendorController extends Controller
      */
     public function index()
     {
-        $vendors = Vendor::withCount('assets')->withSum('assets', 'purchase_price')->get();
-        return view('vendors.index', compact('vendors'));
+        $vendors = Vendor::withCount('assets')->withSum('assets', 'purchase_price')
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+        
+        // Get totals for statistics (from all vendors, not just current page)
+        $allVendors = Vendor::withCount('assets')->withSum('assets', 'purchase_price')->get();
+        $totalVendors = $allVendors->count();
+        $totalAssets = $allVendors->sum('assets_count');
+        $totalValue = $allVendors->sum('assets_sum_purchase_price');
+        
+        return view('vendors.index', compact('vendors', 'totalVendors', 'totalAssets', 'totalValue'));
     }
 
     /**

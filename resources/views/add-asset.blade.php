@@ -135,13 +135,13 @@
                                     @php
                                         $dynamicStatus = request('status', 'PULLED OUT');
                                         $statusColor = match($dynamicStatus) {
-                                            'WORKING' => 'bg-green-100 text-green-800',
+                                            'IN USE' => 'bg-green-100 text-green-800',
                                             'UNDER REPAIR' => 'bg-blue-100 text-blue-800',
                                             'PULLED OUT' => 'bg-yellow-100 text-yellow-800',
                                             default => 'bg-gray-100 text-gray-800'
                                         };
                                         $statusDescription = match($dynamicStatus) {
-                                            'WORKING' => 'Status set based on completed repair',
+                                            'IN USE' => 'Status set based on completed repair',
                                             'UNDER REPAIR' => 'Status set based on ongoing repair',
                                             'PULLED OUT' => 'Status set because asset was pulled out for repair',
                                             default => 'Status set based on repair request status'

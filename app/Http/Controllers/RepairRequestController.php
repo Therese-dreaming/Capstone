@@ -729,6 +729,16 @@ class RepairRequestController extends Controller
 
     public function completed(Request $request)
     {
+        // Calculate statistics from ALL repair requests (not just completed ones)
+        $totalRepairs = RepairRequest::count();
+        $completedRepairs = RepairRequest::where('status', 'completed')->count();
+        $unregisteredItems = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
+            ->where(function($query) {
+                $query->whereNull('serial_number')
+                      ->orWhere('serial_number', '');
+            })
+            ->count();
+
         $query = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
             ->with(['technician', 'asset']);
 
@@ -747,6 +757,21 @@ class RepairRequestController extends Controller
                 $query->where('building', $building)
                       ->where('floor', $floor)
                       ->where('room', $room);
+            }
+        }
+        
+        // Registration status filter
+        if ($request->registration) {
+            if ($request->registration === 'registered') {
+                $query->where(function($q) {
+                    $q->whereNotNull('serial_number')
+                      ->where('serial_number', '!=', '');
+                });
+            } elseif ($request->registration === 'unregistered') {
+                $query->where(function($q) {
+                    $q->whereNull('serial_number')
+                      ->orWhere('serial_number', '');
+                });
             }
         }
 
@@ -812,7 +837,7 @@ class RepairRequestController extends Controller
             return $request;
         });
 
-        return view('repair-completed', compact('completedRequests'));
+        return view('repair-completed', compact('completedRequests', 'totalRepairs', 'completedRepairs', 'unregisteredItems'));
     }
 
     public function markUrgent($id)

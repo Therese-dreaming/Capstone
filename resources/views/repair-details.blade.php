@@ -621,14 +621,14 @@
                         
                         switch(normalizedStatus) {
                             case 'completed':
-                                assetStatus = 'WORKING';
+                                assetStatus = 'IN USE';
                                 break;
                             case 'pulledout':
                                 assetStatus = 'PULLED OUT';
                                 break;
                             case 'cancelled':
                             case 'canceled':
-                                assetStatus = 'WORKING'; // Assume it was working if cancelled
+                                assetStatus = 'IN USE'; // Assume it was working if cancelled
                                 break;
                             case 'inprogress':
                             case 'ongoing':

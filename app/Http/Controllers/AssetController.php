@@ -147,7 +147,13 @@ class AssetController extends Controller
             return $asset;
         });
     
-        return view('asset-list', compact('assets', 'categories', 'locations'));
+        // Get technicians for filter
+        $technicians = \App\Models\User::whereIn('group_id', [1, 2])
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+
+        return view('asset-list', compact('assets', 'categories', 'locations', 'technicians'));
     }
 
     private function getLifeStatus($remainingLife, $totalLifespan)

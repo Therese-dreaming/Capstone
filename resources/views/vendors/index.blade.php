@@ -41,7 +41,7 @@
     @endif
 
     <!-- Vendors Statistics -->
-    @if($vendors->count() > 0)
+    @if($totalVendors > 0)
     <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6">
         <h2 class="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center">
             <svg class="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,7 +55,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs md:text-sm font-medium text-blue-700 mb-1">Total Vendors</p>
-                        <p class="text-2xl md:text-3xl font-bold text-blue-900">{{ $vendors->count() }}</p>
+                        <p class="text-2xl md:text-3xl font-bold text-blue-900">{{ $totalVendors }}</p>
                     </div>
                     <div class="bg-blue-200 p-2 md:p-3 rounded-full">
                         <svg class="w-6 h-6 md:w-8 md:h-8 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs md:text-sm font-medium text-green-700 mb-1">Total Assets</p>
-                        <p class="text-2xl md:text-3xl font-bold text-green-900">{{ $vendors->sum('assets_count') }}</p>
+                        <p class="text-2xl md:text-3xl font-bold text-green-900">{{ $totalAssets }}</p>
                     </div>
                     <div class="bg-green-200 p-2 md:p-3 rounded-full">
                         <svg class="w-6 h-6 md:w-8 md:h-8 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs md:text-sm font-medium text-purple-700 mb-1">Total Value</p>
-                        <p class="text-2xl md:text-3xl font-bold text-purple-900">₱{{ number_format($vendors->sum('assets_sum_purchase_price'), 2) }}</p>
+                        <p class="text-2xl md:text-3xl font-bold text-purple-900">₱{{ number_format($totalValue, 2) }}</p>
                     </div>
                     <div class="bg-purple-200 p-2 md:p-3 rounded-full">
                         <svg class="w-6 h-6 md:w-8 md:h-8 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +106,7 @@
                 All Vendors
             </h2>
             <div class="flex items-center space-x-2">
-                <span class="text-xs md:text-sm text-gray-500">Total: {{ $vendors->count() }} vendors</span>
+                <span class="text-xs md:text-sm text-gray-500">Showing {{ $vendors->firstItem() ?? 0 }}-{{ $vendors->lastItem() ?? 0 }} of {{ $vendors->total() }} vendors</span>
             </div>
         </div>
 
@@ -256,6 +256,13 @@
                 </div>
             @endforelse
         </div>
+        
+        <!-- Pagination -->
+        @if($vendors->hasPages())
+        <div class="mt-6">
+            {{ $vendors->links() }}
+        </div>
+        @endif
     </div>
 </div>
 

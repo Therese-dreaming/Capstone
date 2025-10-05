@@ -52,78 +52,166 @@
             </div>
         </div>
 
-        <!-- Filters and Delete Selected (Mobile) -->
-        <div class="mb-4 flex flex-col gap-4 w-full">
-            <!-- Filters -->
-            <div class="flex flex-col md:flex-row md:items-center md:gap-4 w-full">
-                <div class="flex flex-col gap-2 w-full md:w-auto">
-                    <div class="flex flex-col gap-2 w-full">
-                        <label class="text-xs font-semibold text-gray-600">Request Date Range</label>
-                        <div class="flex flex-col sm:flex-row items-stretch gap-2 w-full">
-                            <input type="date" id="requestStartDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                            <span class="text-sm text-gray-500 flex items-center justify-center">to</span>
-                            <input type="date" id="requestEndDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        </div>
+        <!-- Summary Cards -->
+        <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            
+            <!-- Total Repairs Card -->
+            <div class="bg-blue-600 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-2 sm:p-3 rounded-full backdrop-blur-sm mr-3 sm:mr-4 flex-shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
                     </div>
-                    <div class="flex flex-col gap-2 w-full mt-2">
-                        <label class="text-xs font-semibold text-gray-600">Completion Date Range</label>
-                        <div class="flex flex-col sm:flex-row items-stretch gap-2 w-full">
-                            <input type="date" id="completionStartDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                            <span class="text-sm text-gray-500 flex items-center justify-center">to</span>
-                            <input type="date" id="completionEndDate" class="h-9 w-full md:w-auto px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-blue-100 text-xs sm:text-sm font-medium">Total Repairs</p>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold">{{ number_format($totalRepairs) }}</p>
                     </div>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto md:ml-4 md:mt-0 mt-2">
-                    <select id="statusFilter" onchange="filterHistory()" class="h-9 w-full md:w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+            </div>
+
+            <!-- Completed Repairs Card -->
+            <div class="bg-green-600 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-2 sm:p-3 rounded-full backdrop-blur-sm mr-3 sm:mr-4 flex-shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-green-100 text-xs sm:text-sm font-medium">Completed Repairs</p>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold">{{ number_format($completedRepairs) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unregistered Items Card -->
+            <div class="bg-red-600 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+                <div class="flex items-center">
+                    <div class="bg-white/20 p-2 sm:p-3 rounded-full backdrop-blur-sm mr-3 sm:mr-4 flex-shrink-0">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-red-100 text-xs sm:text-sm font-medium">Unregistered Items</p>
+                        <p class="text-xl sm:text-2xl lg:text-3xl font-bold">{{ number_format($unregisteredItems) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="mb-6 p-4 sm:p-6 bg-gray-50 rounded-xl border border-gray-200">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-4">Filter Repair History</h3>
+            
+            <!-- Filter Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-4">
+                <!-- Request Date Range -->
+                <div class="xl:col-span-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Request Date Range</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="requestStartDate" class="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                        <input type="date" id="requestEndDate" class="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                    </div>
+                </div>
+
+                <!-- Registration Status Filter -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Registration</label>
+                    <select id="registrationFilter" onchange="filterHistory()" class="h-8 sm:h-9 w-full px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                        <option value="">All Items</option>
+                        <option value="registered">Registered</option>
+                        <option value="unregistered">Unregistered</option>
+                    </select>
+                </div>
+
+                <!-- Completion Date Range -->
+                <div class="xl:col-span-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Completion Date Range</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="completionStartDate" class="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                        <input type="date" id="completionEndDate" class="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Status</label>
+                    <select id="statusFilter" onchange="filterHistory()" class="h-8 sm:h-9 w-full px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
                         <option value="">All Status</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
                         <option value="pulled_out">Pulled Out</option>
                     </select>
-                    <select id="locationFilter" onchange="filterHistory()" class="h-9 w-full md:w-48 px-3 py-0 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
-                        <option value="">All Locations</option>
-                        @php
-                            $requestsCollection = ($completedRequests instanceof \Illuminate\Pagination\AbstractPaginator)
-                                ? collect($completedRequests->items())
-                                : collect($completedRequests);
-                            $uniqueLocations = $requestsCollection
-                                ->map(function($r) {
-                                    return [
-                                        'building' => $r->building ?? null,
-                                        'floor' => $r->floor ?? null,
-                                        'room' => $r->room ?? null,
-                                    ];
-                                })
-                                ->filter(function($loc) {
-                                    return !empty($loc['building']) && !empty($loc['floor']) && !empty($loc['room']);
-                                })
-                                ->unique(function($loc) {
-                                    return $loc['building'].'|'.$loc['floor'].'|'.$loc['room'];
-                                })
-                                ->values();
-                        @endphp
-                        @foreach($uniqueLocations as $loc)
-                        <option value="{{ $loc['building'] }}-{{ $loc['floor'] }}-{{ $loc['room'] }}">
-                            {{ $loc['building'] }} - {{ $loc['floor'] }} - {{ $loc['room'] }}
-                        </option>
-                        @endforeach
-                    </select>
                 </div>
             </div>
-            <!-- Delete Selected (Desktop) -->
-            <div class="hidden md:flex items-center space-x-4 md:ml-auto">
-                <div class="text-sm text-gray-600" id="selectedCount">0 items selected</div>
-                <button onclick="deleteSelected()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50" disabled id="deleteSelectedBtn">
-                    Delete Selected
-                </button>
+
+            <!-- Location Filter (Full Width) -->
+            <div class="mb-4">
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Location</label>
+                <select id="locationFilter" onchange="filterHistory()" class="h-8 sm:h-9 w-full px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-red-500 focus:border-red-500">
+                    <option value="">All Locations</option>
+                    @php
+                        $requestsCollection = ($completedRequests instanceof \Illuminate\Pagination\AbstractPaginator)
+                            ? collect($completedRequests->items())
+                            : collect($completedRequests);
+                        
+                        $uniqueLocations = $requestsCollection
+                            ->map(function($r) {
+                                return [
+                                    'building' => $r->building ?? null,
+                                    'floor' => $r->floor ?? null,
+                                    'room' => $r->room ?? null,
+                                ];
+                            })
+                            ->filter(function($loc) {
+                                return !empty($loc['building']) && !empty($loc['floor']) && !empty($loc['room']);
+                            })
+                            ->unique(function($loc) {
+                                return $loc['building'].'|'.$loc['floor'].'|'.$loc['room'];
+                            })
+                            ->values();
+                    @endphp
+                    @foreach($uniqueLocations as $loc)
+                    <option value="{{ $loc['building'] }}-{{ $loc['floor'] }}-{{ $loc['room'] }}">
+                        {{ $loc['building'] }} - {{ $loc['floor'] }} - {{ $loc['room'] }}
+                    </option>
+                    @endforeach
+                </select>
             </div>
-            <!-- Delete Selected (Mobile) -->
-            <div class="flex flex-col sm:flex-row items-center gap-2 md:hidden">
-                <div class="text-sm text-gray-600" id="selectedCountMobile">0 items selected</div>
-                <button onclick="deleteSelectedMobile()" class="text-sm px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50" disabled id="deleteSelectedBtnMobile">
-                    Delete Selected
-                </button>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                <!-- Filter Actions -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="filterHistory()" class="bg-red-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-red-700 flex items-center text-xs sm:text-sm">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        <span class="hidden sm:inline">Apply Filters</span>
+                        <span class="sm:hidden">Apply</span>
+                    </button>
+                    <button onclick="clearFilters()" class="bg-gray-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md hover:bg-gray-600 flex items-center text-xs sm:text-sm">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span class="hidden sm:inline">Clear Filters</span>
+                        <span class="sm:hidden">Clear</span>
+                    </button>
+                </div>
+
+                <!-- Delete Selected Actions -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                    <div class="text-xs sm:text-sm text-gray-600" id="selectedCount">0 items selected</div>
+                    <button onclick="deleteSelected()" class="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 flex items-center" disabled id="deleteSelectedBtn">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span class="hidden sm:inline">Delete Selected</span>
+                        <span class="sm:hidden">Delete</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -143,27 +231,23 @@
                 <div class="text-sm text-gray-700"><span class="font-semibold">Completion Date:</span> {{ \Carbon\Carbon::parse($request->completed_at)->format('M j, Y (g:i A)') }}</div>
                 <div class="text-sm">
                     <span class="font-semibold">Item:</span>
-                    @if($request->asset)
+                    @if($request->asset && $request->asset->serial_number)
                         <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                    @elseif(!empty($request->serial_number))
+                        <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->serial_number }}</a>
                     @else
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-gray-900">{{ $request->equipment }}</span>
-                            @if($request->status === 'completed')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                    </svg>
-                                    Unregistered
-                                </span>
-                            @endif
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Item unregistered
+                            </span>
                         </div>
                     @endif
                 </div>
                 <div class="text-sm"><span class="font-semibold">Ticket No.:</span> {{ $request->ticket_number }}</div>
-                <div class="text-sm"><span class="font-semibold">Location:</span> 
-                    {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
-                </div>
-                <div class="text-sm"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
                 @if(!in_array($request->creator->group_id ?? null, [1, 2]))
                 <div class="text-sm"><span class="font-semibold">Caller's Name:</span> {{ $request->caller_name ?: 'N/A' }}</div>
                 @endif
@@ -189,7 +273,7 @@
         </div>
 
         <!-- Table for desktop -->
-        <div class="overflow-x-auto hidden md:block">
+        <div class="hidden md:block">
             <table id="repairTable" class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-red-800">
                     <tr>
@@ -203,8 +287,6 @@
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Item</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Ticket No.</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Location</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Technician</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
                     </tr>
                 </thead>
@@ -266,25 +348,23 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            @if($request->asset)
+                            @if($request->asset && $request->asset->serial_number)
                                 <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                            @elseif(!empty($request->serial_number))
+                                <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->serial_number }}</a>
                             @else
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-gray-900">{{ $request->equipment }}</span>
-                                    @if($request->status === 'completed')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                            </svg>
-                                            Unregistered
-                                        </span>
-                                    @endif
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        Item unregistered
+                                    </span>
                                 </div>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->ticket_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->building }} - {{ $request->floor }} - {{ $request->room }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div class="flex space-x-2">
                                 <button onclick="window.location.href='{{ route('repair.details', ['id' => $request->id]) }}'" class="text-blue-600 hover:text-blue-800">
@@ -303,7 +383,7 @@
                     </tr>
                     @if(strlen($request->remarks) > 50 || strlen($request->findings) > 50)
                     <tr id="remarks-{{ $request->id }}" class="hidden bg-gray-50">
-                        <td colspan="11" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td colspan="9" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div class="text-sm">
                                 @if(strlen($request->findings) > 50)
                                 <div class="mb-4">
@@ -323,7 +403,7 @@
                     @endif
                     @empty
                     <tr>
-                        <td colspan="11" class="px-6 py-4 text-center text-gray-500">No repair history found</td>
+                        <td colspan="9" class="px-6 py-4 text-center text-gray-500">No repair history found</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -592,7 +672,6 @@
                 if (selectAll) selectAll.checked = false;
                 updateSelectedCount();
                 selectedCardIds = [];
-                updateSelectedCountMobile();
 
                 // Create and show success message
                 const successMessage = document.createElement('div');
@@ -660,22 +739,21 @@
             selectedCardIds.splice(idx, 1);
             card.classList.remove('ring-2', 'ring-red-600');
         }
-        updateSelectedCountMobile();
+        // Mobile cards now use the same selection system
     }
-    function updateSelectedCountMobile() {
-        const count = selectedCardIds.length;
-        document.getElementById('selectedCountMobile').textContent = `${count} items selected`;
-        document.getElementById('deleteSelectedBtnMobile').disabled = count === 0;
-    }
-    function deleteSelectedMobile() {
-        if (selectedCardIds.length === 0) {
-            alert('Please select items to delete');
-            return;
-        }
-        // Show modal and set up deletion
-        window.itemsToDelete = selectedCardIds;
-        document.getElementById('deleteModal').classList.remove('hidden');
-        document.getElementById('deleteModal').classList.add('flex');
+    
+    // Clear all filters function
+    window.clearFilters = function() {
+        document.getElementById('requestStartDate').value = '';
+        document.getElementById('requestEndDate').value = '';
+        document.getElementById('registrationFilter').value = '';
+        document.getElementById('completionStartDate').value = '';
+        document.getElementById('completionEndDate').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('locationFilter').value = '';
+        
+        // Trigger filter to show all results
+        filterHistory();
     }
 </script>
 @endsection

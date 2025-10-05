@@ -74,7 +74,7 @@
             </div>
 
             <!-- Date Range Filter Section -->
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+            <div class="mt-6 mb-6 p-4 bg-gray-50 rounded-lg border">
                 <h3 class="text-lg font-semibold text-gray-800 mb-3">Date Range Filter</h3>
                 <form method="GET" action="{{ request()->url() }}" class="flex flex-col sm:flex-row gap-4 items-end">
                     <!-- Preserve existing search parameters -->
@@ -152,7 +152,8 @@
             <!-- Additional Filters Section -->
             <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
                 <h3 class="text-lg font-semibold text-gray-800 mb-3">Additional Filters</h3>
-                <form method="GET" action="{{ request()->url() }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="space-y-4">
+                    <form method="GET" action="{{ request()->url() }}" class="space-y-4">
                     <!-- Preserve existing search and date parameters -->
                     @if(request('search'))
                         <input type="hidden" name="search" value="{{ request('search') }}">
@@ -166,74 +167,97 @@
                     @if(request('warranty'))
                         <input type="hidden" name="warranty" value="{{ request('warranty') }}">
                     @endif
+                    @if(request('technician'))
+                        <input type="hidden" name="technician" value="{{ request('technician') }}">
+                    @endif
                     
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                            <option value="">All Status</option>
-                            <option value="IN USE" {{ request('status') == 'IN USE' ? 'selected' : '' }}>IN USE</option>
-                            <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
-                            <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
-                            <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
-                            <option value="LOST" {{ request('status') == 'LOST' ? 'selected' : '' }}>LOST</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select name="category" id="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                            <option value="">All Categories</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                        <select name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                            <option value="">All Locations</option>
-                            @foreach($locations as $location)
-                                <option value="{{ $location->id }}" {{ request('location') == $location->id ? 'selected' : '' }}>
-                                    {{ $location->full_location }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="warranty" class="block text-sm font-medium text-gray-700 mb-1">Warranty</label>
-                        <select name="warranty" id="warranty" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                            <option value="">All Warranties</option>
-                            <option value="expiring_365" {{ request('warranty') == 'expiring_365' ? 'selected' : '' }}>Expiring within 365 days</option>
-                            <option value="expiring_30" {{ request('warranty') == 'expiring_30' ? 'selected' : '' }}>Expiring within 30 days</option>
-                            <option value="expired" {{ request('warranty') == 'expired' ? 'selected' : '' }}>Expired</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex items-end gap-2">
-                        <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
-                            </svg>
-                            Apply Filters
-                        </button>
+                    <!-- First Row: 3 filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                                <option value="">All Status</option>
+                                <option value="IN USE" {{ request('status') == 'IN USE' ? 'selected' : '' }}>IN USE</option>
+                                <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
+                                <option value="DISPOSED" {{ request('status') == 'DISPOSED' ? 'selected' : '' }}>DISPOSED</option>
+                                <option value="PULLED OUT" {{ request('status') == 'PULLED OUT' ? 'selected' : '' }}>PULLED OUT</option>
+                                <option value="LOST" {{ request('status') == 'LOST' ? 'selected' : '' }}>LOST</option>
+                            </select>
+                        </div>
                         
-                        @if(request('status') || request('category') || request('location') || request('warranty'))
-                            <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('date_from') ? (request('search') ? '&' : '?') . 'date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('search') || request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}" 
-                               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                        <div>
+                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select name="category" id="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                                <option value="">All Categories</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                            <select name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                                <option value="">All Locations</option>
+                                @foreach($locations as $location)
+                                    <option value="{{ $location->id }}" {{ request('location') == $location->id ? 'selected' : '' }}>
+                                        {{ $location->full_location }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Second Row: 2 filters + buttons -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label for="warranty" class="block text-sm font-medium text-gray-700 mb-1">Warranty</label>
+                            <select name="warranty" id="warranty" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                                <option value="">All Warranties</option>
+                                <option value="expiring_365" {{ request('warranty') == 'expiring_365' ? 'selected' : '' }}>Expiring within 365 days</option>
+                                <option value="expiring_30" {{ request('warranty') == 'expiring_30' ? 'selected' : '' }}>Expiring within 30 days</option>
+                                <option value="expired" {{ request('warranty') == 'expired' ? 'selected' : '' }}>Expired</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="technician" class="block text-sm font-medium text-gray-700 mb-1">Technician</label>
+                            <select name="technician" id="technician" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                                <option value="">All Technicians</option>
+                                @if(isset($technicians))
+                                    @foreach($technicians as $technician)
+                                        <option value="{{ $technician->id }}" {{ request('technician') == $technician->id ? 'selected' : '' }}>
+                                            {{ $technician->name }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                                 </svg>
-                                Clear Filters
-                            </a>
-                        @endif
+                                Apply Filters
+                            </button>
+                            
+                            @if(request('status') || request('category') || request('location') || request('warranty') || request('technician'))
+                                <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('date_from') ? (request('search') ? '&' : '?') . 'date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('search') || request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}" 
+                                   class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Clear Filters
+                                </a>
+                            @endif
+                        </div>
                     </div>
                 </form>
                 
-                @if(request('status') || request('category') || request('location') || request('warranty'))
+                @if(request('status') || request('category') || request('location') || request('warranty') || request('technician'))
                     <div class="mt-3 p-3 bg-red-50 rounded-md">
                         <p class="text-sm text-red-800">
                             <strong>Filtered by:</strong> 
@@ -262,10 +286,20 @@
                                 @if(request('status') || request('category') || request('location')) | @endif
                                 Warranty: {{ ucfirst(str_replace('_', ' ', request('warranty'))) }}
                             @endif
+                            @if(request('technician'))
+                                @php
+                                    $selectedTechnician = isset($technicians) ? $technicians->firstWhere('id', request('technician')) : null;
+                                @endphp
+                                @if($selectedTechnician)
+                                    @if(request('status') || request('category') || request('location') || request('warranty')) | @endif
+                                    Technician: {{ $selectedTechnician->name }}
+                                @endif
+                            @endif
                             ({{ $assets->total() }} assets found)
                         </p>
                     </div>
                 @endif
+                </div>
             </div>
 
             <!-- Search Section -->
@@ -282,7 +316,7 @@
                         </button>
                     </div>
                     @if(request('search'))
-                        <a href="{{ request()->url() }}{{ request('date_from') ? '?date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}{{ request('status') ? (request('date_from') || request('date_to') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('date_from') || request('date_to') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('date_from') || request('date_to') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}{{ request('warranty') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') ? '&' : '?') . 'warranty=' . request('warranty') : '' }}" 
+                        <a href="{{ request()->url() }}{{ request('date_from') ? '?date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}{{ request('status') ? (request('date_from') || request('date_to') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('date_from') || request('date_to') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('date_from') || request('date_to') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}{{ request('warranty') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') ? '&' : '?') . 'warranty=' . request('warranty') : '' }}{{ request('technician') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') || request('warranty') ? '&' : '?') . 'technician=' . request('technician') : '' }}" 
                            class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -364,10 +398,6 @@
                                 <p class="text-gray-500">Location:</p>
                                 <p class="font-medium">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</p>
                             </div>
-                            <div>
-                                <p class="text-gray-500">Created By:</p>
-                                <p class="font-medium">{{ $asset->creator->name ?? 'N/A' }}</p>
-                            </div>
                         </div>
                     
                     <div class="flex justify-end space-x-2">
@@ -434,8 +464,6 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
@@ -486,8 +514,6 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->creator->name ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex space-x-2">
                                     @if(auth()->user()->group_id === 4)
