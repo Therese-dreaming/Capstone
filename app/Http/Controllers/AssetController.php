@@ -1057,6 +1057,7 @@ class AssetController extends Controller
             ]);
             
             $asset = Asset::where('serial_number', $serialNumber)
+                ->whereNotIn('status', ['LOST', 'DISPOSED'])
                 ->when($lab, function($query) use ($lab) {
                     return $query->whereHas('location', function($locationQuery) use ($lab) {
                         $locationQuery->where('room_number', $lab);
@@ -1074,8 +1075,9 @@ class AssetController extends Controller
             if (!$asset) {
                 \Log::warning('Asset not found with serial number: ' . $serialNumber);
                 
-                // Check if the serial number exists in any format
+                // Check if the serial number exists in any format (excluding LOST and DISPOSED)
                 $similarAssets = Asset::where('serial_number', 'LIKE', '%' . $serialNumber . '%')
+                    ->whereNotIn('status', ['LOST', 'DISPOSED'])
                     ->select('serial_number')
                     ->get();
                 

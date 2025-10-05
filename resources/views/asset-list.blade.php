@@ -342,33 +342,9 @@
             <div class="md:hidden space-y-4 mb-4">
                 @foreach($assets as $asset)
                 <div class="border rounded-lg p-4 bg-white shadow-sm">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <h3 class="font-bold text-gray-900">{{ $asset->name ?? '' }}</h3>
-                            <p class="text-sm text-gray-600">{{ $asset->serial_number ?? 'N/A' }}</p>
-                        </div>
-                        <span class="px-2 py-1 text-xs font-medium rounded-full
-                                @switch($asset->status)
-                                    @case('UNDER REPAIR')
-                                        bg-yellow-100 text-yellow-800
-                                        @break
-                                    @case('IN USE')
-                                        bg-green-100 text-green-800
-                                        @break
-                                    @case('DISPOSED')
-                                        bg-red-100 text-red-800
-                                        @break
-                                    @case('PULLED OUT')
-                                        bg-orange-100 text-orange-800
-                                        @break
-                                    @case('LOST')
-                                        bg-red-200 text-red-900
-                                        @break
-                                    @default
-                                        bg-gray-100 text-gray-800
-                                @endswitch">
-                            {{ $asset->status ?? 'N/A' }}
-                        </span>
+                    <div class="mb-3">
+                        <h3 class="font-bold text-gray-900">{{ $asset->name ?? '' }}</h3>
+                        <p class="text-sm text-gray-600">{{ $asset->serial_number ?? 'N/A' }}</p>
                     </div>
                     
                     <div class="flex gap-3 mb-3">
@@ -385,14 +361,37 @@
                         @endif
                     </div>
                     
-                                            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm mb-3">
+                            <div>
+                                <p class="text-gray-500">Status:</p>
+                                <p class="font-medium">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                                            @switch($asset->status)
+                                                @case('UNDER REPAIR')
+                                                    bg-yellow-100 text-yellow-800
+                                                    @break
+                                                @case('IN USE')
+                                                    bg-green-100 text-green-800
+                                                    @break
+                                                @case('DISPOSED')
+                                                    bg-red-100 text-red-800
+                                                    @break
+                                                @case('PULLED OUT')
+                                                    bg-orange-100 text-orange-800
+                                                    @break
+                                                @case('LOST')
+                                                    bg-red-200 text-red-900
+                                                    @break
+                                                @default
+                                                    bg-gray-100 text-gray-800
+                                            @endswitch">
+                                        {{ $asset->status ?? 'N/A' }}
+                                    </span>
+                                </p>
+                            </div>
                             <div>
                                 <p class="text-gray-500">Category:</p>
                                 <p class="font-medium">{{ $asset->category->name ?? '' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Price:</p>
-                                <p class="font-medium">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</p>
                             </div>
                             <div>
                                 <p class="text-gray-500">Location:</p>
@@ -401,6 +400,10 @@
                             <div>
                                 <p class="text-gray-500">Created By:</p>
                                 <p class="font-medium">{{ $asset->creator ? $asset->creator->name : 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Price:</p>
+                                <p class="font-medium">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</p>
                             </div>
                         </div>
                     
@@ -465,11 +468,11 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">QR Code</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serial Number</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky right-20 bg-gray-50 z-10">Category</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky right-0 bg-gray-50 z-10">Actions</th>
                         </tr>
                     </thead>
@@ -494,9 +497,6 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name ?? '' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->category->name ?? '' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->creator ? $asset->creator->name : 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px]
                                             @switch($asset->status)
@@ -521,7 +521,10 @@
                                     {{ $asset->status ?? 'N/A' }}
                                 </span>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->creator ? $asset->creator->name : 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky right-20 bg-white z-10">{{ $asset->category->name ?? '' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky right-0 bg-white z-10">
                                 <div class="flex space-x-2">
                                     @if(auth()->user()->group_id === 4)

@@ -120,10 +120,16 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Exclude Assets (Optional)</label>
                         <div class="border border-gray-300 rounded-lg bg-gray-50 p-4">
                             <div class="flex space-x-2 mb-3">
-                                <select id="assetSelect" 
-                                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
-                                    <option value="">Select an asset...</option>
-                                </select>
+                                <div class="relative flex-1">
+                                    <input type="text" id="assetSearch" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" 
+                                           placeholder="Type to search asset by serial number or name..."
+                                           autocomplete="off">
+                                    <!-- Autocomplete dropdown -->
+                                    <div id="assetAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
+                                        <!-- Asset suggestions will be populated here -->
+                                    </div>
+                                </div>
                                 <button type="button" onclick="addExcludedAsset()" 
                                         class="px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-md">
                                     Add
@@ -414,18 +420,104 @@
         }
 
         function triggerLocationChange(locationId) {
-            const assetSelect = document.getElementById('assetSelect');
+            // Clear asset search when location changes
+            const assetSearch = document.getElementById('assetSearch');
+            if (assetSearch) {
+                assetSearch.value = '';
+                hideAssetAutocomplete();
+            }
+            
+            // Store current location ID for asset search
+            window.currentLocationId = locationId;
+        }
 
-            if (!locationId) {
-                assetSelect.innerHTML = '<option value="">Select an asset...</option>';
+        // Initialize asset autocomplete
+        function initializeAssetAutocomplete() {
+            const assetInput = document.getElementById('assetSearch');
+            const assetAutocomplete = document.getElementById('assetAutocomplete');
+
+            if (!assetInput || !assetAutocomplete) {
                 return;
             }
 
+            let searchTimeout;
+
+            assetInput.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 2) {
+                    hideAssetAutocomplete();
+                    return;
+                }
+
+                if (!window.currentLocationId) {
+                    showAssetMessage('Please select a location first', 'warning');
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    searchAssets(query);
+                }, 300);
+            });
+
+            // Handle keyboard navigation
+            assetInput.addEventListener('keydown', function(e) {
+                const suggestions = assetAutocomplete.querySelectorAll('.asset-suggestion-item');
+                const activeSuggestion = assetAutocomplete.querySelector('.asset-suggestion-item.active');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!activeSuggestion) {
+                        suggestions[0]?.classList.add('active');
+                    } else {
+                        const nextSuggestion = activeSuggestion.nextElementSibling;
+                        if (nextSuggestion && nextSuggestion.classList.contains('asset-suggestion-item')) {
+                            activeSuggestion.classList.remove('active');
+                            nextSuggestion.classList.add('active');
+                            nextSuggestion.scrollIntoView({ block: 'nearest' });
+                        }
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (activeSuggestion) {
+                        const prevSuggestion = activeSuggestion.previousElementSibling;
+                        if (prevSuggestion && prevSuggestion.classList.contains('asset-suggestion-item')) {
+                            activeSuggestion.classList.remove('active');
+                            prevSuggestion.classList.add('active');
+                            prevSuggestion.scrollIntoView({ block: 'nearest' });
+                        } else {
+                            activeSuggestion.classList.remove('active');
+                        }
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (activeSuggestion) {
+                        activeSuggestion.click();
+                    }
+                } else if (e.key === 'Escape') {
+                    hideAssetAutocomplete();
+                }
+            });
+
+            // Hide autocomplete when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!assetInput.contains(e.target) && !assetAutocomplete.contains(e.target)) {
+                    hideAssetAutocomplete();
+                }
+            });
+        }
+
+        function searchAssets(query) {
+            const assetAutocomplete = document.getElementById('assetAutocomplete');
+            
             // Show loading state
-            assetSelect.innerHTML = '<option value="">Loading assets...</option>';
+            assetAutocomplete.innerHTML = '<div class="p-3 text-gray-500 text-sm">Searching assets...</div>';
+            assetAutocomplete.classList.remove('hidden');
 
             // Fetch assets for the selected location
-            fetch(`{{ url('maintenance/get-location-assets') }}/${locationId}`, {
+            fetch(`{{ url('maintenance/get-location-assets') }}/${window.currentLocationId}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -440,26 +532,133 @@
             })
             .then(assets => {
                 if (!assets || assets.length === 0) {
-                    assetSelect.innerHTML = '<option value="">No assets available</option>';
+                    assetAutocomplete.innerHTML = '<div class="p-3 text-gray-500 text-sm">No assets available in this location</div>';
                     return;
                 }
 
-                assetSelect.innerHTML = '<option value="">Select an asset...</option>' + 
-                    assets.map(asset => `
-                        <option value="${asset.id}" data-name="${asset.name}" data-serial="${asset.serial_number}">
-                            ${asset.name} (SN: ${asset.serial_number}) - ${asset.status}
-                        </option>
-                    `).join('');
+                // Filter assets based on search query
+                const filteredAssets = assets.filter(asset => 
+                    asset.name.toLowerCase().includes(query) || 
+                    asset.serial_number.toLowerCase().includes(query)
+                );
+
+                if (filteredAssets.length === 0) {
+                    assetAutocomplete.innerHTML = '<div class="p-3 text-gray-500 text-sm">No assets found matching your search</div>';
+                    return;
+                }
+
+                // Display filtered assets
+                assetAutocomplete.innerHTML = filteredAssets.map(asset => `
+                    <div class="asset-suggestion-item p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                         onclick="selectAsset({id: ${asset.id}, name: '${asset.name}', serial_number: '${asset.serial_number}', status: '${asset.status}'})">
+                        <div class="font-medium text-gray-900">${asset.name}</div>
+                        <div class="text-sm text-gray-600">SN: ${asset.serial_number} • Status: ${asset.status}</div>
+                    </div>
+                `).join('');
             })
             .catch(error => {
                 console.error('Error:', error);
-                assetSelect.innerHTML = '<option value="">Error loading assets</option>';
+                assetAutocomplete.innerHTML = '<div class="p-3 text-red-500 text-sm">Error loading assets</div>';
             });
+        }
+
+        function selectAsset(asset) {
+            const assetInput = document.getElementById('assetSearch');
+            
+            if (!assetInput) return;
+
+            assetInput.value = `${asset.name} (SN: ${asset.serial_number})`;
+            assetInput.dataset.selectedAsset = JSON.stringify(asset);
+            
+            hideAssetAutocomplete();
+        }
+
+        function hideAssetAutocomplete() {
+            const assetAutocomplete = document.getElementById('assetAutocomplete');
+            if (!assetAutocomplete) return;
+
+            assetAutocomplete.classList.add('hidden');
+            assetAutocomplete.querySelectorAll('.asset-suggestion-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        function showAssetMessage(message, type = 'info') {
+            // You can implement a notification system here if needed
+            console.log(`${type}: ${message}`);
+        }
+
+        // Add excluded asset function
+        function addExcludedAsset() {
+            const assetInput = document.getElementById('assetSearch');
+            const selectedAssetsList = document.getElementById('selectedAssetsList');
+            const excludedAssetsInput = document.getElementById('excludedAssetsInput');
+            
+            if (!assetInput.dataset.selectedAsset) {
+                showAssetMessage('Please select an asset from the dropdown', 'warning');
+                return;
+            }
+            
+            const asset = JSON.parse(assetInput.dataset.selectedAsset);
+            
+            // Check if asset is already excluded
+            const currentExcluded = excludedAssetsInput.value ? JSON.parse(excludedAssetsInput.value) : [];
+            if (currentExcluded.some(excluded => excluded.id === asset.id)) {
+                showAssetMessage('This asset is already excluded', 'warning');
+                return;
+            }
+            
+            // Add asset to excluded list
+            currentExcluded.push(asset);
+            excludedAssetsInput.value = JSON.stringify(currentExcluded);
+            
+            // Add visual representation
+            const assetElement = document.createElement('div');
+            assetElement.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200';
+            assetElement.innerHTML = `
+                <div>
+                    <div class="font-medium text-gray-900">${asset.name}</div>
+                    <div class="text-sm text-gray-600">SN: ${asset.serial_number} • Status: ${asset.status}</div>
+                </div>
+                <button type="button" onclick="removeExcludedAsset(${asset.id})" 
+                        class="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            `;
+            
+            selectedAssetsList.appendChild(assetElement);
+            
+            // Clear the input
+            assetInput.value = '';
+            delete assetInput.dataset.selectedAsset;
+        }
+        
+        function removeExcludedAsset(assetId) {
+            const selectedAssetsList = document.getElementById('selectedAssetsList');
+            const excludedAssetsInput = document.getElementById('excludedAssetsInput');
+            
+            // Remove from data
+            const currentExcluded = excludedAssetsInput.value ? JSON.parse(excludedAssetsInput.value) : [];
+            const updatedExcluded = currentExcluded.filter(asset => asset.id !== assetId);
+            excludedAssetsInput.value = JSON.stringify(updatedExcluded);
+            
+            // Remove visual element
+            const assetElements = selectedAssetsList.children;
+            for (let element of assetElements) {
+                const removeButton = element.querySelector('button[onclick*="' + assetId + '"]');
+                if (removeButton) {
+                    element.remove();
+                    break;
+                }
+            }
         }
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             initializeMaintenanceLocationAutocomplete();
+            initializeAssetAutocomplete();
         });
 
         document.querySelector('select[name="technician_id"]').addEventListener('change', function() {
