@@ -121,11 +121,82 @@ class UserController extends Controller
 
         try {
             $userName = $user->name;
+            
+            // Check if user is referenced in other tables
+            $references = $this->checkUserReferences($user);
+            
+            if (!empty($references)) {
+                $referencesList = implode(', ', $references);
+                return back()->with('error', 
+                    'Cannot delete user "' . $userName . '" because they are referenced in: ' . $referencesList . '. 
+                    Please reassign or remove these records first.');
+            }
+            
             $user->delete();
             return redirect()->route('users.index')
                 ->with('success', 'User "' . $userName . '" has been deleted successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete user. Please try again.');
         }
+    }
+
+    /**
+     * Check if user is referenced in other tables
+     */
+    private function checkUserReferences(User $user)
+    {
+        $references = [];
+
+        // Check repair requests as technician
+        if (\App\Models\RepairRequest::where('technician_id', $user->id)->exists()) {
+            $references[] = 'Repair Requests (as technician)';
+        }
+
+        // Check repair requests as creator
+        if (\App\Models\RepairRequest::where('created_by', $user->id)->exists()) {
+            $references[] = 'Repair Requests (as creator)';
+        }
+
+        // Check assets as creator
+        if (\App\Models\Asset::where('created_by', $user->id)->exists()) {
+            $references[] = 'Assets (as creator)';
+        }
+
+        // Check maintenance records as technician
+        if (\App\Models\Maintenance::where('technician_id', $user->id)->exists()) {
+            $references[] = 'Maintenance Records (as technician)';
+        }
+
+        // Check maintenance records as action_by
+        if (\App\Models\Maintenance::where('action_by_id', $user->id)->exists()) {
+            $references[] = 'Maintenance Records (as scheduler)';
+        }
+
+        // Check asset history
+        if (\App\Models\AssetHistory::where('changed_by', $user->id)->exists()) {
+            $references[] = 'Asset History';
+        }
+
+        // Check lab logs
+        if (\App\Models\LabLog::where('user_id', $user->id)->exists()) {
+            $references[] = 'Laboratory Logs';
+        }
+
+        // Check technician evaluations as technician
+        if (\App\Models\TechnicianEvaluation::where('technician_id', $user->id)->exists()) {
+            $references[] = 'Technician Evaluations (as technician)';
+        }
+
+        // Check technician evaluations as evaluator
+        if (\App\Models\TechnicianEvaluation::where('evaluator_id', $user->id)->exists()) {
+            $references[] = 'Technician Evaluations (as evaluator)';
+        }
+
+        // Check notifications
+        if (\App\Models\Notification::where('user_id', $user->id)->exists()) {
+            $references[] = 'Notifications';
+        }
+
+        return $references;
     }
 }

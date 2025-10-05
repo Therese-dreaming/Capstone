@@ -42,6 +42,51 @@ class User extends Authenticatable
         return $this->hasMany(LabLog::class);
     }
 
+    // Repair request relationships
+    public function repairRequestsAsTechnician()
+    {
+        return $this->hasMany(RepairRequest::class, 'technician_id');
+    }
+
+    public function repairRequestsAsCreator()
+    {
+        return $this->hasMany(RepairRequest::class, 'created_by');
+    }
+
+    // Asset relationships
+    public function assetsAsCreator()
+    {
+        return $this->hasMany(Asset::class, 'created_by');
+    }
+
+    // Maintenance relationships
+    public function maintenanceAsTechnician()
+    {
+        return $this->hasMany(Maintenance::class, 'technician_id');
+    }
+
+    public function maintenanceAsScheduler()
+    {
+        return $this->hasMany(Maintenance::class, 'action_by_id');
+    }
+
+    // Asset history relationship
+    public function assetHistories()
+    {
+        return $this->hasMany(AssetHistory::class, 'changed_by');
+    }
+
+    // Technician evaluation relationships
+    public function technicianEvaluations()
+    {
+        return $this->hasMany(TechnicianEvaluation::class, 'technician_id');
+    }
+
+    public function evaluatorEvaluations()
+    {
+        return $this->hasMany(TechnicianEvaluation::class, 'evaluator_id');
+    }
+
     /**
      * Get the appropriate default profile picture based on gender
      */
