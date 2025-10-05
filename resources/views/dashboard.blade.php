@@ -96,18 +96,30 @@
                     </div>
                 </div>
 
-                <!-- Procurement Chart -->
+                <!-- Charts Section -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div class="bg-gray-50 p-3 md:p-4 rounded-xl">
-                        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 text-center">Monthly Procurement Value</h3>
+                        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 text-center">Monthly Procurement Value ({{ date('Y') }})</h3>
                         <div class="h-48 md:h-64">
                             <canvas id="procurementValueChart"></canvas>
                         </div>
                     </div>
                     <div class="bg-gray-50 p-3 md:p-4 rounded-xl">
-                        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 text-center">Assets by Category</h3>
+                        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 text-center">Monthly Asset Procurement ({{ date('Y') }})</h3>
                         <div class="h-48 md:h-64">
                             <canvas id="assetCountChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-3 md:p-4 rounded-xl">
+                        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 text-center">Yearly Procurement Value (Last 5 Years)</h3>
+                        <div class="h-48 md:h-64">
+                            <canvas id="yearlyProcurementChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-3 md:p-4 rounded-xl">
+                        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 text-center">Assets by Category (All Active)</h3>
+                        <div class="h-48 md:h-64">
+                            <canvas id="assetsByCategoryChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -710,6 +722,93 @@
                             ticks: {
                                 precision: 0
                             }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Yearly Procurement Chart
+        const yearlyProcurementCtx = document.getElementById('yearlyProcurementChart');
+        if (yearlyProcurementCtx) {
+            new Chart(yearlyProcurementCtx, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($yearlyProcurementChartData['labels']) !!},
+                    datasets: [{
+                        label: 'Procurement Value (PHP)',
+                        data: {!! json_encode($yearlyProcurementChartData['values']) !!},
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'PHP ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Assets by Category Chart
+        const assetsByCategoryCtx = document.getElementById('assetsByCategoryChart');
+        if (assetsByCategoryCtx) {
+            new Chart(assetsByCategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {!! json_encode($assetsByCategoryChartData['labels']) !!},
+                    datasets: [{
+                        label: 'Asset Count',
+                        data: {!! json_encode($assetsByCategoryChartData['values']) !!},
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(236, 72, 153, 0.7)',
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(251, 146, 60, 0.7)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                padding: 10,
+                                usePointStyle: true,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
                         }
                     }
                 }

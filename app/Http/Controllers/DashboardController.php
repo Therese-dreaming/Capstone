@@ -164,7 +164,7 @@ class DashboardController extends Controller
 
         $criticalAndWarningAssets->getCollection()->transform(function ($asset) {
             $asset->days_left = $asset->end_of_life_date
-                ? now()->diffInDays($asset->end_of_life_date, false)
+                ? max(0, now()->diffInDays($asset->end_of_life_date, false))
                 : 0;
             return $asset;
         });
@@ -347,7 +347,7 @@ class DashboardController extends Controller
             'feedback_score' => $feedbackScore
         ];
 
-        // Prepare chart data
+        // Prepare monthly chart data
         $procurementChartData = [
             'labels' => collect($monthlyData)->pluck('month')->toArray(),
             'values' => collect($monthlyData)->pluck('procurement_value')->toArray()
@@ -356,6 +356,59 @@ class DashboardController extends Controller
         $assetCountChartData = [
             'labels' => collect($monthlyData)->pluck('month')->toArray(),
             'values' => collect($monthlyData)->pluck('procurement_count')->toArray()
+        ];
+
+        // Add yearly procurement data (last 5 years)
+        $currentYear = Carbon::now()->year;
+        $yearlyProcurements = Asset::select(
+            DB::raw('YEAR(purchase_date) as year'),
+            DB::raw('COUNT(*) as procurement_count'),
+            DB::raw('SUM(purchase_price) as procurement_value')
+        )
+            ->whereYear('purchase_date', '>=', $currentYear - 4)
+            ->whereNotNull('purchase_date')
+            ->groupBy('year')
+            ->orderBy('year')
+            ->get();
+
+        // Create yearly data array
+        $yearlyData = collect(range($currentYear - 4, $currentYear))->map(function ($year) {
+            return [
+                'year' => $year,
+                'procurement_count' => 0,
+                'procurement_value' => 0
+            ];
+        })->toArray();
+
+        // Merge actual data
+        foreach ($yearlyProcurements as $proc) {
+            $index = array_search($proc->year, array_column($yearlyData, 'year'));
+            if ($index !== false) {
+                $yearlyData[$index]['procurement_count'] = $proc->procurement_count;
+                $yearlyData[$index]['procurement_value'] = $proc->procurement_value;
+            }
+        }
+
+        $yearlyProcurementChartData = [
+            'labels' => array_column($yearlyData, 'year'),
+            'values' => array_column($yearlyData, 'procurement_value')
+        ];
+
+        // Get assets by category data (all active assets)
+        $categoryData = Asset::select(
+            'categories.name as category_name',
+            DB::raw('COUNT(*) as asset_count'),
+            DB::raw('SUM(purchase_price) as total_value')
+        )
+            ->join('categories', 'assets.category_id', '=', 'categories.id')
+            ->where('assets.status', '!=', 'DISPOSED')
+            ->groupBy('categories.id', 'categories.name')
+            ->orderBy('asset_count', 'desc')
+            ->get();
+
+        $assetsByCategoryChartData = [
+            'labels' => $categoryData->pluck('category_name')->toArray(),
+            'values' => $categoryData->pluck('asset_count')->toArray()
         ];
 
 
@@ -382,7 +435,9 @@ class DashboardController extends Controller
             'avgPulledOutTime',
             'avgPulledOutDays',
             'procurementChartData',
-            'assetCountChartData'
+            'assetCountChartData',
+            'yearlyProcurementChartData',
+            'assetsByCategoryChartData'
         ));
     }
 
