@@ -32,5 +32,35 @@ class Building extends Model
     {
         return $this->hasMany(Floor::class)->where('is_active', true);
     }
+
+    /**
+     * Get locations that reference this building
+     */
+    public function locations()
+    {
+        return Location::where('building', $this->name);
+    }
+
+    /**
+     * Check if building has assets through locations
+     */
+    public function hasAssets()
+    {
+        return Location::where('building', $this->name)
+            ->withCount('assets')
+            ->having('assets_count', '>', 0)
+            ->exists();
+    }
+
+    /**
+     * Check if building has maintenance records through locations
+     */
+    public function hasMaintenanceRecords()
+    {
+        return Location::where('building', $this->name)
+            ->withCount('maintenances')
+            ->having('maintenances_count', '>', 0)
+            ->exists();
+    }
 }
 

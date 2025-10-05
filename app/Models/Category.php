@@ -12,4 +12,9 @@ class Category extends Model
     {
         return $this->hasMany(Asset::class);
     }
+
+    public function repairRequests()
+    {
+        return $this->hasMany(RepairRequest::class);
+    }
 }

@@ -103,11 +103,35 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                         </button>
-                        <button type="button" onclick="openDeleteModal('building', {{ $building->id }}, '{{ $building->name }}', '{{ route('buildings.destroy', $building) }}')" class="text-red-600 hover:text-red-900 transition-colors duration-200" title="Delete Building">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                        
+                        @php
+                            $buildingHasReferences = $building->hasAssets() || $building->hasMaintenanceRecords();
+                        @endphp
+                        
+                        @if($buildingHasReferences)
+                            <div class="relative group">
+                                <button type="button" 
+                                        class="text-gray-400 bg-gray-100 p-1 rounded cursor-not-allowed" 
+                                        title="Cannot delete building - has associated records"
+                                        disabled>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-20">
+                                    <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                        Building has associated records
+                                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <button type="button" onclick="openDeleteModal('building', {{ $building->id }}, '{{ $building->name }}', '{{ route('buildings.destroy', $building) }}')" class="text-red-600 hover:text-red-900 transition-colors duration-200" title="Delete Building">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        @endif
                     </div>
                 </div>
                 
@@ -133,11 +157,35 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </button>
-                            <button type="button" onclick="openDeleteModal('floor', {{ $floor->id }}, '{{ $floor->name }}', '{{ route('buildings.floors.destroy', [$building, $floor]) }}')" class="text-red-500 hover:text-red-700">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
+                            
+                            @php
+                                $floorHasReferences = $floor->hasAssets() || $floor->hasMaintenanceRecords();
+                            @endphp
+                            
+                            @if($floorHasReferences)
+                                <div class="relative group">
+                                    <button type="button" 
+                                            class="text-gray-400 bg-gray-100 p-0.5 rounded cursor-not-allowed" 
+                                            title="Cannot delete floor - has associated records"
+                                            disabled>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block z-20">
+                                        <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                            Floor has associated records
+                                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <button type="button" onclick="openDeleteModal('floor', {{ $floor->id }}, '{{ $floor->name }}', '{{ route('buildings.floors.destroy', [$building, $floor]) }}')" class="text-red-500 hover:text-red-700">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            @endif
                         </div>
                     </div>
                     @endforeach
@@ -292,7 +340,7 @@
                         <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Floor</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room Number</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assets Count</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -317,7 +365,7 @@
                                 {{ $location->assets_count }} {{ Str::plural('asset', $location->assets_count) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10">
                             <div class="flex justify-center space-x-2">
                                 <a href="{{ route('locations.show', $location->id) }}" 
                                    class="text-blue-600 hover:text-blue-800 bg-blue-100 hover:bg-blue-200 p-2 rounded-lg transition-colors duration-200" title="View Location">
@@ -332,13 +380,37 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </a>
-                                <button type="button" 
-                                        class="text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 p-2 rounded-lg transition-colors duration-200"
-                                        onclick="openDeleteModal('location', {{ $location->id }}, '{{ $location->full_location }}', '{{ route('locations.destroy', $location) }}')" title="Delete Location">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                                
+                                @php
+                                    $locationHasReferences = $location->assets()->exists() || $location->maintenances()->exists();
+                                @endphp
+                                
+                                @if($locationHasReferences)
+                                    <div class="relative group">
+                                        <button type="button" 
+                                                class="text-gray-400 bg-gray-100 p-2 rounded-lg cursor-not-allowed" 
+                                                title="Cannot delete location - has associated records"
+                                                disabled>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-20">
+                                            <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                                Location has associated records
+                                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <button type="button" 
+                                            class="text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 p-2 rounded-lg transition-colors duration-200"
+                                            onclick="openDeleteModal('location', {{ $location->id }}, '{{ $location->full_location }}', '{{ route('locations.destroy', $location) }}')" title="Delete Location">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -431,13 +503,37 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                         </a>
-                        <button type="button" 
-                                class="text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 p-2 rounded-lg transition-colors duration-200"
-                                onclick="openDeleteModal('location', {{ $location->id }}, '{{ $location->full_location }}', '{{ route('locations.destroy', $location) }}')" title="Delete Location">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                        
+                        @php
+                            $locationHasReferences = $location->assets()->exists() || $location->maintenances()->exists();
+                        @endphp
+                        
+                        @if($locationHasReferences)
+                            <div class="relative group">
+                                <button type="button" 
+                                        class="text-gray-400 bg-gray-100 p-2 rounded-lg cursor-not-allowed" 
+                                        title="Cannot delete location - has associated records"
+                                        disabled>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block z-20">
+                                    <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                        Location has associated records
+                                        <div class="absolute top-full right-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <button type="button" 
+                                    class="text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 p-2 rounded-lg transition-colors duration-200"
+                                    onclick="openDeleteModal('location', {{ $location->id }}, '{{ $location->full_location }}', '{{ route('locations.destroy', $location) }}')" title="Delete Location">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        @endif
                     </div>
                 </div>
             @empty

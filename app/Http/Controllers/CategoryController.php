@@ -36,12 +36,18 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         try {
-            // Check if category has assets
-            if ($category->assets()->count() > 0) {
-                return back()->with('error', 'Cannot delete category: It still has assets assigned to it.');
+            $categoryName = $category->name;
+            
+            // Check if category is referenced in other tables
+            $references = $this->checkCategoryReferences($category);
+            
+            if (!empty($references)) {
+                $referencesList = implode(', ', $references);
+                return back()->with('error', 
+                    'Cannot delete category "' . $categoryName . '" because it is referenced in: ' . $referencesList . '. 
+                    Please reassign or remove these records first.');
             }
 
-            $categoryName = $category->name;
             $category->delete();
 
             return redirect()->route('categories.index')
@@ -49,5 +55,27 @@ class CategoryController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete category. Please try again.');
         }
+    }
+
+    /**
+     * Check if category is referenced in other tables
+     */
+    private function checkCategoryReferences(Category $category)
+    {
+        $references = [];
+
+        // Check assets
+        if ($category->assets()->exists()) {
+            $assetCount = $category->assets()->count();
+            $references[] = "Assets ($assetCount items)";
+        }
+
+        // Check repair requests
+        if ($category->repairRequests()->exists()) {
+            $repairCount = $category->repairRequests()->count();
+            $references[] = "Repair Requests ($repairCount items)";
+        }
+
+        return $references;
     }
 }

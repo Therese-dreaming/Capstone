@@ -114,28 +114,24 @@ class LocationController extends Controller
 
     public function destroy(Location $location)
     {
-        // Check if location has assets
-        if ($location->assets()->count() > 0) {
-            return back()->withErrors(['error' => 'Cannot delete location that has assets assigned to it.']);
-        }
-
-        // Check if location has maintenance records
-        if ($location->maintenances()->count() > 0) {
-            return back()->withErrors(['error' => 'Cannot delete location that has maintenance records associated with it. Please remove or reassign the maintenance records first.']);
-        }
-
         try {
+            $locationName = $location->full_location;
+            
+            // Check if location is referenced in other tables
+            $references = $this->checkLocationReferences($location);
+            
+            if (!empty($references)) {
+                $referencesList = implode(', ', $references);
+                return back()->with('error', 
+                    'Cannot delete location "' . $locationName . '" because it is referenced in: ' . $referencesList . '. 
+                    Please reassign or remove these records first.');
+            }
+
             $location->delete();
             return redirect()->route('locations.index')
-                ->with('success', 'Location deleted successfully.');
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Handle any other foreign key constraint violations
-            if ($e->getCode() == 23000) {
-                return back()->withErrors(['error' => 'Cannot delete location because it is referenced by other records in the system.']);
-            }
-            
-            // Re-throw if it's a different error
-            throw $e;
+                ->with('success', 'Location "' . $locationName . '" deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete location. Please try again.');
         }
     }
 
@@ -210,15 +206,31 @@ class LocationController extends Controller
 
     public function destroyBuilding(Building $building)
     {
-        DB::transaction(function () use ($building) {
-            // Delete all floors first (due to foreign key constraint)
-            $building->floors()->delete();
-            // Then delete the building
-            $building->delete();
-        });
+        try {
+            $buildingName = $building->name;
+            
+            // Check if building is referenced in locations with assets
+            $references = $this->checkBuildingReferences($building);
+            
+            if (!empty($references)) {
+                $referencesList = implode(', ', $references);
+                return back()->with('error', 
+                    'Cannot delete building "' . $buildingName . '" because it is referenced in: ' . $referencesList . '. 
+                    Please reassign or remove these records first.');
+            }
 
-        return redirect()->route('locations.index')
-            ->with('success', 'Building and all its floors have been deleted successfully.');
+            DB::transaction(function () use ($building) {
+                // Delete all floors first (due to foreign key constraint)
+                $building->floors()->delete();
+                // Then delete the building
+                $building->delete();
+            });
+
+            return redirect()->route('locations.index')
+                ->with('success', 'Building "' . $buildingName . '" and all its floors have been deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete building. Please try again.');
+        }
     }
 
     public function storeFloor(Request $request, Building $building)
@@ -306,9 +318,115 @@ class LocationController extends Controller
 
     public function destroyFloor(Building $building, Floor $floor)
     {
-        $floor->delete();
+        try {
+            $floorName = $floor->name;
+            
+            // Check if floor is referenced in locations with assets
+            $references = $this->checkFloorReferences($floor);
+            
+            if (!empty($references)) {
+                $referencesList = implode(', ', $references);
+                return back()->with('error', 
+                    'Cannot delete floor "' . $floorName . '" because it is referenced in: ' . $referencesList . '. 
+                    Please reassign or remove these records first.');
+            }
 
-        return redirect()->route('locations.index')
-            ->with('success', 'Floor deleted successfully.');
+            $floor->delete();
+
+            return redirect()->route('locations.index')
+                ->with('success', 'Floor "' . $floorName . '" deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete floor. Please try again.');
+        }
+    }
+
+    /**
+     * Check if location is referenced in other tables
+     */
+    private function checkLocationReferences(Location $location)
+    {
+        $references = [];
+
+        // Check assets
+        if ($location->assets()->exists()) {
+            $assetCount = $location->assets()->count();
+            $references[] = "Assets ($assetCount items)";
+        }
+
+        // Check maintenance records
+        if ($location->maintenances()->exists()) {
+            $maintenanceCount = $location->maintenances()->count();
+            $references[] = "Maintenance Records ($maintenanceCount items)";
+        }
+
+        return $references;
+    }
+
+    /**
+     * Check if building is referenced in locations with assets
+     */
+    private function checkBuildingReferences(Building $building)
+    {
+        $references = [];
+
+        // Check locations that reference this building and have assets
+        $locationsWithAssets = Location::where('building', $building->name)
+            ->withCount('assets')
+            ->having('assets_count', '>', 0)
+            ->get();
+
+        if ($locationsWithAssets->count() > 0) {
+            $totalAssets = $locationsWithAssets->sum('assets_count');
+            $locationCount = $locationsWithAssets->count();
+            $references[] = "Locations with Assets ($locationCount locations, $totalAssets assets)";
+        }
+
+        // Check locations that reference this building and have maintenance records
+        $locationsWithMaintenance = Location::where('building', $building->name)
+            ->withCount('maintenances')
+            ->having('maintenances_count', '>', 0)
+            ->get();
+
+        if ($locationsWithMaintenance->count() > 0) {
+            $totalMaintenance = $locationsWithMaintenance->sum('maintenances_count');
+            $locationCount = $locationsWithMaintenance->count();
+            $references[] = "Locations with Maintenance Records ($locationCount locations, $totalMaintenance records)";
+        }
+
+        return $references;
+    }
+
+    /**
+     * Check if floor is referenced in locations with assets
+     */
+    private function checkFloorReferences(Floor $floor)
+    {
+        $references = [];
+
+        // Check locations that reference this floor and have assets
+        $locationsWithAssets = Location::where('floor', $floor->name)
+            ->withCount('assets')
+            ->having('assets_count', '>', 0)
+            ->get();
+
+        if ($locationsWithAssets->count() > 0) {
+            $totalAssets = $locationsWithAssets->sum('assets_count');
+            $locationCount = $locationsWithAssets->count();
+            $references[] = "Locations with Assets ($locationCount locations, $totalAssets assets)";
+        }
+
+        // Check locations that reference this floor and have maintenance records
+        $locationsWithMaintenance = Location::where('floor', $floor->name)
+            ->withCount('maintenances')
+            ->having('maintenances_count', '>', 0)
+            ->get();
+
+        if ($locationsWithMaintenance->count() > 0) {
+            $totalMaintenance = $locationsWithMaintenance->sum('maintenances_count');
+            $locationCount = $locationsWithMaintenance->count();
+            $references[] = "Locations with Maintenance Records ($locationCount locations, $totalMaintenance records)";
+        }
+
+        return $references;
     }
 }

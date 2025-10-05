@@ -152,12 +152,36 @@
                                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                         </button>
-                        <button type="button" onclick="showDeleteModal('{{ $category->id }}', '{{ $category->name }}')" 
-                                class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors duration-200" title="Delete Category">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                        
+                        @php
+                            $hasReferences = $category->assets()->exists() || $category->repairRequests()->exists();
+                        @endphp
+                        
+                        @if($hasReferences)
+                            <div class="relative group">
+                                <button type="button" 
+                                        class="p-2 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" 
+                                        title="Cannot delete category - has associated records"
+                                        disabled>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block z-10">
+                                    <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                        Category has associated records
+                                        <div class="absolute top-full right-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <button type="button" onclick="showDeleteModal('{{ $category->id }}', '{{ $category->name }}')" 
+                                    class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors duration-200" title="Delete Category">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -197,12 +221,36 @@
                                               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </button>
-                                <button type="button" onclick="showDeleteModal('{{ $category->id }}', '{{ $category->name }}')" 
-                                        class="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition-colors duration-200" title="Delete Category">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                                
+                                @php
+                                    $hasReferences = $category->assets()->exists() || $category->repairRequests()->exists();
+                                @endphp
+                                
+                                @if($hasReferences)
+                                    <div class="relative group inline-block">
+                                        <button type="button" 
+                                                class="text-gray-400 bg-gray-100 p-2 rounded cursor-not-allowed" 
+                                                title="Cannot delete category - has associated records"
+                                                disabled>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                                            <div class="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                                Category has associated records
+                                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <button type="button" onclick="showDeleteModal('{{ $category->id }}', '{{ $category->name }}')" 
+                                            class="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition-colors duration-200" title="Delete Category">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                @endif
                             </div>
                         </td>
                     </tr>
