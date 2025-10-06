@@ -29,7 +29,7 @@
             </div>
 
             <!-- Overall Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-lg border border-red-200 hover:shadow-xl transition-all duration-300">
                     <div class="flex items-center">
                         <div class="bg-red-100 p-3 rounded-full mr-4">
@@ -65,9 +65,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                             </svg>
                         </div>
-                        <div>
+                        <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-green-800">Total Value</p>
-                            <p class="text-2xl md:text-3xl font-bold text-green-900">₱{{ number_format($overallStats['total_value'], 2) }}</p>
+                            <p class="text-2xl md:text-3xl font-bold text-green-900 break-words">₱{{ number_format($overallStats['total_value'], 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -223,8 +223,8 @@
                                         {{ $vendor['total_assets'] }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                    ₱{{ number_format($vendor['total_value'], 2) }}
+                                <td class="px-6 py-4 text-sm font-semibold text-gray-900 break-words">
+                                    <span class="block">₱{{ number_format($vendor['total_value'], 2) }}</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

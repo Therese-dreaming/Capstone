@@ -21,21 +21,23 @@
     </div>
 
     <!-- Key Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200 hover:shadow-xl transition-all duration-300">
-            <div class="flex items-center">
-                <div class="bg-green-100 p-3 rounded-full mr-4">
-                    <svg class="w-6 h-6 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-green-800">Total Value</p>
-                    <p class="text-2xl font-bold text-green-900">₱{{ number_format($totalValue, 2) }}</p>
-                </div>
+    <!-- Total Value - Full Width Row -->
+    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg border border-green-200 hover:shadow-xl transition-all duration-300">
+        <div class="flex items-center">
+            <div class="bg-green-100 p-3 rounded-full mr-4">
+                <svg class="w-6 h-6 text-green-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-green-800">Total Value</p>
+                <p class="text-2xl font-bold text-green-900 break-words">₱{{ number_format($totalValue, 2) }}</p>
             </div>
         </div>
+    </div>
 
+    <!-- Other Metrics - Two Cards Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300">
             <div class="flex items-center">
                 <div class="bg-blue-100 p-3 rounded-full mr-4">
@@ -76,16 +78,16 @@
                 Performance Metrics
             </h3>
             <div class="space-y-4">
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Total Repairs</span>
+                <div class="p-3 bg-gray-50 rounded-lg text-center">
+                    <span class="block text-sm font-medium text-gray-700 mb-2">Total Repairs</span>
                     <span class="text-lg font-semibold text-gray-900">{{ $totalRepairs }}</span>
                 </div>
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Completion Rate</span>
+                <div class="p-3 bg-gray-50 rounded-lg text-center">
+                    <span class="block text-sm font-medium text-gray-700 mb-2">Completion Rate</span>
                     <span class="text-lg font-semibold text-green-600">{{ number_format($completionRate, 1) }}%</span>
                 </div>
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Disposed Assets</span>
+                <div class="p-3 bg-gray-50 rounded-lg text-center">
+                    <span class="block text-sm font-medium text-gray-700 mb-2">Disposed Assets</span>
                     <span class="text-lg font-semibold text-red-600">{{ $disposedCount }}</span>
                 </div>
             </div>

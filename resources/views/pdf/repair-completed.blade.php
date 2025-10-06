@@ -60,7 +60,17 @@
                 <td class="whitespace-nowrap">{{ \Carbon\Carbon::parse($request->completed_at)->format('m/d/Y') }}</td>
                 <td>{{ $request->equipment }}</td>
                 <td>{{ $request->ticket_number }}</td>
-                <td>{{ $request->location }}</td>
+                <td>
+                    @if($request->building && $request->floor && $request->room)
+                        {{ $request->building }} - Floor {{ $request->floor }} - Room {{ $request->room }}
+                    @elseif($request->building && $request->room)
+                        {{ $request->building }} - Room {{ $request->room }}
+                    @elseif($request->location)
+                        {{ $request->location }}
+                    @else
+                        N/A
+                    @endif
+                </td>
                 <td>{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</td>
                 <td>{{ $request->remarks }}</td>
             </tr>

@@ -558,52 +558,63 @@ class MaintenanceController extends Controller
 
     public function previewPDF(Request $request)
     {
-        $query = Maintenance::whereIn('status', ['completed', 'cancelled']);
+        try {
+            // Get the same filtered data as the history page
+            $query = Maintenance::with(['technician', 'actionBy', 'location'])
+                ->whereIn('status', ['completed', 'cancelled'])
+                ->orderBy('scheduled_date', 'desc');
 
-        if ($request->lab) {
-            $query->where('lab_number', $request->lab);
-        }
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-        if ($request->start_date) {
-            $query->whereDate('scheduled_date', '>=', $request->start_date);
-        }
-        if ($request->end_date) {
-            $query->whereDate('scheduled_date', '<=', $request->end_date);
-        }
+            // Apply filters if they exist
+            if ($request->has('start_date') && $request->start_date) {
+                $query->whereDate('scheduled_date', '>=', $request->start_date);
+            }
 
-        $maintenances = $query->orderBy('scheduled_date', 'desc')
-            ->orderBy('updated_at', 'desc')
-            ->get();
+            if ($request->has('end_date') && $request->end_date) {
+                $query->whereDate('scheduled_date', '<=', $request->end_date);
+            }
 
-        return view('exports.maintenance-history-pdf', compact('maintenances'));
+            if ($request->filled('lab')) {
+                $query->whereHas('location', function($q) use ($request) {
+                    $q->where('room_number', $request->lab);
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('issue')) {
+                if ($request->issue === 'with_issues') {
+                    $query->whereNotNull('asset_issues')->where('asset_issues', '!=', '[]');
+                } elseif ($request->issue === 'no_issues') {
+                    $query->where(function($q) {
+                        $q->whereNull('asset_issues')->orWhere('asset_issues', '[]');
+                    });
+                }
+            }
+
+            $maintenances = $query->get();
+
+            // Transform data for PDF template
+            $maintenances = $maintenances->map(function($maintenance) {
+                $maintenance->lab_number = $maintenance->location ? $maintenance->location->room_number : 'N/A';
+                $maintenance->maintenance_task = is_array($maintenance->maintenance_tasks) 
+                    ? implode(', ', $maintenance->maintenance_tasks) 
+                    : $maintenance->maintenance_tasks;
+                return $maintenance;
+            });
+
+            // Generate PDF for preview (stream instead of download)
+            $pdf = Pdf::loadView('exports.maintenance-history-pdf', compact('maintenances'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('maintenance-history-preview.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
     }
 
-    public function exportPDF(Request $request)
-    {
-        $query = Maintenance::whereIn('status', ['completed', 'cancelled']);
-
-        if ($request->lab) {
-            $query->where('lab_number', $request->lab);
-        }
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-        if ($request->start_date) {
-            $query->whereDate('scheduled_date', '>=', $request->start_date);
-        }
-        if ($request->end_date) {
-            $query->whereDate('scheduled_date', '<=', $request->end_date);
-        }
-
-        $maintenances = $query->orderBy('scheduled_date', 'desc')
-            ->orderBy('updated_at', 'desc')
-            ->get();
-
-        $pdf = PDF::loadView('exports.maintenance-history-pdf', compact('maintenances'));
-        return $pdf->download('maintenance-history.pdf');
-    }
 
     public function destroyMultiple(Request $request)
     {
@@ -688,4 +699,68 @@ class MaintenanceController extends Controller
             return redirect()->route('maintenance.upcoming')->with('error', 'Failed to cancel maintenance');
         }
     }
+
+    public function exportHistoryPDF(Request $request)
+    {
+        try {
+            // Get the same filtered data as the history page
+            $query = Maintenance::with(['technician', 'actionBy', 'location'])
+                ->whereIn('status', ['completed', 'cancelled'])
+                ->orderBy('scheduled_date', 'desc');
+
+            // Apply filters if they exist
+            if ($request->has('start_date') && $request->start_date) {
+                $query->whereDate('scheduled_date', '>=', $request->start_date);
+            }
+
+            if ($request->has('end_date') && $request->end_date) {
+                $query->whereDate('scheduled_date', '<=', $request->end_date);
+            }
+
+            if ($request->filled('lab')) {
+                $query->whereHas('location', function($q) use ($request) {
+                    $q->where('room_number', $request->lab);
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('issue')) {
+                if ($request->issue === 'with_issues') {
+                    $query->whereNotNull('asset_issues')->where('asset_issues', '!=', '[]');
+                } elseif ($request->issue === 'no_issues') {
+                    $query->where(function($q) {
+                        $q->whereNull('asset_issues')->orWhere('asset_issues', '[]');
+                    });
+                }
+            }
+
+            $maintenances = $query->get();
+
+            // Transform data for PDF template
+            $maintenances = $maintenances->map(function($maintenance) {
+                $maintenance->lab_number = $maintenance->location ? $maintenance->location->room_number : 'N/A';
+                $maintenance->maintenance_task = is_array($maintenance->maintenance_tasks) 
+                    ? implode(', ', $maintenance->maintenance_tasks) 
+                    : $maintenance->maintenance_tasks;
+                return $maintenance;
+            });
+
+            // Generate PDF
+            $pdf = Pdf::loadView('exports.maintenance-history-pdf', compact('maintenances'));
+            $pdf->setPaper('A4', 'landscape');
+
+            // Generate filename with current date
+            $filename = 'maintenance-history-' . date('Y-m-d') . '.pdf';
+
+            // Stream PDF for preview in browser (users can download from browser if needed)
+            return $pdf->stream($filename);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
+        }
+    }
+
 }

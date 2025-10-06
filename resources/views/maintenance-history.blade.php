@@ -29,12 +29,13 @@
                         <p class="text-red-100 text-xs sm:text-sm md:text-lg">View maintenance records</p>
                     </div>
                 </div>
-                <button onclick="exportToPDF()" class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-white/20 text-white font-medium rounded-lg hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 transition-colors duration-200 text-sm sm:text-base flex-shrink-0">
+                <button onclick="previewPDF()" class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-white/20 text-white font-medium rounded-lg hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 transition-colors duration-200 text-sm sm:text-base flex-shrink-0">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    <span class="hidden sm:inline">Export to PDF</span>
-                    <span class="sm:hidden">Export</span>
+                    <span class="hidden sm:inline">Preview PDF</span>
+                    <span class="sm:hidden">Preview</span>
                 </button>
             </div>
         </div>
@@ -246,30 +247,6 @@
         </div>
     </div>
 
-    <!-- PDF Preview Modal -->
-    <div id="pdfPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 p-4">
-        <div class="relative top-4 sm:top-10 lg:top-20 mx-auto p-3 sm:p-4 md:p-5 border w-full max-w-[95vw] sm:max-w-[90vw] lg:max-w-[75vw] shadow-lg rounded-md bg-white">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
-                <h3 class="text-base sm:text-lg font-medium">Maintenance History Preview</h3>
-                <button onclick="closePdfPreview()" class="text-gray-500 hover:text-gray-700 self-end sm:self-auto">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="preview-content" style="max-height: 60vh; overflow-y: auto;">
-                <!-- Preview content will be loaded here -->
-            </div>
-            <div class="mt-3 sm:mt-4 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-                <button onclick="closePdfPreview()" class="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm sm:text-base">
-                    Cancel
-                </button>
-                <button onclick="downloadPDF()" class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm sm:text-base">
-                    Download PDF
-                </button>
-            </div>
-        </div>
-    </div>
 
 <script>
     function filterHistory() {
@@ -316,15 +293,13 @@
         }
     });
 
-    function exportToPDF() {
-        const modal = document.getElementById('pdfPreviewModal');
-        const previewContent = modal.querySelector('.preview-content');
 
-        // Get current filters
+    function previewPDF() {
         const labFilter = document.getElementById('labFilter').value;
         const statusFilter = document.getElementById('statusFilter').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
+        const issueFilter = document.getElementById('issueFilter').value;
 
         // Build query parameters
         const params = new URLSearchParams();
@@ -332,56 +307,14 @@
         if (statusFilter) params.append('status', statusFilter);
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
+        if (issueFilter) params.append('issue', issueFilter);
 
-        // Show loading state
-        previewContent.innerHTML = '<div class="text-center py-4">Loading preview...</div>';
-        modal.classList.remove('hidden');
-
-        // Fetch preview content with filters
-        fetch('{{ route("maintenance.previewPDF") }}?' + params.toString())
-            .then(response => response.text())
-            .then(html => {
-                const iframe = document.createElement('iframe');
-                iframe.style.width = '100%';
-                iframe.style.height = '70vh';
-                iframe.style.border = 'none';
-
-                previewContent.innerHTML = '';
-                previewContent.appendChild(iframe);
-
-                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDocument.open();
-                iframeDocument.write(html);
-                iframeDocument.close();
-            })
-            .catch(error => {
-                previewContent.innerHTML = '<div class="text-center py-4 text-red-600">Error loading preview</div>';
-            });
-    }
-
-    function closePdfPreview() {
-        const modal = document.getElementById('pdfPreviewModal');
-        const previewContent = modal.querySelector('.preview-content');
-        modal.classList.add('hidden');
-        previewContent.innerHTML = ''; // Clear the preview content
-    }
-
-    function downloadPDF() {
-        const labFilter = document.getElementById('labFilter').value;
-        const statusFilter = document.getElementById('statusFilter').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-
-        // Build query parameters
-        const params = new URLSearchParams();
-        if (labFilter) params.append('lab', labFilter);
-        if (statusFilter) params.append('status', statusFilter);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
-
-        // Append query parameters to the export URL
-        window.location.href = "{{ route('maintenance.exportPDF') }}?" + params.toString();
-        closePdfPreview();
+        // Generate PDF URL and open in new tab for preview/download
+        const baseUrl = window.location.origin + window.location.pathname.replace('/maintenance/history', '');
+        const pdfUrl = baseUrl + "/maintenance/history/export-pdf?" + params.toString();
+        
+        // Open PDF in new tab - browser will handle preview/download
+        window.open(pdfUrl, '_blank');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -592,6 +525,7 @@
                 notification.remove();
             }, 5000);
         }
+
     });
 </script>
 @endsection

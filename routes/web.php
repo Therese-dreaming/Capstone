@@ -168,7 +168,7 @@ Route::middleware(['auth'])->group(function () {
 		Route::post('/maintenance/add-task', [MaintenanceController::class, 'addNewTask'])->name('maintenance.addNewTask');
 		Route::delete('/maintenance/task/{maintenance}', [MaintenanceController::class, 'deleteTask'])->name('maintenance.deleteTask');
 		Route::get('/maintenance/preview-pdf', [MaintenanceController::class, 'previewPDF'])->name('maintenance.previewPDF');
-		Route::get('/maintenance/export-pdf', [MaintenanceController::class, 'exportPDF'])->name('maintenance.exportPDF');
+		Route::get('/maintenance/export-pdf', [MaintenanceController::class, 'exportHistoryPDF'])->name('maintenance.exportPDF');
 		Route::get('/maintenance/export/excel', [MaintenanceController::class, 'exportExcel'])->name('maintenance.exportExcel');
 		Route::patch('/maintenance/{locationId}/date/{date}/complete-all', [MaintenanceController::class, 'completeAllByDate'])->name('maintenance.completeAllByDate');
 		Route::delete('/maintenance/{locationId}/date/{date}/cancel-all', [MaintenanceController::class, 'cancelAllByDate'])->name('maintenance.cancelAllByDate');
@@ -176,6 +176,7 @@ Route::middleware(['auth'])->group(function () {
 		Route::post('/maintenance/destroy-multiple', [MaintenanceController::class, 'destroyMultiple'])->name('maintenance.destroyMultiple');
 		Route::get('/maintenance/get-lab-assets/{labNumber}', [MaintenanceController::class, 'getLabAssets'])->name('maintenance.getLabAssets');
 		Route::get('/maintenance/get-location-assets/{locationId}', [MaintenanceController::class, 'getLocationAssets'])->name('maintenance.getLocationAssets');
+		Route::get('/maintenance/history/export-pdf', [MaintenanceController::class, 'exportHistoryPDF'])->name('maintenance.history.exportPDF');
 
 		// Repair Request Routes
 		Route::middleware([\App\Http\Middleware\CheckRole::class.':1,3'])->group(function () {
