@@ -598,9 +598,7 @@ class MaintenanceController extends Controller
             // Transform data for PDF template
             $maintenances = $maintenances->map(function($maintenance) {
                 $maintenance->lab_number = $maintenance->location ? $maintenance->location->room_number : 'N/A';
-                $maintenance->maintenance_task = is_array($maintenance->maintenance_tasks) 
-                    ? implode(', ', $maintenance->maintenance_tasks) 
-                    : $maintenance->maintenance_tasks;
+                // The maintenance_task field is already correct, no transformation needed
                 return $maintenance;
             });
 
@@ -742,9 +740,7 @@ class MaintenanceController extends Controller
             // Transform data for PDF template
             $maintenances = $maintenances->map(function($maintenance) {
                 $maintenance->lab_number = $maintenance->location ? $maintenance->location->room_number : 'N/A';
-                $maintenance->maintenance_task = is_array($maintenance->maintenance_tasks) 
-                    ? implode(', ', $maintenance->maintenance_tasks) 
-                    : $maintenance->maintenance_tasks;
+                // The maintenance_task field is already correct, no transformation needed
                 return $maintenance;
             });
 

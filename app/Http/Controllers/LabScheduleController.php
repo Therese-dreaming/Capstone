@@ -165,76 +165,100 @@ class LabScheduleController extends Controller
 
     public function previewPDF(Request $request)
     {
-        $query = LabLog::with('user')
-            ->when($request->laboratory, function ($q) use ($request) {
-                return $q->where('laboratory', $request->laboratory);
-            })
-            ->when($request->purpose, function ($q) use ($request) {
-                return $q->where('purpose', $request->purpose);
-            })
-            ->when($request->status, function ($q) use ($request) {
-                return $q->where('status', $request->status);
-            })
-            ->when($request->start_date, function ($q) use ($request) {
-                return $q->whereDate('time_in', '>=', $request->start_date);
-            })
-            ->when($request->end_date, function ($q) use ($request) {
-                return $q->whereDate('time_in', '<=', $request->end_date);
-            })
-            ->orderBy('time_in', 'desc');
+        try {
+            $query = LabLog::with('user')
+                ->when($request->laboratory, function ($q) use ($request) {
+                    return $q->where('laboratory', $request->laboratory);
+                })
+                ->when($request->purpose, function ($q) use ($request) {
+                    return $q->where('purpose', $request->purpose);
+                })
+                ->when($request->status, function ($q) use ($request) {
+                    return $q->where('status', $request->status);
+                })
+                ->when($request->time_in_start_date, function ($q) use ($request) {
+                    return $q->whereDate('time_in', '>=', $request->time_in_start_date);
+                })
+                ->when($request->time_in_end_date, function ($q) use ($request) {
+                    return $q->whereDate('time_in', '<=', $request->time_in_end_date);
+                })
+                ->when($request->time_out_start_date, function ($q) use ($request) {
+                    return $q->whereDate('time_out', '>=', $request->time_out_start_date);
+                })
+                ->when($request->time_out_end_date, function ($q) use ($request) {
+                    return $q->whereDate('time_out', '<=', $request->time_out_end_date);
+                })
+                ->orderBy('time_in', 'desc');
 
-        $logs = $query->get();
+            $logs = $query->get();
 
-        $data = [
-            'logs' => $logs,
-            'filters' => [
+            // Prepare filters data for the template
+            $filters = [
                 'laboratory' => $request->laboratory,
                 'purpose' => $request->purpose,
                 'status' => $request->status,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date
-            ]
-        ];
+                'start_date' => $request->time_in_start_date,
+                'end_date' => $request->time_in_end_date,
+            ];
 
-        return view('exports.lab-logs-pdf', $data)->render();
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('exports.lab-attendance-history-pdf', compact('logs'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('lab-attendance-history-preview.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
     }
 
     public function exportPDF(Request $request)
     {
-        $query = LabLog::with('user')
-            ->when($request->laboratory, function ($q) use ($request) {
-                return $q->where('laboratory', $request->laboratory);
-            })
-            ->when($request->purpose, function ($q) use ($request) {
-                return $q->where('purpose', $request->purpose);
-            })
-            ->when($request->status, function ($q) use ($request) {
-                return $q->where('status', $request->status);
-            })
-            ->when($request->start_date, function ($q) use ($request) {
-                return $q->whereDate('time_in', '>=', $request->start_date);
-            })
-            ->when($request->end_date, function ($q) use ($request) {
-                return $q->whereDate('time_in', '<=', $request->end_date);
-            })
-            ->orderBy('time_in', 'desc');
+        try {
+            $query = LabLog::with('user')
+                ->when($request->laboratory, function ($q) use ($request) {
+                    return $q->where('laboratory', $request->laboratory);
+                })
+                ->when($request->purpose, function ($q) use ($request) {
+                    return $q->where('purpose', $request->purpose);
+                })
+                ->when($request->status, function ($q) use ($request) {
+                    return $q->where('status', $request->status);
+                })
+                ->when($request->time_in_start_date, function ($q) use ($request) {
+                    return $q->whereDate('time_in', '>=', $request->time_in_start_date);
+                })
+                ->when($request->time_in_end_date, function ($q) use ($request) {
+                    return $q->whereDate('time_in', '<=', $request->time_in_end_date);
+                })
+                ->when($request->time_out_start_date, function ($q) use ($request) {
+                    return $q->whereDate('time_out', '>=', $request->time_out_start_date);
+                })
+                ->when($request->time_out_end_date, function ($q) use ($request) {
+                    return $q->whereDate('time_out', '<=', $request->time_out_end_date);
+                })
+                ->orderBy('time_in', 'desc');
 
-        $logs = $query->get();
+            $logs = $query->get();
 
-        $pdf = PDF::loadView('exports.lab-logs-pdf', [
-            'logs' => $logs,
-            'filters' => [
+            // Prepare filters data for the template
+            $filters = [
                 'laboratory' => $request->laboratory,
                 'purpose' => $request->purpose,
                 'status' => $request->status,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date
-            ]
-        ]);
+                'start_date' => $request->time_in_start_date,
+                'end_date' => $request->time_in_end_date,
+            ];
 
-        return response($pdf->output())
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="lab_attendance_history.pdf"');
+            // Generate PDF and download it
+            $pdf = PDF::loadView('exports.lab-attendance-history-pdf', compact('logs'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->download('lab-attendance-history-report.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
+        }
     }
 
     public function checkAvailability($laboratory)

@@ -19,11 +19,13 @@
                     </div>
                 </div>
                 <div class="flex space-x-3">
-                    <button onclick="exportPDF()" class="inline-flex items-center px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
+                    <button onclick="previewPDF()" class="inline-flex items-center px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
-                        Export PDF
+                        <span class="hidden sm:inline">Preview PDF</span>
+                        <span class="sm:hidden">Preview</span>
                     </button>
                     <button onclick="exportPaascuUtilization()" class="inline-flex items-center px-6 py-3 bg-green-800 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -859,31 +861,34 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function exportPDF() {
+function previewPDF() {
     // Get current filter values
     const startDate = document.querySelector('input[name="start_date"]').value;
     const endDate = document.querySelector('input[name="end_date"]').value;
     const departmentId = document.querySelector('select[name="department_id"]').value;
     const labId = document.querySelector('select[name="lab_id"]').value;
+    const purpose = document.querySelector('select[name="purpose"]').value;
     const period = document.querySelector('select[name="period"]').value;
 
-    // Build query string
+    // Build query parameters
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     if (departmentId) params.append('department_id', departmentId);
     if (labId) params.append('lab_id', labId);
+    if (purpose) params.append('purpose', purpose);
     if (period) params.append('period', period);
 
-    // Redirect to PDF export route
-    const url = `{{ route('reports.lab-usage.export') }}?${params.toString()}`;
-    window.open(url, '_blank');
+    // Generate PDF URL and open in new tab for preview/download
+    const pdfUrl = '{{ route("reports.lab-usage.export") }}' + (params.toString() ? '?' + params.toString() : '');
+    
+    // Open PDF in new tab - browser will handle preview/download
+    window.open(pdfUrl, '_blank');
 }
 
 function exportPaascuUtilization() {
     // Get current filter values
     const startDate = document.querySelector('input[name="start_date"]').value;
-    const endDate = document.querySelector('input[name="end_date"]').value;
     const departmentId = document.querySelector('select[name="department_id"]').value;
     const labId = document.querySelector('select[name="lab_id"]').value;
     const period = document.querySelector('select[name="period"]').value;

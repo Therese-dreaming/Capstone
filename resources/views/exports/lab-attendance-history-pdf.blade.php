@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Maintenance History Report</title>
+    <title>Lab Attendance History Report</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -106,11 +106,7 @@
             color: #000000;
         }
         
-        .status-cancelled {
-            color: #000000;
-        }
-        
-        .status-pending {
+        .status-on-going {
             color: #000000;
         }
         
@@ -122,12 +118,12 @@
             background-color: #ffffff;
         }
         
-        .location-cell {
+        .faculty-cell {
             font-weight: 500;
             color: #000000;
         }
         
-        .technician-cell {
+        .laboratory-cell {
             color: #000000;
             font-weight: 500;
         }
@@ -138,9 +134,13 @@
             color: #000000;
         }
         
-        .task-cell {
-            max-width: 200px;
-            word-wrap: break-word;
+        .time-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            color: #000000;
+        }
+        
+        .purpose-cell {
             color: #000000;
         }
         
@@ -156,22 +156,24 @@
 </head>
 <body>
     <div class="header">
-        <h1>Maintenance History Report</h1>
-        <p class="subtitle">Comprehensive Maintenance Activity Overview</p>
+        <h1>Lab Attendance History Report</h1>
+        <p class="subtitle">Comprehensive Laboratory Usage Overview</p>
     </div>
     
     <div class="report-info">
         <div class="generation-date">
             Generated on {{ date('F d, Y \a\t g:i A') }}
         </div>
-        @if(request()->has('start_date') || request()->has('end_date') || request()->has('lab_filter') || request()->has('status_filter') || request()->has('issue_filter'))
+        @if(request()->has('laboratory') || request()->has('purpose') || request()->has('status') || request()->has('time_in_start_date') || request()->has('time_in_end_date') || request()->has('time_out_start_date') || request()->has('time_out_end_date'))
             <div class="filters-applied">
                 <strong>Applied Filters:</strong>
-                @if(request('start_date')) From: {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }} @endif
-                @if(request('end_date')) To: {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }} @endif
-                @if(request('lab_filter')) | Lab: {{ request('lab_filter') }} @endif
-                @if(request('status_filter')) | Status: {{ ucfirst(request('status_filter')) }} @endif
-                @if(request('issue_filter')) | Issues: {{ ucfirst(str_replace('_', ' ', request('issue_filter'))) }} @endif
+                @if(request('laboratory')) Laboratory: {{ request('laboratory') }} @endif
+                @if(request('purpose')) | Purpose: {{ ucfirst(request('purpose')) }} @endif
+                @if(request('status')) | Status: {{ ucfirst(request('status')) }} @endif
+                @if(request('time_in_start_date')) | Time In From: {{ \Carbon\Carbon::parse(request('time_in_start_date'))->format('M d, Y') }} @endif
+                @if(request('time_in_end_date')) | Time In To: {{ \Carbon\Carbon::parse(request('time_in_end_date'))->format('M d, Y') }} @endif
+                @if(request('time_out_start_date')) | Time Out From: {{ \Carbon\Carbon::parse(request('time_out_start_date'))->format('M d, Y') }} @endif
+                @if(request('time_out_end_date')) | Time Out To: {{ \Carbon\Carbon::parse(request('time_out_end_date'))->format('M d, Y') }} @endif
             </div>
         @endif
     </div>
@@ -179,55 +181,51 @@
     <table>
         <thead>
             <tr>
-                <th>Scheduled Date</th>
-                <th>Location</th>
-                <th>Maintenance Tasks</th>
-                <th>Assigned Technician</th>
+                <th>Date</th>
+                <th>Faculty</th>
+                <th>Position</th>
+                <th>Laboratory</th>
+                <th>Purpose</th>
+                <th>Time In</th>
+                <th>Time Out</th>
                 <th>Status</th>
-                <th>Action By</th>
-                <th>Completion Date</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($maintenances as $maintenance)
+            @forelse($logs as $log)
                 <tr>
                     <td class="date-cell">
-                        {{ $maintenance->scheduled_date ? \Carbon\Carbon::parse($maintenance->scheduled_date)->format('m/d/Y') : 'N/A' }}
+                        {{ $log->time_in ? \Carbon\Carbon::parse($log->time_in)->format('m/d/Y') : ($log->time_out ? \Carbon\Carbon::parse($log->time_out)->format('m/d/Y') : 'N/A') }}
                     </td>
-                    <td class="location-cell">
-                        @if($maintenance->location)
-                            {{ $maintenance->location->building }} - {{ $maintenance->location->room_number }}
-                        @else
-                            {{ isset($maintenance->lab_number) ? 'Lab ' . $maintenance->lab_number : 'N/A' }}
-                        @endif
+                    <td class="faculty-cell">
+                        {{ $log->user->name ?? 'N/A' }}
                     </td>
-                    <td class="task-cell">
-                        {{ $maintenance->maintenance_task ?: 'N/A' }}
+                    <td class="faculty-cell">
+                        {{ $log->user->position ?? 'N/A' }}
                     </td>
-                    <td class="technician-cell">
-                        {{ $maintenance->technician ? $maintenance->technician->name : 'Not Assigned' }}
+                    <td class="laboratory-cell">
+                        {{ $log->laboratory ?? 'N/A' }}
+                    </td>
+                    <td class="purpose-cell">
+                        {{ $log->purpose ? ucfirst($log->purpose) : 'N/A' }}
+                    </td>
+                    <td class="time-cell">
+                        {{ $log->time_in ? \Carbon\Carbon::parse($log->time_in)->format('g:i A') : '-' }}
+                    </td>
+                    <td class="time-cell">
+                        {{ $log->time_out ? \Carbon\Carbon::parse($log->time_out)->format('g:i A') : '-' }}
                     </td>
                     <td>
-                        <span class="status-badge status-{{ $maintenance->status }}">
-                            {{ ucfirst($maintenance->status) }}
+                        <span class="status-badge status-{{ str_replace('-', '_', $log->status) }}">
+                            {{ ucfirst(str_replace('-', ' ', $log->status ?? 'N/A')) }}
                         </span>
-                    </td>
-                    <td class="technician-cell">
-                        {{ $maintenance->actionBy ? $maintenance->actionBy->name : 'System' }}
-                    </td>
-                    <td class="date-cell">
-                        @if($maintenance->status === 'completed' && $maintenance->completed_at)
-                            {{ \Carbon\Carbon::parse($maintenance->completed_at)->format('m/d/Y g:i A') }}
-                        @else
-                            -
-                        @endif
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="no-data">
-                        <strong>No maintenance records found</strong><br>
-                        <small>Try adjusting your filter criteria to view maintenance activities</small>
+                    <td colspan="8" class="no-data">
+                        <strong>No attendance records found</strong><br>
+                        <small>Try adjusting your filter criteria to view lab attendance activities</small>
                     </td>
                 </tr>
             @endforelse

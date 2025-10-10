@@ -83,6 +83,30 @@ class ReportController extends Controller
         return view('reports.category', compact('categories', 'categoryStats', 'totalSummary', 'ageDistribution', 'oldAssetsData'));
     }
 
+    public function categoryReportPreviewPDF()
+    {
+        try {
+            $categories = Category::with(['assets' => function($query) {
+                $query->where('status', '!=', 'DISPOSED');
+            }])->get();
+            
+            // Calculate total summary
+            $totalSummary = [
+                'total_assets' => Asset::where('status', '!=', 'DISPOSED')->count(),
+                'total_value' => Asset::where('status', '!=', 'DISPOSED')->sum('purchase_price')
+            ];
+
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('exports.category-report-pdf', compact('categories', 'totalSummary'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('asset-category-report-preview.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
+    }
+
     public function locationReport()
     {
         $assets = Asset::where('status', '!=', 'DISPOSED')->with('location')->get();
@@ -170,6 +194,39 @@ class ReportController extends Controller
         }
 
         return view('reports.location', compact('locationStats', 'totalSummary', 'ageDistribution', 'oldAssetsData'));
+    }
+
+    public function locationReportPreviewPDF()
+    {
+        try {
+            $assets = Asset::where('status', '!=', 'DISPOSED')->with('location')->get();
+            
+            // Calculate total summary
+            $totalSummary = [
+                'total_assets' => $assets->count(),
+                'total_value' => $assets->sum('purchase_price')
+            ];
+
+            // Group assets by location
+            $locationStats = $assets->groupBy('location_id')
+                ->map(function ($locationAssets) {
+                    $location = $locationAssets->first()->location;
+                    return [
+                        'location' => $location ? $location->full_location : 'N/A',
+                        'count' => $locationAssets->count(),
+                        'total_value' => $locationAssets->sum('purchase_price')
+                    ];
+                })->values();
+
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('exports.location-report-pdf', compact('locationStats', 'totalSummary'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('asset-location-report-preview.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
     }
 
     public function locationDetails($location)
@@ -306,6 +363,46 @@ class ReportController extends Controller
         return view('reports.procurement-history', compact('assets', 'categories', 'vendors'));
     }
 
+    public function procurementHistoryExportPDF(Request $request)
+    {
+        try {
+            $query = Asset::with(['category', 'vendor'])->orderBy('purchase_date', 'desc');
+
+            // Apply same filters as main method
+            if ($request->filled('start_date')) {
+                $query->where('purchase_date', '>=', $request->start_date);
+            }
+
+            if ($request->filled('end_date')) {
+                $query->where('purchase_date', '<=', $request->end_date);
+            }
+
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('vendor_id')) {
+                $query->where('vendor_id', $request->vendor_id);
+            }
+
+            $assets = $query->get();
+
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('exports.procurement-history-pdf', compact('assets'));
+            $pdf->setPaper('A4', 'portrait');
+
+            return $pdf->stream('procurement-history-report-' . now()->format('Y-m-d') . '.pdf');
+
+        } catch (\Exception $e) {
+            \Log::error('Procurement PDF generation failed: ' . $e->getMessage());
+            return response('PDF Generation Error: ' . $e->getMessage(), 500);
+        }
+    }
+
     public function disposalHistory(Request $request)
     {
         $query = Asset::with('category')
@@ -323,6 +420,46 @@ class ReportController extends Controller
         $disposedAssets = $query->paginate(10);
     
         return view('reports.disposal-history', compact('disposedAssets'));
+    }
+
+    public function disposalHistoryExportPDF(Request $request)
+    {
+        try {
+            \Log::info('Disposal PDF export called with params: ', $request->all());
+            
+            $query = Asset::with('category')
+                ->where('status', 'DISPOSED')
+                ->orderBy('disposal_date', 'desc');
+        
+            if ($request->filled('start_date')) {
+                $query->where('disposal_date', '>=', $request->start_date);
+            }
+        
+            if ($request->filled('end_date')) {
+                $query->where('disposal_date', '<=', $request->end_date . ' 23:59:59');
+            }
+        
+            $disposedAssets = $query->get();
+            
+            \Log::info('Found ' . $disposedAssets->count() . ' disposed assets');
+
+            // Test if view exists and can be rendered
+            $html = view('exports.disposal-history-pdf', compact('disposedAssets'))->render();
+            \Log::info('View rendered successfully, HTML length: ' . strlen($html));
+
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('exports.disposal-history-pdf', compact('disposedAssets'));
+            $pdf->setPaper('A4', 'portrait');
+
+            return $pdf->stream('disposal-history-report-' . now()->format('Y-m-d') . '.pdf');
+
+        } catch (\Exception $e) {
+            \Log::error('PDF generation failed: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Return a simple response to debug
+            return response('PDF Generation Error: ' . $e->getMessage(), 500);
+        }
     }
 
     public function vendorAnalysis(Request $request)
@@ -399,6 +536,83 @@ class ReportController extends Controller
         ];
 
         return view('reports.vendor-analysis', compact('vendorAnalysis', 'overallStats'));
+    }
+
+    public function vendorAnalysisPreviewPDF()
+    {
+        try {
+            // Get all vendors with their assets and related data
+            $vendors = Vendor::with(['assets' => function($query) {
+                $query->with(['repairRequests' => function($repairQuery) {
+                    $repairQuery->where('status', 'completed');
+                }]);
+            }])->get();
+
+            // Check if there are any vendors with assets
+            $vendorsWithAssets = $vendors->filter(function($vendor) {
+                return $vendor->assets->count() > 0;
+            });
+
+            // Calculate overall statistics
+            $overallStats = [
+                'total_vendors' => $vendors->count(),
+                'total_assets' => $vendorsWithAssets->sum(function($vendor) { return $vendor->assets->count(); }),
+                'total_value' => $vendorsWithAssets->sum(function($vendor) { return $vendor->assets->sum('purchase_price'); }),
+            ];
+
+            $vendorAnalysis = collect();
+            if ($vendorsWithAssets->count() > 0) {
+                $vendorAnalysis = $vendorsWithAssets->map(function ($vendor) {
+                    $assets = $vendor->assets;
+                    $totalAssets = $assets->count();
+                    $totalValue = $assets->sum('purchase_price');
+                    
+                    // Calculate repair statistics
+                    $totalRepairs = $assets->sum(function($asset) {
+                        return $asset->repairRequests->count();
+                    });
+                    
+                    $completedRepairs = $assets->sum(function($asset) {
+                        return $asset->repairRequests->where('status', 'completed')->count();
+                    });
+                    
+                    $disposedAssets = $assets->where('status', 'DISPOSED')->count();
+
+                    // Calculate completion rate
+                    $completionRate = $totalRepairs > 0 ? ($completedRepairs / $totalRepairs) * 100 : 0;
+
+                    // Calculate average age (years)
+                    $averageAge = null;
+                    if ($totalAssets > 0) {
+                        $totalYears = $assets->sum(function($asset) {
+                            return \Carbon\Carbon::parse($asset->purchase_date)->diffInYears(now());
+                        });
+                        $averageAge = round($totalYears / $totalAssets, 1);
+                    }
+
+                    return [
+                        'id' => $vendor->id,
+                        'name' => $vendor->name,
+                        'total_assets' => $totalAssets,
+                        'total_value' => $totalValue,
+                        'total_repairs' => $totalRepairs,
+                        'completed_repairs' => $completedRepairs,
+                        'completion_rate' => round($completionRate, 2),
+                        'disposed_count' => $disposedAssets,
+                        'average_age' => $averageAge,
+                    ];
+                })->toArray();
+            }
+
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('exports.vendor-analysis-pdf', compact('vendorAnalysis', 'overallStats'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('vendor-analysis-report-preview.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
     }
 
     public function vendorDetails(Vendor $vendor)
@@ -877,8 +1091,8 @@ class ReportController extends Controller
         // Generate filename
         $filename = 'lab-usage-report-' . now()->format('Y-m-d') . '.pdf';
 
-        // Return the PDF for download
-        return $pdf->download($filename);
+        // Return the PDF for preview/stream
+        return $pdf->stream($filename);
     }
 
     public function employeePerformance(Request $request)

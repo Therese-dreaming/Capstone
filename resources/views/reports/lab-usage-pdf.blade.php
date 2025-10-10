@@ -1,105 +1,159 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
     <title>Lab Usage Report</title>
     <style>
-        @font-face {
-            font-family: 'Poppins';
-            src: url('{{ storage_path('fonts/Poppins-Regular.ttf') }}') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Poppins';
-            src: url('{{ storage_path('fonts/Poppins-Bold.ttf') }}') format('truetype');
-            font-weight: bold;
-            font-style: normal;
-        }
-        body {
-            font-family: 'Poppins', Arial, sans-serif;
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 11px;
+            color: #000000;
+            line-height: 1.4;
             margin: 0;
             padding: 20px;
+            background-color: #ffffff;
         }
+        
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #dc2626;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
         }
-        .header h1 {
-            color: #dc2626;
+        
+        h1 { 
+            color: #991b1b;
+            font-size: 18px;
+            font-weight: 900;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .subtitle {
+            color: #991b1b;
+            font-size: 12px;
+            font-weight: 700;
             margin: 0;
-            font-size: 24px;
-            font-weight: bold;
         }
-        .header p {
-            color: #666;
-            margin: 5px 0 0;
-        }
-        .summary-cards {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        .card {
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            width: 18%;
+        
+        .report-info {
             text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #ffffff;
         }
-        .card h3 {
-            margin: 0;
-            color: #374151;
-            font-size: 14px;
+        
+        .generation-date {
+            font-size: 10px;
+            color: #000000;
+            font-weight: 500;
         }
-        .card p {
-            margin: 5px 0 0;
-            color: #dc2626;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        th, td {
-            border: 1px solid #e5e7eb;
-            padding: 8px;
+        
+        .summary-section {
+            margin: 20px 0;
             text-align: left;
+        }
+        
+        .summary-text {
             font-size: 12px;
+            color: #000000;
+            line-height: 1.5;
         }
-        th {
-            background-color: #f3f4f6;
-            color: #374151;
+        
+        .summary-text strong {
+            color: #991b1b;
             font-weight: bold;
         }
-        .section-title {
-            color: #374151;
-            font-size: 16px;
-            margin: 20px 0 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #e5e7eb;
-            font-weight: bold;
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px;
         }
-        .footer {
+        
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 8px 10px; 
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        th { 
+            background-color: #ffffff;
+            color: #991b1b;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border: 1px solid #000000;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        
+        tbody tr:hover {
+            background-color: #ffffff;
+        }
+        
+        td {
+            font-size: 10px;
+            line-height: 1.3;
+            color: #000000;
+        }
+        
+        .no-data {
             text-align: center;
+            padding: 30px 20px;
+            color: #000000;
+            font-style: italic;
+            background-color: #ffffff;
+        }
+        
+        .section-title {
+            color: #991b1b;
+            font-size: 14px;
+            font-weight: 700;
+            margin: 25px 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #991b1b;
+            color: white;
+        }
+        
+        .total-row td {
+            color: white;
+        }
+        
+        .footer {
             margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #e5e7eb;
-            color: #666;
-            font-size: 12px;
+            text-align: center;
+            font-size: 9px;
+            color: #000000;
+            border-top: 1px solid #000000;
+            padding-top: 15px;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Lab Usage Report</h1>
-        <p>Generated on {{ now()->format('F d, Y') }}</p>
+        <p class="subtitle">Comprehensive Laboratory Usage Analytics</p>
+    </div>
+    
+    <div class="report-info">
+        <div class="generation-date">
+            Generated on {{ date('F d, Y \a\t g:i A') }}
+        </div>
+    </div>
+    
+    <div class="summary-section">
+        <div class="summary-text">
+            This report contains comprehensive laboratory usage data with <strong>{{ $summary->total_sessions ?? 0 }} total sessions</strong> across <strong>{{ $summary->labs_used ?? 0 }} laboratories</strong>, totaling <strong>{{ number_format($summary->total_hours ?? 0, 1) }} hours</strong> of usage by <strong>{{ $summary->unique_users ?? 0 }} unique users</strong>.
+        </div>
     </div>
 
     <div class="section-title">Usage by Department</div>
@@ -112,14 +166,28 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($departmentUsage as $dept)
+            @forelse($departmentUsage as $dept)
             <tr>
                 <td>{{ $dept->department_name }}</td>
                 <td>{{ number_format($dept->total_sessions) }}</td>
                 <td>{{ number_format($dept->total_hours, 1) }}</td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="3" class="no-data">
+                    <strong>No department usage data found</strong><br>
+                    <small>No department usage records available for the selected period</small>
+                </td>
+            </tr>
+            @endforelse
         </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td><strong>TOTAL</strong></td>
+                <td><strong>{{ number_format($departmentUsage->sum('total_sessions')) }}</strong></td>
+                <td><strong>{{ number_format($departmentUsage->sum('total_hours'), 1) }}</strong></td>
+            </tr>
+        </tfoot>
     </table>
 
     <div class="section-title">Usage by Laboratory</div>
@@ -132,14 +200,28 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($labUsage as $lab)
+            @forelse($labUsage as $lab)
             <tr>
                 <td>{{ $lab->lab_name }}</td>
                 <td>{{ number_format($lab->total_sessions) }}</td>
                 <td>{{ number_format($lab->total_hours, 1) }}</td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="3" class="no-data">
+                    <strong>No laboratory usage data found</strong><br>
+                    <small>No laboratory usage records available for the selected period</small>
+                </td>
+            </tr>
+            @endforelse
         </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td><strong>TOTAL</strong></td>
+                <td><strong>{{ number_format($labUsage->sum('total_sessions')) }}</strong></td>
+                <td><strong>{{ number_format($labUsage->sum('total_hours'), 1) }}</strong></td>
+            </tr>
+        </tfoot>
     </table>
 
     <div class="section-title">Detailed Usage Data</div>
@@ -156,7 +238,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($usageData as $data)
+            @forelse($usageData as $data)
             <tr>
                 <td>{{ $data->period }}</td>
                 <td>{{ $data->department_name }}</td>
@@ -166,8 +248,20 @@
                 <td>{{ number_format($data->avg_duration, 1) }}h</td>
                 <td>{{ number_format($data->unique_users) }}</td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="7" class="no-data">
+                    <strong>No detailed usage data found</strong><br>
+                    <small>No detailed usage records available for the selected period</small>
+                </td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
+    
+    <div class="footer">
+        <p>This report was automatically generated by the Asset Management System</p>
+        <p>© {{ date('Y') }} - Confidential and Proprietary Information</p>
+    </div>
 </body>
 </html> 

@@ -38,11 +38,12 @@
                         <p class="text-gray-600 text-sm md:text-base">Comprehensive overview of assets by location</p>
                     </div>
                 </div>
-                <button onclick="printReport()" id="printButton" class="inline-flex items-center px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                <button onclick="previewPDF()" id="printButton" class="inline-flex items-center px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    <span id="printButtonText">Print Report</span>
+                    <span id="printButtonText">Preview PDF</span>
                 </button>
             </div>
 
@@ -80,36 +81,23 @@
                         Asset Distribution Charts
                     </h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Asset Count by Location Chart -->
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Combined Asset Count and Value Chart -->
                         <div class="bg-white rounded-xl shadow-md p-4">
                             <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
-                                <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
-                                Asset Count
+                                Asset Count & Value by Location
                             </h4>
-                            <div class="h-64">
-                                <canvas id="assetCountChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Asset Value by Location Chart -->
-                        <div class="bg-white rounded-xl shadow-md p-4">
-                            <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
-                                <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                                </svg>
-                                Asset Value
-                            </h4>
-                            <div class="h-64">
-                                <canvas id="assetValueChart"></canvas>
+                            <div class="h-80">
+                                <canvas id="combinedAssetChart"></canvas>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Age Distribution Charts -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="grid grid-cols-1 gap-6 mt-6">
                         <!-- Asset Age Distribution Chart -->
                         <div class="bg-white rounded-xl shadow-md p-4">
                             <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
@@ -120,19 +108,6 @@
                             </h4>
                             <div class="h-64">
                                 <canvas id="assetAgeChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Assets 5+ Years Old Chart -->
-                        <div class="bg-white rounded-xl shadow-md p-4">
-                            <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
-                                <svg class="w-4 h-4 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Assets 5+ Years Old
-                            </h4>
-                            <div class="h-64">
-                                <canvas id="oldAssetsChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -151,7 +126,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-800 group-hover:text-red-800 transition-colors">{{ $stat['location'] }}</h3>
+                        <h3 class="text-lg font-bold text-gray-800 group-hover:text-red-800 transition-colors truncate" title="{{ $stat['location'] }}">{{ $stat['location'] }}</h3>
                     </div>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
@@ -204,7 +179,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
                                         </div>
-                                        <span class="text-sm font-medium text-gray-900">{{ $stat['location'] }}</span>
+                                        <span class="text-sm font-medium text-gray-900 truncate" title="{{ $stat['location'] }}">{{ $stat['location'] }}</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -253,12 +228,20 @@
 
 <script>
     // Chart data from PHP
+    const rawLocations = @json($locationStats->pluck('location'));
+    
+    // Function to truncate long location names for charts
+    function truncateLocation(location, maxLength = 25) {
+        if (location.length <= maxLength) return location;
+        return location.substring(0, maxLength) + '...';
+    }
+    
     const chartData = {
-        locations: @json($locationStats->pluck('location')),
+        locations: rawLocations.map(location => truncateLocation(location)),
+        fullLocations: rawLocations, // Keep full names for tooltips
         assetCounts: @json($locationStats->pluck('count')),
         assetValues: @json($locationStats->pluck('total_value')),
         ageDistribution: @json($ageDistribution),
-        oldAssetsData: @json($oldAssetsData),
         colors: [
             '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
             '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
@@ -266,28 +249,52 @@
         ]
     };
 
-    // Asset Count by Location Chart (Bar Chart)
-    const assetCountCtx = document.getElementById('assetCountChart').getContext('2d');
-    new Chart(assetCountCtx, {
+    // Combined Asset Count and Value Chart (Dual Y-Axis)
+    const combinedAssetCtx = document.getElementById('combinedAssetChart').getContext('2d');
+    new Chart(combinedAssetCtx, {
         type: 'bar',
         data: {
             labels: chartData.locations,
             datasets: [{
                 label: 'Asset Count',
                 data: chartData.assetCounts,
-                backgroundColor: chartData.colors.slice(0, chartData.locations.length),
-                borderColor: chartData.colors.slice(0, chartData.locations.length).map(color => color + '80'),
+                backgroundColor: 'rgba(59, 130, 246, 0.8)', // Blue
+                borderColor: 'rgba(59, 130, 246, 1)',
                 borderWidth: 2,
                 borderRadius: 8,
                 borderSkipped: false,
+                yAxisID: 'y'
+            }, {
+                label: 'Asset Value (₱)',
+                data: chartData.assetValues,
+                backgroundColor: 'rgba(16, 185, 129, 0.8)', // Green
+                borderColor: 'rgba(16, 185, 129, 1)',
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+                yAxisID: 'y1'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'rect',
+                        font: {
+                            size: 12
+                        },
+                        color: '#374151'
+                    }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -296,28 +303,22 @@
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     borderWidth: 1,
                     cornerRadius: 8,
-                    displayColors: false,
+                    displayColors: true,
                     callbacks: {
+                        title: function(context) {
+                            return chartData.fullLocations[context[0].dataIndex];
+                        },
                         label: function(context) {
-                            return `Assets: ${context.parsed.y}`;
+                            if (context.datasetIndex === 0) {
+                                return `Assets: ${context.parsed.y}`;
+                            } else {
+                                return `Value: ₱${context.parsed.y.toLocaleString()}`;
+                            }
                         }
                     }
                 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: '#6B7280',
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
                 x: {
                     grid: {
                         display: false
@@ -329,75 +330,56 @@
                         },
                         maxRotation: 45
                     }
-                }
-            }
-        }
-    });
-
-    // Asset Value by Location Chart (Horizontal Bar Chart)
-    const assetValueCtx = document.getElementById('assetValueChart').getContext('2d');
-    new Chart(assetValueCtx, {
-        type: 'bar',
-        data: {
-            labels: chartData.locations,
-            datasets: [{
-                label: 'Asset Value (₱)',
-                data: chartData.assetValues,
-                backgroundColor: chartData.colors.slice(0, chartData.locations.length).map(color => color + '60'),
-                borderColor: chartData.colors.slice(0, chartData.locations.length),
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
                 },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: 'white',
-                    bodyColor: 'white',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Value: ₱${context.parsed.x.toLocaleString()}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
                     beginAtZero: true,
                     grid: {
                         color: 'rgba(0, 0, 0, 0.1)',
                         drawBorder: false
                     },
                     ticks: {
-                        color: '#6B7280',
+                        color: '#3B82F6',
+                        font: {
+                            size: 12
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Asset Count',
+                        color: '#3B82F6',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        color: '#10B981',
                         font: {
                             size: 12
                         },
                         callback: function(value) {
                             return '₱' + (value / 1000).toFixed(0) + 'K';
                         }
-                    }
-                },
-                y: {
-                    grid: {
-                        display: false
                     },
-                    ticks: {
-                        color: '#6B7280',
+                    title: {
+                        display: true,
+                        text: 'Asset Value (₱)',
+                        color: '#10B981',
                         font: {
-                            size: 11
+                            size: 14,
+                            weight: 'bold'
                         }
                     }
                 }
@@ -473,56 +455,6 @@
         }
     });
 
-    // Assets 5+ Years Old Chart (Doughnut Chart)
-    const oldAssetsCtx = document.getElementById('oldAssetsChart').getContext('2d');
-    new Chart(oldAssetsCtx, {
-        type: 'doughnut',
-        data: {
-            labels: chartData.oldAssetsData.labels,
-            datasets: [{
-                data: chartData.oldAssetsData.data,
-                backgroundColor: ['#EF4444', '#10B981'],
-                borderColor: 'white',
-                borderWidth: 3,
-                hoverOffset: 15,
-                cutout: '60%'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        font: {
-                            size: 12
-                        },
-                        color: '#374151'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: 'white',
-                    bodyColor: 'white',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    displayColors: true,
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
-                            return `${context.label}: ${context.parsed} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
 
     // Auto-print when page loads in print mode
     document.addEventListener('DOMContentLoaded', function() {
@@ -543,25 +475,9 @@
         }
     });
 
-    function printReport() {
-        // Check if we're already in print mode
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('print') === '1') {
-            // Already in print mode, just print
-            window.print();
-        } else {
-            // Add print parameter and reload
-            const printButton = document.getElementById('printButton');
-            const printButtonText = document.getElementById('printButtonText');
-            if (printButton && printButtonText) {
-                printButtonText.textContent = 'Loading...';
-                printButton.disabled = true;
-            }
-            
-            const url = new URL(window.location);
-            url.searchParams.set('print', '1');
-            window.location.href = url.toString();
-        }
+    function previewPDF() {
+        // Open PDF preview in new tab
+        window.open('{{ route("reports.location.previewPDF") }}', '_blank');
     }
 </script>
 

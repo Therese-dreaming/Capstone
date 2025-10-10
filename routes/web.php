@@ -112,14 +112,19 @@ Route::middleware(['auth'])->group(function () {
 		// Reports routes - Admin only
 		Route::prefix('reports')->group(function () {
 			Route::get('/category', [ReportController::class, 'categoryReport'])->name('reports.category');
+			Route::get('/category/preview-pdf', [ReportController::class, 'categoryReportPreviewPDF'])->name('reports.category.previewPDF');
 			Route::get('/location', [ReportController::class, 'locationReport'])->name('reports.location');
+			Route::get('/location/preview-pdf', [ReportController::class, 'locationReportPreviewPDF'])->name('reports.location.previewPDF');
 			Route::get('/category/{category}/details', [ReportController::class, 'categoryDetails'])->name('reports.category.details');
 			Route::get('/location/{location}/details', [ReportController::class, 'locationDetails'])->name('reports.location.details');
 			Route::get('/asset-history/{asset}', [ReportController::class, 'assetHistory'])->name('reports.asset-history');
 			Route::get('/procurement-history', [ReportController::class, 'procurementHistory'])->name('reports.procurement-history');
+			Route::get('/procurement-history/export-pdf', [ReportController::class, 'procurementHistoryExportPDF'])->name('reports.procurement-history.export-pdf');
 			Route::get('/procurement-history/paascu-export', [ReportController::class, 'exportPaascuFromProcurement'])->name('reports.procurement-history.paascu-export');
 			Route::get('/disposal-history', [ReportController::class, 'disposalHistory'])->name('reports.disposal-history');
+			Route::get('/disposal-history/export-pdf', [ReportController::class, 'disposalHistoryExportPDF'])->name('reports.disposal-history.export-pdf');
 			Route::get('/vendor-analysis', [ReportController::class, 'vendorAnalysis'])->name('reports.vendor-analysis');
+			Route::get('/vendor-analysis/preview-pdf', [ReportController::class, 'vendorAnalysisPreviewPDF'])->name('reports.vendor-analysis.previewPDF');
 			Route::get('/vendor-details/{vendor}', [ReportController::class, 'vendorDetails'])->name('reports.vendor-details');
 			Route::get('/asset-history/{asset}/maintenance', [ReportController::class, 'assetMaintenanceHistory'])->name('reports.asset-maintenance-history');
 			Route::get('/asset-history/{asset}/repairs', [ReportController::class, 'assetRepairHistory'])->name('reports.asset-repair-history');

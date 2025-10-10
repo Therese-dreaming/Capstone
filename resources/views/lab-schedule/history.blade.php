@@ -21,29 +21,38 @@
     </div>
     @endif
 
+    <div class="mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center mb-4 sm:mb-0">
+                    <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4 flex-shrink-0">
+                        <svg class="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2 truncate">Lab Attendance History</h1>
+                        <p class="text-red-100 text-sm md:text-lg">View and manage laboratory attendance records</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <button onclick="previewPDF()" class="text-sm px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-md hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 flex items-center justify-center border border-white/30">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span class="hidden sm:inline">Preview PDF</span>
+                        <span class="sm:hidden">Preview</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content Card -->
     <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
-        <!-- Header Section -->
-        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4 md:gap-0">
-            <div class="flex items-center">
-                <div class="bg-red-100 p-3 rounded-full mr-4">
-                    <svg class="w-8 h-8 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Lab Attendance History</h1>
-                    <p class="text-gray-600 text-sm md:text-base">View and manage laboratory attendance records</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-3">
-                <button onclick="exportToPDF()" class="inline-flex items-center px-4 py-2 bg-red-800 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export to PDF
-                </button>
-            </div>
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold">Lab Attendance History</h1>
         </div>
 
         <!-- Filters Section -->
@@ -278,30 +287,6 @@
     </div>
 </div>
 
-<!-- PDF Preview Modal -->
-<div id="pdfPreviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-6 border w-11/12 max-w-4xl shadow-xl rounded-xl bg-white">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-bold text-gray-900">PDF Preview</h3>
-            <button onclick="closePdfPreview()" class="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-        <div class="preview-content bg-gray-50 rounded-lg p-4" style="max-height: 70vh; overflow-y: auto;">
-            <!-- Preview content will be loaded here -->
-        </div>
-        <div class="mt-6 flex justify-end space-x-3">
-            <button onclick="closePdfPreview()" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
-                Cancel
-            </button>
-            <button onclick="downloadPDF()" class="px-6 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 transition-colors">
-                Download PDF
-            </button>
-        </div>
-    </div>
-</div>
 
 <script>
     function filterHistory() {
@@ -503,10 +488,8 @@
             });
     }
 
-    function exportToPDF() {
-        const modal = document.getElementById('pdfPreviewModal');
-        const previewContent = modal.querySelector('.preview-content');
-
+    // Preview PDF function - opens in new tab
+    function previewPDF() {
         // Get current filters
         const statusFilter = document.getElementById('statusFilter').value;
         const laboratoryFilter = document.getElementById('laboratoryFilter').value;
@@ -525,61 +508,10 @@
         if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
         if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
         if (timeOutEndDate) params.append('time_out_end_date', timeOutEndDate);
+        params.append('preview', '1'); // Add preview parameter
 
-        // Show loading state
-        previewContent.innerHTML = '<div class="text-center py-8 text-gray-500"><svg class="w-8 h-8 mx-auto animate-spin text-red-600 mb-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Loading preview...</div>';
-        modal.classList.remove('hidden');
-
-        // Fetch preview content
-        fetch(`{{ route('lab-schedule.previewPDF') }}?${params.toString()}`)
-            .then(response => response.text())
-            .then(html => {
-                const iframe = document.createElement('iframe');
-                iframe.style.width = '100%';
-                iframe.style.height = '70vh';
-                iframe.style.border = 'none';
-
-                previewContent.innerHTML = '';
-                previewContent.appendChild(iframe);
-
-                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDocument.open();
-                iframeDocument.write(html);
-                iframeDocument.close();
-            })
-            .catch(error => {
-                previewContent.innerHTML = '<div class="text-center py-8 text-red-600"><svg class="w-8 h-8 mx-auto text-red-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Error loading preview</div>';
-            });
-    }
-
-    function downloadPDF() {
-        const statusFilter = document.getElementById('statusFilter').value;
-        const laboratoryFilter = document.getElementById('laboratoryFilter').value;
-        const purposeFilter = document.getElementById('purposeFilter').value;
-        const timeInStartDate = document.getElementById('timeInStartDate').value;
-        const timeInEndDate = document.getElementById('timeInEndDate').value;
-        const timeOutStartDate = document.getElementById('timeOutStartDate').value;
-        const timeOutEndDate = document.getElementById('timeOutEndDate').value;
-
-        // Build query parameters
-        const params = new URLSearchParams();
-        if (statusFilter) params.append('status', statusFilter);
-        if (laboratoryFilter) params.append('laboratory', laboratoryFilter);
-        if (purposeFilter) params.append('purpose', purposeFilter);
-        if (timeInStartDate) params.append('time_in_start_date', timeInStartDate);
-        if (timeInEndDate) params.append('time_in_end_date', timeInEndDate);
-        if (timeOutStartDate) params.append('time_out_start_date', timeOutStartDate);
-        if (timeOutEndDate) params.append('time_out_end_date', timeOutEndDate);
-
-        // Redirect to download URL
-        window.location.href = `{{ route('lab-schedule.exportPDF') }}?${params.toString()}`;
-        closePdfPreview();
-    }
-
-    function closePdfPreview() {
-        const modal = document.getElementById('pdfPreviewModal');
-        modal.classList.add('hidden');
-        modal.querySelector('.preview-content').innerHTML = '';
+        // Open preview in new tab
+        window.open(`{{ route('lab-schedule.previewPDF') }}?${params.toString()}`, '_blank');
     }
 </script>
 @endsection

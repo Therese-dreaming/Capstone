@@ -39,11 +39,13 @@
                             </a>
                         @endif
                     </form>
-                    <button onclick="printReport()" class="bg-red-800 text-white px-6 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl">
+                    <button onclick="previewPDF()" class="bg-red-800 text-white px-6 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center sm:justify-start w-full sm:w-auto text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
-                        Print Report
+                        <span class="hidden sm:inline">Preview PDF</span>
+                        <span class="sm:hidden">Preview</span>
                     </button>
                 </div>
             </div>
@@ -198,8 +200,20 @@
 </div>
 
 <script>
-    function printReport() {
-        window.print();
+    function previewPDF() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+
+        // Generate PDF URL and open in new tab for preview/download
+        const pdfUrl = '{{ route("reports.disposal-history.export-pdf") }}' + (params.toString() ? '?' + params.toString() : '');
+        
+        // Open PDF in new tab - browser will handle preview/download
+        window.open(pdfUrl, '_blank');
     }
 </script>
 

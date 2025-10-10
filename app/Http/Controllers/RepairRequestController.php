@@ -931,81 +931,112 @@ class RepairRequestController extends Controller
 
     public function previewPDF(Request $request)
     {
-        $query = RepairRequest::where('status', 'completed')
-            ->with('technician');
+        try {
+            $query = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
+                ->with(['technician', 'asset']);
 
-        // Apply filters
-        if ($request->location) {
-            // Parse location string (format: "Building-Floor-Room")
-            $locationParts = explode('-', $request->location, 3);
-            if (count($locationParts) === 3) {
-                $building = trim($locationParts[0]);
-                $floor = trim($locationParts[1]);
-                $room = trim($locationParts[2]);
-                
-                $query->where('building', $building)
-                      ->where('floor', $floor)
-                      ->where('room', $room);
+            // Apply status filter
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
             }
-        }
-        if ($request->start_date) {
-            $query->whereDate('created_at', '>=', $request->start_date);
-        }
-        if ($request->end_date) {
-            $query->whereDate('created_at', '<=', $request->end_date);
-        }
-        if ($request->date_filter_type === 'completion') {
-            if ($request->start_date) {
-                $query->whereDate('completed_at', '>=', $request->start_date);
-            }
-            if ($request->end_date) {
-                $query->whereDate('completed_at', '<=', $request->end_date);
-            }
-        }
 
-        $completedRequests = $query->orderBy('created_at', 'desc')->get();
+            // Apply location filter
+            if ($request->filled('location')) {
+                // Parse location string (format: "Building-Floor-Room")
+                $locationParts = explode('-', $request->location, 3);
+                if (count($locationParts) === 3) {
+                    $building = trim($locationParts[0]);
+                    $floor = trim($locationParts[1]);
+                    $room = trim($locationParts[2]);
+                    
+                    $query->where('building', $building)
+                          ->where('floor', $floor)
+                          ->where('room', $room);
+                }
+            }
 
-        return view('pdf.repair-completed', compact('completedRequests'))->render();
+            // Apply request date filters
+            if ($request->filled('request_start_date')) {
+                $query->whereDate('created_at', '>=', $request->request_start_date);
+            }
+            if ($request->filled('request_end_date')) {
+                $query->whereDate('created_at', '<=', $request->request_end_date);
+            }
+
+            // Apply completion date filters
+            if ($request->filled('completion_start_date')) {
+                $query->whereDate('completed_at', '>=', $request->completion_start_date);
+            }
+            if ($request->filled('completion_end_date')) {
+                $query->whereDate('completed_at', '<=', $request->completion_end_date);
+            }
+
+            $completedRequests = $query->orderBy('created_at', 'desc')->get();
+
+            // Generate PDF and stream it (for preview)
+            $pdf = PDF::loadView('pdf.repair-completed', compact('completedRequests'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('repair-history-preview.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
     }
 
     public function exportPDF(Request $request)
     {
-        $query = RepairRequest::where('status', 'completed')
-            ->with('technician');
+        try {
+            $query = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
+                ->with(['technician', 'asset']);
 
-        // Apply same filters as preview
-        if ($request->location) {
-            // Parse location string (format: "Building-Floor-Room")
-            $locationParts = explode('-', $request->location, 3);
-            if (count($locationParts) === 3) {
-                $building = trim($locationParts[0]);
-                $floor = trim($locationParts[1]);
-                $room = trim($locationParts[2]);
-                
-                $query->where('building', $building)
-                      ->where('floor', $floor)
-                      ->where('room', $room);
+            // Apply status filter
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
             }
-        }
-        if ($request->start_date) {
-            $query->whereDate('created_at', '>=', $request->start_date);
-        }
-        if ($request->end_date) {
-            $query->whereDate('created_at', '<=', $request->end_date);
-        }
-        if ($request->date_filter_type === 'completion') {
-            if ($request->start_date) {
-                $query->whereDate('completed_at', '>=', $request->start_date);
-            }
-            if ($request->end_date) {
-                $query->whereDate('completed_at', '<=', $request->end_date);
-            }
-        }
 
-        $completedRequests = $query->orderBy('created_at', 'desc')->get();
+            // Apply location filter
+            if ($request->filled('location')) {
+                // Parse location string (format: "Building-Floor-Room")
+                $locationParts = explode('-', $request->location, 3);
+                if (count($locationParts) === 3) {
+                    $building = trim($locationParts[0]);
+                    $floor = trim($locationParts[1]);
+                    $room = trim($locationParts[2]);
+                    
+                    $query->where('building', $building)
+                          ->where('floor', $floor)
+                          ->where('room', $room);
+                }
+            }
 
-        $pdf = PDF::loadView('pdf.repair-completed', compact('completedRequests'));
-        return $pdf->download('completed-repairs.pdf');
+            // Apply request date filters
+            if ($request->filled('request_start_date')) {
+                $query->whereDate('created_at', '>=', $request->request_start_date);
+            }
+            if ($request->filled('request_end_date')) {
+                $query->whereDate('created_at', '<=', $request->request_end_date);
+            }
+
+            // Apply completion date filters
+            if ($request->filled('completion_start_date')) {
+                $query->whereDate('completed_at', '>=', $request->completion_start_date);
+            }
+            if ($request->filled('completion_end_date')) {
+                $query->whereDate('completed_at', '<=', $request->completion_end_date);
+            }
+
+            $completedRequests = $query->orderBy('created_at', 'desc')->get();
+
+            // Generate PDF and download it
+            $pdf = PDF::loadView('pdf.repair-completed', compact('completedRequests'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->download('repair-history-report.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
+        }
     }
 
     public function exportExcel(Request $request)
