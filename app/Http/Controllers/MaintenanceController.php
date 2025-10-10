@@ -744,8 +744,25 @@ class MaintenanceController extends Controller
                 return $maintenance;
             });
 
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
             // Generate PDF
-            $pdf = Pdf::loadView('exports.maintenance-history-pdf', compact('maintenances'));
+            $pdf = Pdf::loadView('exports.maintenance-history-pdf', compact('maintenances', 'signatures'));
             $pdf->setPaper('A4', 'landscape');
 
             // Generate filename with current date

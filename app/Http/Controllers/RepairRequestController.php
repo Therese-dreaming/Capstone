@@ -1028,11 +1028,28 @@ class RepairRequestController extends Controller
 
             $completedRequests = $query->orderBy('created_at', 'desc')->get();
 
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
             // Generate PDF and download it
-            $pdf = PDF::loadView('pdf.repair-completed', compact('completedRequests'));
+            $pdf = PDF::loadView('pdf.repair-completed', compact('completedRequests', 'signatures'));
             $pdf->setPaper('A4', 'landscape');
 
-            return $pdf->download('repair-history-report.pdf');
+            return $pdf->stream('repair-history-report.pdf');
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());

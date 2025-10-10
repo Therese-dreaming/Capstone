@@ -18,9 +18,13 @@
             text-align: left; 
         }
         th { 
-            background-color: #f3f4f6;
+            background-color: #ffffff;
+            color: #991b1b;
             font-size: 10px;
             text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border: 1px solid #000000;
         }
         h1 { 
             text-align: center; 

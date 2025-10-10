@@ -50,8 +50,21 @@
                         <span id="selectedPurposeText" class="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full">Selected: None</span>
                     </label>
 
+                    <!-- Multi-selection controls for purpose -->
+                    <div class="mb-4 flex flex-wrap gap-2 items-center">
+                        <button onclick="selectAllPurposes()" class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors">
+                            Select All
+                        </button>
+                        <button onclick="clearAllPurposes()" class="px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-full hover:bg-gray-200 transition-colors">
+                            Clear All
+                        </button>
+                        <div id="selectedPurposesCount" class="text-xs text-gray-600 ml-2">
+                            0 purposes selected
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="lecture" onclick="selectPurpose(this)">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="lecture" onclick="togglePurpose(this)">
                             <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                                 <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
                                 <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
@@ -66,7 +79,7 @@
                             </div>
                         </div>
 
-                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="examination" onclick="selectPurpose(this)">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="examination" onclick="togglePurpose(this)">
                             <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                                 <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
                                 <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
@@ -81,7 +94,7 @@
                             </div>
                         </div>
 
-                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="practical" onclick="selectPurpose(this)">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="practical" onclick="togglePurpose(this)">
                             <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                                 <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
                                 <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
@@ -96,7 +109,7 @@
                             </div>
                         </div>
 
-                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="research" onclick="selectPurpose(this)">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="research" onclick="togglePurpose(this)">
                             <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                                 <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
                                 <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
@@ -111,7 +124,7 @@
                             </div>
                         </div>
 
-                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="training" onclick="selectPurpose(this)">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="training" onclick="togglePurpose(this)">
                             <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                                 <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
                                 <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
@@ -126,7 +139,7 @@
                             </div>
                         </div>
 
-                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="other" onclick="selectPurpose(this)">
+                        <div class="purpose-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="other" onclick="togglePurpose(this)">
                             <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-red-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                                 <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
                                 <div class="absolute top-3 right-3 transition-all duration-300 opacity-0 group-hover:opacity-100 active-checkmark">
@@ -400,31 +413,35 @@
 
 <script>
     let selectedLab = null;
-    let selectedPurpose = null;
+    let selectedPurposes = [];
     let isProcessing = false;
 
-    // Function to handle purpose selection
-    function selectPurpose(element) {
-        // Remove active state from all purpose cards
-        document.querySelectorAll('.purpose-card').forEach(card => {
-            card.querySelector('.absolute').classList.remove('opacity-50');
-            card.querySelector('.active-checkmark').classList.remove('opacity-100');
-            card.querySelector('.border-2').classList.remove('border-red-500');
-        });
-
-        // Add active state to selected purpose card
-        element.querySelector('.absolute').classList.add('opacity-50');
-        element.querySelector('.active-checkmark').classList.add('opacity-100');
-        element.querySelector('.border-2').classList.add('border-red-500');
-
-        // Update selected purpose
-        selectedPurpose = element.dataset.value;
-        const purposeText = element.querySelector('.text-lg').textContent;
-        document.getElementById('selectedPurposeText').textContent = `Selected: ${purposeText}`;
-
-        // Show/hide other purpose input
+    // Function to toggle purpose selection (multi-select)
+    function togglePurpose(element) {
+        const purposeValue = element.dataset.value;
+        
+        // Check if purpose is already selected
+        const isSelected = selectedPurposes.includes(purposeValue);
+        
+        if (isSelected) {
+            // Remove from selection
+            selectedPurposes = selectedPurposes.filter(purpose => purpose !== purposeValue);
+            element.querySelector('.absolute').classList.remove('opacity-50');
+            element.querySelector('.active-checkmark').classList.remove('opacity-100');
+            element.querySelector('.border-2').classList.remove('border-red-500');
+        } else {
+            // Add to selection
+            selectedPurposes.push(purposeValue);
+            element.querySelector('.absolute').classList.add('opacity-50');
+            element.querySelector('.active-checkmark').classList.add('opacity-100');
+            element.querySelector('.border-2').classList.add('border-red-500');
+        }
+        
+        updateSelectedPurposesDisplay();
+        
+        // Show/hide other purpose input if "other" is selected
         const otherPurposeInput = document.getElementById('otherPurposeInput');
-        if (selectedPurpose === 'other') {
+        if (selectedPurposes.includes('other')) {
             otherPurposeInput.classList.remove('hidden');
         } else {
             otherPurposeInput.classList.add('hidden');
@@ -432,10 +449,62 @@
         }
     }
 
-    // Function to handle lab selection
-    async function selectLab(element) {
-        // For tap-in: require purpose. For tap-out (lab unavailable by same user), purpose is not required.
+    // Function to select all purposes
+    function selectAllPurposes() {
+        document.querySelectorAll('.purpose-card').forEach(card => {
+            const purposeValue = card.dataset.value;
+            if (!selectedPurposes.includes(purposeValue)) {
+                selectedPurposes.push(purposeValue);
+                card.querySelector('.absolute').classList.add('opacity-50');
+                card.querySelector('.active-checkmark').classList.add('opacity-100');
+                card.querySelector('.border-2').classList.add('border-red-500');
+            }
+        });
+        updateSelectedPurposesDisplay();
+        
+        // Show other input if "other" is selected
+        if (selectedPurposes.includes('other')) {
+            document.getElementById('otherPurposeInput').classList.remove('hidden');
+        }
+    }
 
+    // Function to clear all purpose selections
+    function clearAllPurposes() {
+        selectedPurposes = [];
+        document.querySelectorAll('.purpose-card').forEach(card => {
+            card.querySelector('.absolute').classList.remove('opacity-50');
+            card.querySelector('.active-checkmark').classList.remove('opacity-100');
+            card.querySelector('.border-2').classList.remove('border-red-500');
+        });
+        updateSelectedPurposesDisplay();
+        
+        // Hide other input
+        document.getElementById('otherPurposeInput').classList.add('hidden');
+        document.getElementById('otherPurposeText').value = '';
+    }
+
+    // Function to update the selected purposes display
+    function updateSelectedPurposesDisplay() {
+        const selectedPurposeTextEl = document.getElementById('selectedPurposeText');
+        const selectedPurposesCountEl = document.getElementById('selectedPurposesCount');
+        
+        if (selectedPurposes.length === 0) {
+            selectedPurposeTextEl.textContent = 'Selected: None';
+            selectedPurposeTextEl.className = 'text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full';
+        } else if (selectedPurposes.length === 1) {
+            const purposeText = document.querySelector(`[data-value="${selectedPurposes[0]}"] .text-lg`).textContent;
+            selectedPurposeTextEl.textContent = `Selected: ${purposeText}`;
+            selectedPurposeTextEl.className = 'text-sm font-medium text-green-700 bg-green-50 px-3 py-1 rounded-full';
+        } else {
+            selectedPurposeTextEl.textContent = `Selected: ${selectedPurposes.length} purposes`;
+            selectedPurposeTextEl.className = 'text-sm font-medium text-green-700 bg-green-50 px-3 py-1 rounded-full';
+        }
+        
+        selectedPurposesCountEl.textContent = `${selectedPurposes.length} purpose${selectedPurposes.length !== 1 ? 's' : ''} selected`;
+    }
+
+    // Function to handle lab selection (single select)
+    async function selectLab(element) {
         // Check if user has an ongoing lab session
         const hasOngoingSession = await checkUserOngoingSession();
         if (hasOngoingSession) {
@@ -453,10 +522,10 @@
 
         // If lab is available, proceed with purpose requirement (tap-in)
         if (availability.status !== 'ongoing') {
-            if (!selectedPurpose) {
-                showStatus('error', 'Please select a purpose first before choosing a laboratory');
+            if (selectedPurposes.length === 0) {
+                showStatus('error', 'Please select at least one purpose first before choosing a laboratory');
                 canOpenModal = false;
-            } else if (selectedPurpose === 'other' && !document.getElementById('otherPurposeText').value.trim()) {
+            } else if (selectedPurposes.includes('other') && !document.getElementById('otherPurposeText').value.trim()) {
                 showStatus('error', 'Please specify the purpose before proceeding');
                 canOpenModal = false;
             }
@@ -534,21 +603,7 @@
 
     // Function to reset purpose selection
     function resetPurposeSelection() {
-        // Remove active state from all purpose cards
-        document.querySelectorAll('.purpose-card').forEach(card => {
-            card.querySelector('.absolute').classList.remove('opacity-50');
-            card.querySelector('.active-checkmark').classList.remove('opacity-100');
-            card.querySelector('.border-2').classList.remove('border-red-500');
-        });
-
-        // Reset selected purpose
-        selectedPurpose = null;
-        document.getElementById('selectedPurposeText').textContent = 'Selected: None';
-        document.getElementById('selectedPurposeText').className = 'text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full';
-        
-        // Hide other purpose input
-        document.getElementById('otherPurposeInput').classList.add('hidden');
-        document.getElementById('otherPurposeText').value = '';
+        clearAllPurposes();
     }
 
     // Function to start RFID listener
@@ -608,26 +663,33 @@
 
     // Function to handle RFID scan
     async function handleRFIDScan(rfidNumber) {
-        // Only require a lab selection; purpose may be omitted for tap-out when lab is ongoing
+        // Only require a lab selection; purposes may be omitted for tap-out when lab is ongoing
         if (!selectedLab || isProcessing) return;
         isProcessing = true;
 
         // Determine if lab is currently ongoing to treat as tap-out (skip purpose)
         const availability = await getLabAvailabilityDetail(selectedLab);
-        let purposeText = null;
+        let purposesText = null;
         if (availability.status !== 'ongoing') {
-            purposeText = selectedPurpose;
-            if (selectedPurpose === 'other') {
-                purposeText = document.getElementById('otherPurposeText').value.trim();
-                if (!purposeText) {
-                    showStatus('error', 'Please specify the purpose before proceeding');
-                    isProcessing = false;
-                    // Turn off loading since we didn't call the server
-                    if (typeof setTapModalLoading === 'function') {
-                        setTapModalLoading(false);
+            if (selectedPurposes.length > 0) {
+                // Handle multiple purposes
+                purposesText = selectedPurposes.map(purpose => {
+                    if (purpose === 'other') {
+                        const otherText = document.getElementById('otherPurposeText').value.trim();
+                        if (!otherText) {
+                            showStatus('error', 'Please specify the purpose before proceeding');
+                            isProcessing = false;
+                            if (typeof setTapModalLoading === 'function') {
+                                setTapModalLoading(false);
+                            }
+                            return null;
+                        }
+                        return otherText;
                     }
-                    return;
-                }
+                    return purpose;
+                }).filter(p => p !== null);
+                
+                if (purposesText.length === 0) return;
             }
         }
 
@@ -644,7 +706,7 @@
                 body: JSON.stringify({
                     rfid_number: rfidNumber,
                     laboratory: selectedLab,
-                    ...(purposeText ? { purpose: purposeText } : {})
+                    ...(purposesText ? { purposes: purposesText } : {})
                 })
             });
 
@@ -692,8 +754,16 @@
                 const attendanceInfo = document.getElementById('attendanceInfo');
                 attendanceInfo.classList.remove('hidden', 'opacity-0');
 
-                // Show success message and close modal
-                showStatus('success', data.message);
+                // Check for ongoing session warning
+                if (data.warning && data.warning.has_ongoing_session) {
+                    // Show warning message about ongoing session
+                    showOngoingSessionWarning(data.warning);
+                    showStatus('success', data.message);
+                } else {
+                    // Show normal success message
+                    showStatus('success', data.message);
+                }
+                
                 closeTapCardModal(true);
                 stopRFIDListener();
             } else {
@@ -812,47 +882,25 @@
         }
     }
 
-            // Add this function to check lab availability
+            // Simplified lab availability check - always shows available
     async function checkLabAvailability(labNumber) {
-        try {
-            const response = await fetch(`/lab-schedule/check-availability/${labNumber}`, {
-                headers: { 'Accept': 'application/json' }
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const ct = response.headers.get('content-type') || '';
-            if (!ct.includes('application/json')) throw new Error('Non-JSON response');
-            const data = await response.json();
+        // With improved system, all labs show as available
+        // Warning modals handle ongoing session logic
+        const statusIconWrapper = document.querySelector(`[data-value="${labNumber}"] .status-icon`);
+        const statusText = document.querySelector(`[data-value="${labNumber}"] .status-text`);
+        const container = document.querySelector(`[data-value="${labNumber}"] .relative`);
 
-            const statusIconWrapper = document.querySelector(`[data-value="${labNumber}"] .status-icon`);
-            const statusText = document.querySelector(`[data-value="${labNumber}"] .status-text`);
-            const container = document.querySelector(`[data-value="${labNumber}"] .relative`);
+        if (!statusIconWrapper) return;
 
-            if (!statusIconWrapper) return;
-
-            if (data.status === 'ongoing') {
-                statusIconWrapper.innerHTML = `
-                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                `;
-                statusText.textContent = 'Unavailable';
-                if (container) {
-                    container.classList.add('bg-red-100', 'border-red-600', 'opacity-80');
-                    container.classList.remove('bg-white', 'border-gray-200');
-                }
-            } else {
-                statusIconWrapper.innerHTML = `
-                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>`;
-                statusText.textContent = 'Available';
-                if (container) {
-                    container.classList.add('bg-white', 'border-gray-200');
-                    container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80');
-                }
-            }
-        } catch (error) {
-            console.error('Error checking lab availability:', error);
+        // Always show as available
+        statusIconWrapper.innerHTML = `
+            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>`;
+        statusText.textContent = 'Available';
+        if (container) {
+            container.classList.add('bg-white', 'border-gray-200');
+            container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80', 'bg-orange-50', 'border-orange-300');
         }
     }
 
@@ -872,16 +920,11 @@
         }
     }
 
-    // Call this function when the page loads and periodically
-    document.addEventListener('DOMContentLoaded', () => {
-        const labCards = document.querySelectorAll('.lab-card');
-        labCards.forEach(card => {
-            const labNumber = card.dataset.value;
-            checkLabAvailability(labNumber);
-        });
-    });
+    // Removed automatic lab availability checking on page load
+    // Labs now show as "Available" by default in HTML template
+    // Warning modals handle ongoing session logic
 
-    function updateLabStatus(labNumber, status) {
+    function updateLabStatus(labNumber, status, sessionDate = null) {
         const labCard = document.querySelector(`[data-value="${labNumber}"]`);
         if (!labCard) return;
 
@@ -891,7 +934,18 @@
 
         if (!statusIconWrapper) return;
 
-        if (status === 'on-going') {
+        // Check if ongoing session is from today (use local date, not UTC)
+        const now = new Date();
+        const today = now.getFullYear() + '-' + 
+                     String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(now.getDate()).padStart(2, '0');
+        const isFromToday = sessionDate === today;
+        
+        // Debug logging
+        console.log(`Lab ${labNumber}: status=${status}, sessionDate=${sessionDate}, today=${today}, isFromToday=${isFromToday}`);
+
+        if (status === 'on-going' && isFromToday) {
+            // Unavailable if ongoing session is from today
             statusIconWrapper.innerHTML = `
                 <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -900,9 +954,10 @@
             statusText.textContent = 'Unavailable';
             if (container) {
                 container.classList.add('bg-red-100', 'border-red-600', 'opacity-80');
-                container.classList.remove('bg-white', 'border-gray-200');
+                container.classList.remove('bg-white', 'border-gray-200', 'bg-orange-50', 'border-orange-300');
             }
         } else {
+            // Available (either no ongoing session or ongoing session from past days)
             statusIconWrapper.innerHTML = `
                 <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -910,77 +965,147 @@
             statusText.textContent = 'Available';
             if (container) {
                 container.classList.add('bg-white', 'border-gray-200');
-                container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80');
+                container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80', 'bg-orange-50', 'border-orange-300');
+            }
+
+            // Add indicator for past ongoing sessions
+            if (status === 'on-going' && !isFromToday) {
+                addPastSessionIndicator(labCard);
+            } else {
+                removePastSessionIndicator(labCard);
             }
         }
     }
 
-    // Function to fetch all labs status
+    // Function to add past session indicator
+    function addPastSessionIndicator(labCard) {
+        // Remove existing indicator first
+        removePastSessionIndicator(labCard);
+        
+        // Add indicator badge
+        const indicator = document.createElement('div');
+        indicator.className = 'past-session-indicator absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-white';
+        indicator.title = 'Has ongoing session from previous day(s)';
+        
+        const container = labCard.querySelector('.relative');
+        if (container) {
+            container.appendChild(indicator);
+        }
+    }
+
+    // Function to remove past session indicator
+    function removePastSessionIndicator(labCard) {
+        const indicator = labCard.querySelector('.past-session-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Function to fetch all labs status (now re-enabled with proper logic)
     async function fetchLabsStatus() {
         try {
             const response = await fetch('/lab-schedule/all-labs-status');
             const data = await response.json();
+            console.log('Fetched lab status data:', data); // Debug logging
             data.forEach(lab => {
-                updateLabStatus(lab.laboratory, lab.status);
+                // Pass session date to determine if it's from today or past
+                updateLabStatus(lab.laboratory, lab.status, lab.session_date);
             });
         } catch (error) {
             console.error('Error fetching lab status:', error);
         }
     }
 
-    // Function to disable/enable lab cards based on user's ongoing session
+    // Function to ensure lab cards are always enabled (improved system allows cross-lab usage)
     async function updateLabCardsBasedOnUserSession() {
-        const hasOngoingSession = await checkUserOngoingSession();
+        // With the improved login system, users can always select labs
+        // They'll get warnings about ongoing sessions, but won't be blocked
         const labCards = document.querySelectorAll('.lab-card');
         
         labCards.forEach(card => {
-            if (hasOngoingSession) {
-                // Disable lab selection
-                card.style.pointerEvents = 'none';
-                card.style.opacity = '0.5';
-                card.querySelector('.relative').classList.add('cursor-not-allowed');
-                card.querySelector('.relative').classList.remove('cursor-pointer');
-                
-                // Add a visual indicator
-                let disabledIndicator = card.querySelector('.disabled-indicator');
-                if (!disabledIndicator) {
-                    disabledIndicator = document.createElement('div');
-                    disabledIndicator.className = 'disabled-indicator absolute inset-0 bg-gray-900 bg-opacity-50 rounded-xl flex items-center justify-center z-10';
-                    disabledIndicator.innerHTML = `
-                        <div class="text-white text-center">
-                            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
-                            </svg>
-                            <p class="text-sm font-medium">Complete your ongoing session first</p>
-                        </div>
-                    `;
-                    card.querySelector('.relative').appendChild(disabledIndicator);
-                }
-            } else {
-                // Enable lab selection
-                card.style.pointerEvents = 'auto';
-                card.style.opacity = '1';
-                card.querySelector('.relative').classList.add('cursor-pointer');
-                card.querySelector('.relative').classList.remove('cursor-not-allowed');
-                
-                // Remove disabled indicator
-                const disabledIndicator = card.querySelector('.disabled-indicator');
-                if (disabledIndicator) {
-                    disabledIndicator.remove();
-                }
+            // Always enable lab selection
+            card.style.pointerEvents = 'auto';
+            card.style.opacity = '1';
+            card.querySelector('.relative').classList.add('cursor-pointer');
+            card.querySelector('.relative').classList.remove('cursor-not-allowed');
+            
+            // Remove any old disabled indicators
+            const disabledIndicator = card.querySelector('.disabled-indicator');
+            if (disabledIndicator) {
+                disabledIndicator.remove();
             }
         });
     }
 
+    // Function to show ongoing session warning
+    function showOngoingSessionWarning(warningData) {
+        // Create warning modal
+        const warningModal = document.createElement('div');
+        warningModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+        warningModal.innerHTML = `
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+                <div class="flex items-center mb-4">
+                    <div class="bg-yellow-100 p-3 rounded-full mr-4">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Ongoing Session Detected</h3>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-gray-700 mb-4">${warningData.message}</p>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="text-sm text-gray-700">
+                            <div class="font-medium mb-2">Previous Session Details:</div>
+                            <div class="space-y-1">
+                                <div><span class="font-medium">Laboratory:</span> ${warningData.ongoing_laboratory}</div>
+                                <div><span class="font-medium">Purpose:</span> ${warningData.ongoing_purpose}</div>
+                                <div><span class="font-medium">Started:</span> ${new Date(warningData.ongoing_time_in).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="text-sm text-blue-800">
+                            <div class="font-medium mb-1">📋 Action Required:</div>
+                            <p>Please notify the admin about the actual time you logged out from Laboratory ${warningData.ongoing_laboratory} so it can be recorded properly in the manual logout system.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        I Understand
+                    </button>
+                    <a href="/lab-schedule/manual-logout" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        View Manual Logout
+                    </a>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(warningModal);
+        
+        // Auto-remove after 15 seconds
+        setTimeout(() => {
+            if (warningModal.parentNode) {
+                warningModal.remove();
+            }
+        }, 15000);
+    }
+
     // Initial load
     document.addEventListener('DOMContentLoaded', () => {
-        fetchLabsStatus(); // Fetch immediately when page loads
-        updateLabCardsBasedOnUserSession(); // Check user session status
-
-        // Update every 5 seconds
+        // Fetch lab status to show proper availability and indicators
+        fetchLabsStatus();
+        updateLabCardsBasedOnUserSession(); // Ensure cards are enabled
+        
+        // Regular updates to keep status current
         setInterval(() => {
             fetchLabsStatus();
             updateLabCardsBasedOnUserSession();
-        }, 5000);
+        }, 5000); // Check every 5 seconds
     });
 </script>

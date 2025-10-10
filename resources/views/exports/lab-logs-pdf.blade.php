@@ -19,10 +19,18 @@
             text-align: left; 
         }
         th { 
-            background-color: #960106;
-            color: white;
+            background-color: #ffffff !important;
+            color: #991b1b !important;
             font-size: 10px;
             text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border: 1px solid #000000;
+        }
+        
+        thead th {
+            background-color: #ffffff !important;
+            color: #991b1b !important;
         }
         h1 { 
             text-align: center; 

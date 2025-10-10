@@ -107,6 +107,47 @@ class ReportController extends Controller
         }
     }
 
+    public function categoryReportExportPDF(Request $request)
+    {
+        try {
+            $categories = Category::with(['assets' => function($query) {
+                $query->where('status', '!=', 'DISPOSED');
+            }])->get();
+            
+            // Calculate total summary
+            $totalSummary = [
+                'total_assets' => Asset::where('status', '!=', 'DISPOSED')->count(),
+                'total_value' => Asset::where('status', '!=', 'DISPOSED')->sum('purchase_price')
+            ];
+
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Generate PDF and stream it
+            $pdf = PDF::loadView('exports.category-report-pdf', compact('categories', 'totalSummary', 'signatures'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('asset-category-report.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
+        }
+    }
+
     public function locationReport()
     {
         $assets = Asset::where('status', '!=', 'DISPOSED')->with('location')->get();
@@ -226,6 +267,56 @@ class ReportController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function locationReportExportPDF(Request $request)
+    {
+        try {
+            $assets = Asset::where('status', '!=', 'DISPOSED')->with('location')->get();
+            
+            // Calculate total summary
+            $totalSummary = [
+                'total_assets' => $assets->count(),
+                'total_value' => $assets->sum('purchase_price')
+            ];
+
+            // Group assets by location
+            $locationStats = $assets->groupBy('location_id')
+                ->map(function ($locationAssets) {
+                    $location = $locationAssets->first()->location;
+                    return [
+                        'location' => $location ? $location->full_location : 'N/A',
+                        'count' => $locationAssets->count(),
+                        'total_value' => $locationAssets->sum('purchase_price')
+                    ];
+                })->values();
+
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Generate PDF and stream it
+            $pdf = PDF::loadView('exports.location-report-pdf', compact('locationStats', 'totalSummary', 'signatures'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('asset-location-report.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
         }
     }
 
@@ -391,8 +482,25 @@ class ReportController extends Controller
 
             $assets = $query->get();
 
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
             // Generate PDF and stream it (for preview)
-            $pdf = PDF::loadView('exports.procurement-history-pdf', compact('assets'));
+            $pdf = PDF::loadView('exports.procurement-history-pdf', compact('assets', 'signatures'));
             $pdf->setPaper('A4', 'portrait');
 
             return $pdf->stream('procurement-history-report-' . now()->format('Y-m-d') . '.pdf');
@@ -440,18 +548,35 @@ class ReportController extends Controller
             }
         
             $disposedAssets = $query->get();
-            
-            \Log::info('Found ' . $disposedAssets->count() . ' disposed assets');
+        
+        \Log::info('Found ' . $disposedAssets->count() . ' disposed assets');
 
-            // Test if view exists and can be rendered
-            $html = view('exports.disposal-history-pdf', compact('disposedAssets'))->render();
-            \Log::info('View rendered successfully, HTML length: ' . strlen($html));
+        // Process signatures if provided
+        $signatures = [];
+        if ($request->has('signatures')) {
+            $signaturesData = json_decode($request->signatures, true);
+            if (is_array($signaturesData)) {
+                foreach ($signaturesData as $signature) {
+                    if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                        $signatures[] = [
+                            'label' => $signature['label'],
+                            'name' => $signature['name'],
+                            'signature_base64' => $signature['signature']
+                        ];
+                    }
+                }
+            }
+        }
 
-            // Generate PDF and stream it (for preview)
-            $pdf = PDF::loadView('exports.disposal-history-pdf', compact('disposedAssets'));
-            $pdf->setPaper('A4', 'portrait');
+        // Test if view exists and can be rendered
+        $html = view('exports.disposal-history-pdf', compact('disposedAssets', 'signatures'))->render();
+        \Log::info('View rendered successfully, HTML length: ' . strlen($html));
 
-            return $pdf->stream('disposal-history-report-' . now()->format('Y-m-d') . '.pdf');
+        // Generate PDF and stream it (for preview)
+        $pdf = PDF::loadView('exports.disposal-history-pdf', compact('disposedAssets', 'signatures'));
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->stream('disposal-history-report-' . now()->format('Y-m-d') . '.pdf');
 
         } catch (\Exception $e) {
             \Log::error('PDF generation failed: ' . $e->getMessage());
@@ -612,6 +737,100 @@ class ReportController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to preview PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function vendorAnalysisExportPDF(Request $request)
+    {
+        try {
+            // Get all vendors with their assets and related data
+            $vendors = Vendor::with(['assets' => function($query) {
+                $query->with(['repairRequests' => function($repairQuery) {
+                    $repairQuery->where('status', 'completed');
+                }]);
+            }])->get();
+
+            // Check if there are any vendors with assets
+            $vendorsWithAssets = $vendors->filter(function($vendor) {
+                return $vendor->assets->count() > 0;
+            });
+
+            // Calculate overall statistics
+            $overallStats = [
+                'total_vendors' => $vendors->count(),
+                'total_assets' => $vendorsWithAssets->sum(function($vendor) { return $vendor->assets->count(); }),
+                'total_value' => $vendorsWithAssets->sum(function($vendor) { return $vendor->assets->sum('purchase_price'); }),
+            ];
+
+            $vendorAnalysis = collect();
+            if ($vendorsWithAssets->count() > 0) {
+                $vendorAnalysis = $vendorsWithAssets->map(function ($vendor) {
+                    $assets = $vendor->assets;
+                    $totalAssets = $assets->count();
+                    $totalValue = $assets->sum('purchase_price');
+                    
+                    // Calculate repair statistics
+                    $totalRepairs = $assets->sum(function($asset) {
+                        return $asset->repairRequests->count();
+                    });
+                    
+                    $completedRepairs = $assets->sum(function($asset) {
+                        return $asset->repairRequests->where('status', 'completed')->count();
+                    });
+                    
+                    $disposedAssets = $assets->where('status', 'DISPOSED')->count();
+
+                    // Calculate completion rate
+                    $completionRate = $totalRepairs > 0 ? ($completedRepairs / $totalRepairs) * 100 : 0;
+
+                    // Calculate average age (years)
+                    $averageAge = null;
+                    if ($totalAssets > 0) {
+                        $totalYears = $assets->sum(function($asset) {
+                            return \Carbon\Carbon::parse($asset->purchase_date)->diffInYears(now());
+                        });
+                        $averageAge = round($totalYears / $totalAssets, 1);
+                    }
+
+                    return [
+                        'id' => $vendor->id,
+                        'name' => $vendor->name,
+                        'total_assets' => $totalAssets,
+                        'total_value' => $totalValue,
+                        'total_repairs' => $totalRepairs,
+                        'completed_repairs' => $completedRepairs,
+                        'completion_rate' => round($completionRate, 2),
+                        'disposed_count' => $disposedAssets,
+                        'average_age' => $averageAge,
+                    ];
+                })->toArray();
+            }
+
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Generate PDF and stream it
+            $pdf = PDF::loadView('exports.vendor-analysis-pdf', compact('vendorAnalysis', 'overallStats', 'signatures'));
+            $pdf->setPaper('A4', 'landscape');
+
+            return $pdf->stream('vendor-analysis-report.pdf');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
         }
     }
 
@@ -1071,6 +1290,23 @@ class ReportController extends Controller
         // Get data for the table
         $usageData = $query->paginate(10);
 
+        // Process signatures if provided
+        $signatures = [];
+        if ($request->has('signatures')) {
+            $signaturesData = json_decode($request->signatures, true);
+            if (is_array($signaturesData)) {
+                foreach ($signaturesData as $signature) {
+                    if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                        $signatures[] = [
+                            'label' => $signature['label'],
+                            'name' => $signature['name'],
+                            'signature_base64' => $signature['signature']
+                        ];
+                    }
+                }
+            }
+        }
+
         // Generate PDF
         $pdf = PDF::loadView('reports.lab-usage-pdf', compact(
             'summary',
@@ -1078,7 +1314,8 @@ class ReportController extends Controller
             'labUsage',
             'peakUsage',
             'usageData',
-            'period'
+            'period',
+            'signatures'
         ));
 
         // Set PDF options

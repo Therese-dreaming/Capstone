@@ -89,12 +89,7 @@ class LabScheduleController extends Controller
             }
             
             // If there's an ongoing session in another laboratory for this user
-            if ($anyOngoingLog && $anyOngoingLog->laboratory != $request->laboratory) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "You have an ongoing session in Laboratory {$anyOngoingLog->laboratory}. Please complete that session first."
-                ], 400);
-            }
+            $hasOngoingInOtherLab = $anyOngoingLog && $anyOngoingLog->laboratory != $request->laboratory;
 
             // Prevent time-in if another user currently occupies the lab
             $labOngoingByOther = LabLog::where('laboratory', $request->laboratory)
@@ -130,14 +125,34 @@ class LabScheduleController extends Controller
                 ], 500);
             }
 
-            return response()->json([
+            // Prepare response with ongoing session warning if applicable
+            $response = [
                 'success' => true,
                 'faculty_name' => $user->name,
                 'faculty_id' => $user->id,
                 'status' => $labLog->status,
                 'time_in' => $labLog->time_in,
                 'message' => 'Time In recorded successfully'
-            ]);
+            ];
+
+            // Add ongoing session warning if user has ANY ongoing session (from previous days)
+            if ($anyOngoingLog) {
+                // Check if the ongoing session is from a previous day
+                $sessionDate = $anyOngoingLog->time_in->format('Y-m-d');
+                $today = now()->format('Y-m-d');
+                
+                if ($sessionDate < $today) {
+                    $response['warning'] = [
+                        'has_ongoing_session' => true,
+                        'ongoing_laboratory' => $anyOngoingLog->laboratory,
+                        'ongoing_time_in' => $anyOngoingLog->time_in,
+                        'ongoing_purpose' => $anyOngoingLog->purpose,
+                        'message' => "⚠️ You have an ongoing session in Laboratory {$anyOngoingLog->laboratory} since {$anyOngoingLog->time_in->format('M d, Y h:i A')}. Please notify the admin about your actual logout time for that session."
+                    ];
+                }
+            }
+
+            return response()->json($response);
         } catch (\Exception $e) {
 
             return response()->json([
@@ -219,7 +234,10 @@ class LabScheduleController extends Controller
                 ->when($request->laboratory, function ($q) use ($request) {
                     return $q->where('laboratory', $request->laboratory);
                 })
-                ->when($request->purpose, function ($q) use ($request) {
+                ->when($request->has('purpose') && is_array($request->purpose), function ($q) use ($request) {
+                    return $q->whereIn('purpose', $request->purpose);
+                })
+                ->when($request->purpose && !is_array($request->purpose), function ($q) use ($request) {
                     return $q->where('purpose', $request->purpose);
                 })
                 ->when($request->status, function ($q) use ($request) {
@@ -241,20 +259,37 @@ class LabScheduleController extends Controller
 
             $logs = $query->get();
 
+            // Process signatures if provided
+            $signatures = [];
+            if ($request->has('signatures')) {
+                $signaturesData = json_decode($request->signatures, true);
+                if (is_array($signaturesData)) {
+                    foreach ($signaturesData as $signature) {
+                        if (isset($signature['label'], $signature['name'], $signature['signature'])) {
+                            $signatures[] = [
+                                'label' => $signature['label'],
+                                'name' => $signature['name'],
+                                'signature_base64' => $signature['signature']
+                            ];
+                        }
+                    }
+                }
+            }
+
             // Prepare filters data for the template
             $filters = [
                 'laboratory' => $request->laboratory,
-                'purpose' => $request->purpose,
+                'purpose' => is_array($request->purpose) ? implode(', ', $request->purpose) : $request->purpose,
                 'status' => $request->status,
                 'start_date' => $request->time_in_start_date,
                 'end_date' => $request->time_in_end_date,
             ];
 
-            // Generate PDF and download it
-            $pdf = PDF::loadView('exports.lab-attendance-history-pdf', compact('logs'));
+            // Generate PDF and stream it
+            $pdf = PDF::loadView('exports.lab-attendance-history-pdf', compact('logs', 'signatures'));
             $pdf->setPaper('A4', 'landscape');
 
-            return $pdf->download('lab-attendance-history-report.pdf');
+            return $pdf->stream('lab-attendance-history-report.pdf');
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
@@ -284,7 +319,8 @@ class LabScheduleController extends Controller
 
             $statuses[] = [
                 'laboratory' => $lab,
-                'status' => $ongoingLog ? 'on-going' : 'available'
+                'status' => $ongoingLog ? 'on-going' : 'available',
+                'session_date' => $ongoingLog ? $ongoingLog->time_in->format('Y-m-d') : null
             ];
         }
 

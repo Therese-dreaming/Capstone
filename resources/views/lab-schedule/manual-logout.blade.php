@@ -52,10 +52,37 @@
         </div>
 
         <div class="bg-white rounded-xl shadow p-4 md:p-6">
-            <h2 class="text-lg font-semibold mb-4">Ongoing Sessions</h2>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold">Ongoing Sessions Requiring Manual Logout</h2>
+                <div class="bg-yellow-100 px-3 py-1 rounded-full">
+                    <span class="text-sm font-medium text-yellow-800">{{ $ongoingLogs->total() }} session(s)</span>
+                </div>
+            </div>
+            
             @if($ongoingLogs->isEmpty())
-                <div class="text-gray-600">No ongoing sessions found.</div>
+                <div class="text-center py-8">
+                    <div class="bg-green-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">All Clear!</h3>
+                    <p class="text-gray-600">No ongoing sessions requiring manual logout.</p>
+                </div>
             @else
+                <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 p-2 rounded-full mr-3">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="text-sm text-blue-800">
+                            <div class="font-medium mb-1">💡 How to Handle Forgotten Sessions:</div>
+                            <p>These are sessions where users forgot to tap out. Contact the faculty member to confirm their actual logout time, then use the form below to record the correct time.</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="space-y-4">
                     @foreach($ongoingLogs as $log)
                         <div class="border border-gray-200 rounded-lg p-4">
