@@ -131,6 +131,12 @@
                         </svg>
                         <span>Repair Calls</span>
                     </a>
+                    <a href="{{ route('repair.pending-signature') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.pending-signature') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        <span>Pending Signatures</span>
+                    </a>
                     <a href="{{ route('lab.logging') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab.logging') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -319,6 +325,18 @@
                             <a href="{{ route('maintenance.upcoming') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.upcoming') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
                                 Upcoming Maintenance
                             </a>
+                            @if(auth()->check() && auth()->user()->group_id !== 2)
+                            <a href="{{ route('maintenance.pending-approval') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.pending-approval') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
+                                <div class="flex items-center justify-between w-full">
+                                    <span>Pending Approval</span>
+                                    @if(auth()->user()->getNavigationCount('maintenance_pending_approval') > 0)
+                                        <span class="bg-orange-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Tasks Pending Approval">
+                                            {{ auth()->user()->getNavigationCount('maintenance_pending_approval') }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </a>
+                            @endif
                             <a href="{{ route('maintenance.history') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.history') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
                                 Maintenance History
                             </a>

@@ -13,6 +13,15 @@ class Maintenance extends Model
         'scheduled_date',
         'target_date',
         'status',
+        'approval_status',
+        'approved_by_id',
+        'approved_at',
+        'admin_notes',
+        'quality_issues',
+        'admin_signature',
+        'requires_rework',
+        'rework_count',
+        'rework_instructions',
         'action_by_id',
         'completed_at',
         'excluded_assets',
@@ -26,7 +35,9 @@ class Maintenance extends Model
         'scheduled_date' => 'datetime',
         'target_date' => 'date',
         'asset_issues' => 'array',
-        'completed_at' => 'datetime'
+        'quality_issues' => 'array',
+        'completed_at' => 'datetime',
+        'approved_at' => 'datetime'
     ];
 
     public function actionBy()
@@ -37,6 +48,11 @@ class Maintenance extends Model
     public function technician()
     {
         return $this->belongsTo(User::class, 'technician_id');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
     }
 
     public function location()

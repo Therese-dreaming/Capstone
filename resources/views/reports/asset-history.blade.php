@@ -84,20 +84,22 @@
                             }
                         }
                         
-                        // Add location changes
-                        if(isset($history['LOCATION_ID'])) {
+                        // Add location changes (support LOCATION_ID and LOCATION)
+                        $locationChanges = collect($history['LOCATION_ID'] ?? collect())
+                            ->concat(collect($history['LOCATION'] ?? collect()));
+                        if($locationChanges->isNotEmpty()) {
                             // Get all location IDs from location changes for batch loading
-                            $locationIds = collect($history['LOCATION_ID'])->flatMap(function($record) {
+                            $locationIds = $locationChanges->flatMap(function($record) {
                                 return [$record->old_value, $record->new_value];
                             })->filter()->unique();
                             
                             // Load location details
                             $locations = \App\Models\Location::whereIn('id', $locationIds)->get()->keyBy('id');
                             
-                            foreach($history['LOCATION_ID'] as $record) {
+                            foreach($locationChanges as $record) {
                                 // Get location names
-                                $fromLocation = $locations->has($record->old_value) ? $locations[$record->old_value]->full_location : 'Location #' . $record->old_value;
-                                $toLocation = $locations->has($record->new_value) ? $locations[$record->new_value]->full_location : 'Location #' . $record->new_value;
+                                $fromLocation = $locations->has($record->old_value) ? $locations[$record->old_value]->full_location : ('Location #' . $record->old_value);
+                                $toLocation = $locations->has($record->new_value) ? $locations[$record->new_value]->full_location : ('Location #' . $record->new_value);
                                 
                                 $allEvents->push([
                                     'date' => $record->created_at,
@@ -113,9 +115,11 @@
                             }
                         }
                         
-                        // Add price changes
-                        if(isset($history['PRICE'])) {
-                            foreach($history['PRICE'] as $record) {
+                        // Add price changes (support PRICE and PURCHASE_PRICE)
+                        $priceChanges = collect($history['PRICE'] ?? collect())
+                            ->concat(collect($history['PURCHASE_PRICE'] ?? collect()));
+                        if($priceChanges->isNotEmpty()) {
+                            foreach($priceChanges as $record) {
                                 $allEvents->push([
                                     'date' => $record->created_at,
                                     'type' => 'price',
@@ -509,12 +513,33 @@
 
 <script>
     function showTab(tabId) {
-        // Update URL with active_tab parameter and redirect
-        const currentUrl = new URL(window.location);
-        currentUrl.searchParams.set('active_tab', tabId);
-        
-        // Redirect to the new URL so the server can see the parameter
-        window.location.href = currentUrl.toString();
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        // Remove active styles from all tab buttons
+        document.querySelectorAll('.tab-button').forEach(tab => {
+            tab.classList.remove('active');
+            tab.classList.remove('bg-red-800');
+            tab.classList.remove('!text-white');
+            tab.classList.remove('!font-bold');
+        });
+
+        // Show the selected tab
+        const selected = document.getElementById(tabId);
+        if (selected) selected.classList.remove('hidden');
+
+        // Apply active styles to the selected button
+        const activeTabElement = document.querySelector(`[data-tab="${tabId}"]`);
+        if (activeTabElement) {
+            activeTabElement.classList.add('active', 'bg-red-800', '!text-white', '!font-bold');
+        }
+
+        // Update URL without reloading so pagination links include the right tab
+        const url = new URL(window.location);
+        url.searchParams.set('active_tab', tabId);
+        window.history.replaceState({}, '', url);
     }
 
     // Date filtering functionality

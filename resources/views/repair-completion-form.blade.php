@@ -80,6 +80,39 @@
             </div>
             @endif
 
+            <!-- Photo Evidence Section (Required) -->
+            <div class="space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div class="flex items-center space-x-2 mb-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <label class="text-sm font-semibold text-blue-900">Photo Evidence <span class="text-red-600">*</span></label>
+                </div>
+                <p class="text-xs text-blue-700 mb-3">Please upload before and after photos of the repair work</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-blue-900 mb-2">Before Photos</label>
+                        <input type="file" name="before_photos[]" id="beforePhotosInput" multiple accept="image/*" required
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                            onchange="previewImages(this, 'beforePhotosPreview')">
+                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos</p>
+                        <!-- Preview Container -->
+                        <div id="beforePhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-blue-900 mb-2">After Photos</label>
+                        <input type="file" name="after_photos[]" id="afterPhotosInput" multiple accept="image/*" required
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                            onchange="previewImages(this, 'afterPhotosPreview')">
+                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos</p>
+                        <!-- Preview Container -->
+                        <div id="afterPhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Findings -->
             <div class="space-y-2">
                 <label class="block text-gray-700 text-sm font-semibold" for="findings">
@@ -98,6 +131,26 @@
                 <textarea id="remarks" name="remarks" rows="3" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
                     placeholder="Enter any additional remarks about the repair"></textarea>
+            </div>
+
+            <!-- Caller Presence Section -->
+            <div class="space-y-3 bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div class="flex items-center space-x-2 mb-2">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <label class="text-sm font-semibold text-purple-900">Is the caller present?</label>
+                </div>
+                <div class="flex items-center space-x-6 ml-7">
+                    <label class="inline-flex items-center hover:cursor-pointer">
+                        <input type="radio" name="caller_present" value="yes" class="form-radio text-purple-600 focus:ring-purple-600" checked onclick="toggleCallerPresence(true)">
+                        <span class="ml-2 text-gray-700">Yes, Present</span>
+                    </label>
+                    <label class="inline-flex items-center hover:cursor-pointer">
+                        <input type="radio" name="caller_present" value="no" class="form-radio text-purple-600 focus:ring-purple-600" onclick="toggleCallerPresence(false)">
+                        <span class="ml-2 text-gray-700">No, Not Available</span>
+                    </label>
+                </div>
             </div>
 
             <!-- Signatures Section -->
@@ -121,13 +174,13 @@
                     </div>
                 </div>
 
-                <!-- Caller's Signature -->
+                <!-- Caller's Signature (shown when caller is present) -->
                 @if($repairRequest->creator_id != auth()->id())
-                <div class="space-y-2">
+                <div id="callerSignatureSection" class="space-y-2">
                     <label class="block text-gray-700 text-sm font-semibold">
                         Caller's Signature <span class="text-red-600">*</span>
                     </label>
-                    <div class="border border-gray-300 rounded-md p-4">
+                    <div class="border border-gray-300 rounded-md p-4 bg-green-50">
                         <canvas id="callerSignature" class="signature-pad"></canvas>
                         <input type="hidden" name="caller_signature" id="callerSignatureInput">
                         <div class="flex justify-between items-center mt-2">
@@ -135,6 +188,43 @@
                                 Clear Signature
                             </button>
                             <span class="text-sm text-gray-500">Please sign above</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delegate Section (shown when caller is not present) -->
+                <div id="delegateSection" class="hidden space-y-3 bg-amber-50 p-4 rounded-lg border border-amber-200">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <label class="text-sm font-semibold text-amber-900">Authorized Delegate (Optional)</label>
+                    </div>
+                    <p class="text-xs text-amber-700 mb-3">If an authorized person is available to sign on behalf of the caller, enter their name below. Otherwise, leave blank and the caller will be notified to sign within 48 hours.</p>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-amber-900">Delegate Name</label>
+                        <input type="text" name="delegate_name" id="delegateNameInput" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            placeholder="Enter delegate's full name (optional)"
+                            oninput="toggleDelegateSignature()">
+                        <p class="text-xs text-amber-600">Enter the name of the person authorized to sign on behalf of the caller</p>
+                    </div>
+
+                    <!-- Delegate Signature (shown when delegate name is entered) -->
+                    <div id="delegateSignatureSection" class="hidden space-y-3 mt-4">
+                        <label class="block text-gray-700 text-sm font-semibold">
+                            Delegate's Signature <span class="text-red-600">*</span>
+                        </label>
+                        <div class="border border-gray-300 rounded-md p-4 bg-white">
+                            <canvas id="delegateSignature" class="signature-pad"></canvas>
+                            <input type="hidden" name="delegate_signature" id="delegateSignatureInput">
+                            <div class="flex justify-between items-center mt-2">
+                                <button type="button" onclick="clearDelegateSignature()" class="text-sm text-red-600 hover:text-red-800">
+                                    Clear Signature
+                                </button>
+                                <span class="text-sm text-gray-500">Delegate please sign above</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -181,7 +271,7 @@
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
-    let technicianPad, callerPad;
+    let technicianPad, callerPad, delegatePad;
     let html5QrCode;
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -218,6 +308,8 @@
             });
         }
 
+        // Note: Delegate signature pad is initialized on-demand when delegate name is entered
+
 
 
         // Set current timestamp
@@ -232,6 +324,8 @@
             const remarks = document.getElementById('remarks').value.trim();
             const technicianSignature = technicianPad.toDataURL();
             const callerSignature = callerPad ? callerPad.toDataURL() : '';
+            const callerPresent = (document.querySelector('input[name="caller_present"]:checked')?.value === 'yes');
+            const delegateName = (document.getElementById('delegateNameInput')?.value || '').trim();
 
             if (!findings) {
                 showMessage('Please enter the findings', 'error');
@@ -248,18 +342,35 @@
                 return;
             }
 
-            @if($repairRequest->creator_id != auth()->id())
-            if (!callerPad || callerPad.isEmpty()) {
-                showMessage('Please provide caller signature', 'error');
-                return;
+            // Signature rules
+            if (callerPresent) {
+                // Caller present: require caller signature
+                if (!callerPad || callerPad.isEmpty()) {
+                    showMessage('Please provide caller signature', 'error');
+                    return;
+                }
+            } else {
+                // Caller not present
+                if (delegateName) {
+                    // Delegate selected: require delegate signature
+                    if (!delegatePad || delegatePad.isEmpty()) {
+                        showMessage('Please provide delegate signature', 'error');
+                        return;
+                    }
+                }
+                // If no delegate name, allow deferred (no signature required here)
             }
-            @endif
 
             // Set signature data to hidden inputs
             document.getElementById('technicianSignatureInput').value = technicianSignature;
-            @if($repairRequest->creator_id != auth()->id())
-            document.getElementById('callerSignatureInput').value = callerSignature;
-            @endif
+            const callerSigInput = document.getElementById('callerSignatureInput');
+            if (callerSigInput) {
+                callerSigInput.value = callerSignature;
+            }
+            const delegateSigInput = document.getElementById('delegateSignatureInput');
+            if (delegateSigInput && delegatePad && !delegatePad.isEmpty()) {
+                delegateSigInput.value = delegatePad.toDataURL();
+            }
 
             // Submit the form via AJAX
             const formData = new FormData(this);
@@ -343,10 +454,8 @@
             formData.set('technician_signature', technicianPad.toDataURL());
         }
         @if(!in_array($repairRequest->creator->group_id ?? null, [1, 2]))
-        if (!callerPad || callerPad.isEmpty()) {
-            showMessage('Please provide caller signature', 'error');
-            return;
-        }
+        // For pull-out, do not force caller signature when caller is absent
+
         @endif
 
         // Validate required fields
@@ -368,12 +477,7 @@
             return;
         }
 
-        @if($repairRequest->creator_id != auth()->id())
-        if (!callerPad || callerPad.isEmpty()) {
-            showMessage('Please provide caller signature', 'error');
-            return;
-        }
-        @endif
+        // Caller signature not mandatory here if opting for delegate/deferred
 
         // Submit the form with updated status
         fetch(form.action, {
@@ -436,6 +540,180 @@
         setTimeout(() => {
             messageDiv.remove();
         }, 5000);
+    }
+
+    // Caller presence toggle
+    function toggleCallerPresence(isPresent) {
+        const callerSection = document.getElementById('callerSignatureSection');
+        const delegateSection = document.getElementById('delegateSection');
+        
+        if (isPresent) {
+            if (callerSection) callerSection.classList.remove('hidden');
+            if (delegateSection) delegateSection.classList.add('hidden');
+        } else {
+            if (callerSection) callerSection.classList.add('hidden');
+            if (delegateSection) delegateSection.classList.remove('hidden');
+        }
+    }
+
+    // Toggle delegate signature section
+    function toggleDelegateSignature() {
+        const delegateNameInput = document.getElementById('delegateNameInput');
+        const signatureSection = document.getElementById('delegateSignatureSection');
+        
+        if (delegateNameInput && delegateNameInput.value.trim()) {
+            signatureSection.classList.remove('hidden');
+            
+            // Wait for the element to be visible before initializing
+            setTimeout(() => {
+                const delegateCanvas = document.getElementById('delegateSignature');
+                if (delegateCanvas && !delegatePad) {
+                    // Set canvas size based on visible dimensions
+                    delegateCanvas.width = delegateCanvas.offsetWidth;
+                    delegateCanvas.height = 200;
+                    
+                    delegatePad = new SignaturePad(delegateCanvas, {
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        penColor: 'rgb(0, 0, 0)',
+                        velocityFilterWeight: 0.7,
+                        minWidth: 0.5,
+                        maxWidth: 2.5,
+                        throttle: 16
+                    });
+                    
+                    console.log('Delegate signature pad initialized');
+                }
+            }, 100);
+        } else {
+            signatureSection.classList.add('hidden');
+            // Clear the pad when hiding
+            if (delegatePad) {
+                delegatePad.clear();
+            }
+        }
+    }
+
+    // Clear delegate signature
+    function clearDelegateSignature() {
+        if (delegatePad) {
+            delegatePad.clear();
+        }
+    }
+
+    // Preview uploaded images
+    function previewImages(input, previewContainerId) {
+        const previewContainer = document.getElementById(previewContainerId);
+        previewContainer.innerHTML = ''; // Clear previous previews
+        
+        if (input.files && input.files.length > 0) {
+            Array.from(input.files).forEach((file, index) => {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    console.error('File is not an image:', file.name);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    console.log('FileReader loaded, data length:', e.target.result.length);
+                    console.log('Data starts with:', e.target.result.substring(0, 50));
+                    
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'relative group';
+                    
+                    // Create image element
+                    const img = document.createElement('img');
+                    img.className = 'w-full h-32 object-cover rounded-lg border-2 border-blue-300 cursor-pointer hover:border-blue-500 transition-colors bg-white';
+                    img.alt = `Preview ${index + 1}`;
+                    img.style.minHeight = '128px';
+                    img.style.display = 'block';
+                    img.style.position = 'relative';
+                    img.style.zIndex = '1';
+                    
+                    // Set src after adding to DOM to ensure proper loading
+                    img.onload = function() {
+                        console.log('Image loaded successfully:', file.name);
+                        console.log('Image dimensions:', this.naturalWidth, 'x', this.naturalHeight);
+                    };
+                    
+                    img.onerror = function(err) {
+                        console.error('Failed to load image:', file.name, err);
+                        img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
+                    };
+                    
+                    img.onclick = function() {
+                        openImagePreviewModal(e.target.result);
+                    };
+                    
+                    // Create overlay (for hover effect only)
+                    const overlay = document.createElement('div');
+                    overlay.className = 'absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity rounded-lg flex items-center justify-center pointer-events-none';
+                    overlay.style.zIndex = '10';
+                    overlay.innerHTML = `
+                        <svg class="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                    `;
+                    
+                    // Create filename label
+                    const filename = document.createElement('p');
+                    filename.className = 'text-xs text-center text-blue-700 mt-1 truncate';
+                    filename.textContent = file.name;
+                    
+                    // Append elements (don't add overlay for now to test)
+                    previewDiv.appendChild(img);
+                    // previewDiv.appendChild(overlay); // Temporarily disabled
+                    previewDiv.appendChild(filename);
+                    previewContainer.appendChild(previewDiv);
+                    
+                    // Set src AFTER appending to DOM
+                    img.src = e.target.result;
+                }
+                
+                reader.onerror = function() {
+                    console.error('FileReader error for:', file.name);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+
+    // Open image preview modal
+    function openImagePreviewModal(imageSrc) {
+        const modal = document.createElement('div');
+        modal.id = 'imagePreviewModal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4';
+        modal.onclick = function() { this.remove(); };
+        
+        // Create container
+        const container = document.createElement('div');
+        container.className = 'relative max-w-4xl max-h-full';
+        container.onclick = function(e) { e.stopPropagation(); };
+        
+        // Create image
+        const img = document.createElement('img');
+        img.src = imageSrc;
+        img.className = 'max-w-full max-h-screen object-contain rounded-lg shadow-2xl';
+        
+        // Create close button
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'absolute top-4 right-4 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg';
+        closeBtn.onclick = function() {
+            document.getElementById('imagePreviewModal').remove();
+        };
+        closeBtn.innerHTML = `
+            <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        `;
+        
+        // Append elements
+        container.appendChild(img);
+        container.appendChild(closeBtn);
+        modal.appendChild(container);
+        document.body.appendChild(modal);
     }
 </script>
 

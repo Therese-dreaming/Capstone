@@ -142,7 +142,7 @@ class MaintenanceController extends Controller
 
     public function upcoming(Request $request)
     {
-        $query = Maintenance::where('status', 'scheduled');
+        $query = Maintenance::whereIn('status', ['scheduled', 'needs_rework']);
 
         // If user is secretary (group_id = 2), only show their assigned tasks
         if (auth()->user()->group_id === 2) {
@@ -185,10 +185,19 @@ class MaintenanceController extends Controller
         \Log::info('Complete maintenance request data:', request()->all());
     
         $updateData = [
-            'status' => 'completed',
+            'status' => 'pending_approval',
+            'approval_status' => 'pending_approval',
             'action_by_id' => auth()->id(),
             'completed_at' => now(),
-            'notes' => request('notes')
+            'notes' => request('notes'),
+            // Reset approval fields when resubmitting (for rework cases)
+            'approved_by_id' => null,
+            'approved_at' => null,
+            'admin_signature' => null,
+            'admin_notes' => null,
+            'quality_issues' => [],
+            'requires_rework' => false,
+            'rework_instructions' => null
         ];
     
         // Handle asset issues if they exist in the request
@@ -230,7 +239,7 @@ class MaintenanceController extends Controller
             $maintenance->update($updateData);
             \Log::info('Maintenance updated successfully:', ['maintenance_id' => $id]);
     
-            return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance marked as completed');
+            return redirect()->route('maintenance.upcoming')->with('success', 'Maintenance submitted for approval');
         } catch (\Exception $e) {
             \Log::error('Error updating maintenance:', ['error' => $e->getMessage()]);
             return redirect()->route('maintenance.upcoming')->with('error', 'Failed to update maintenance: ' . $e->getMessage());
@@ -267,7 +276,7 @@ class MaintenanceController extends Controller
 
     public function history(Request $request)
     {
-        $query = Maintenance::with(['location', 'technician', 'actionBy'])
+        $query = Maintenance::with(['location', 'technician', 'actionBy', 'approvedBy'])
             ->whereIn('status', ['completed', 'cancelled'])
             ->orderBy('scheduled_date', 'desc');
 
@@ -476,7 +485,7 @@ class MaintenanceController extends Controller
         try {
             $maintenances = Maintenance::where('location_id', $locationId)
                 ->whereDate('scheduled_date', $date)
-                ->where('status', 'scheduled')
+                ->whereIn('status', ['scheduled', 'needs_rework'])
                 ->get();
 
             // Handle asset issues if they exist in the request
@@ -509,9 +518,18 @@ class MaintenanceController extends Controller
 
             foreach ($maintenances as $maintenance) {
                 $updateData = [
-                    'status' => 'completed',
+                    'status' => 'pending_approval',
+                    'approval_status' => 'pending_approval',
                     'action_by_id' => auth()->id(),
-                    'completed_at' => now()
+                    'completed_at' => now(),
+                    // Reset approval fields when resubmitting (for rework cases)
+                    'approved_by_id' => null,
+                    'approved_at' => null,
+                    'admin_signature' => null,
+                    'admin_notes' => null,
+                    'quality_issues' => [],
+                    'requires_rework' => false,
+                    'rework_instructions' => null
                 ];
 
                 // Add asset issues data if it exists
@@ -524,7 +542,7 @@ class MaintenanceController extends Controller
             }
 
             return redirect()->route('maintenance.upcoming')
-                ->with('success', 'All maintenance tasks completed successfully');
+                ->with('success', 'All maintenance tasks submitted for approval');
         } catch (\Exception $e) {
             return redirect()->route('maintenance.upcoming')
                 ->with('error', 'Failed to complete maintenance tasks');
@@ -773,6 +791,134 @@ class MaintenanceController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to export PDF: ' . $e->getMessage());
+        }
+    }
+
+    // New methods for approval workflow
+    public function pendingApproval(Request $request)
+    {
+        $query = Maintenance::with(['location', 'technician', 'actionBy'])
+            ->where('status', 'pending_approval')
+            ->orderBy('completed_at', 'desc');
+
+        // Apply filters
+        if ($request->filled('lab')) {
+            $query->whereHas('location', function($q) use ($request) {
+                $q->where('room_number', $request->lab);
+            });
+        }
+
+        if ($request->filled('technician')) {
+            $query->where('technician_id', $request->technician);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->where('completed_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('completed_at', '<=', $request->end_date);
+        }
+
+        $maintenances = $query->paginate(15);
+        $technicians = User::whereIn('group_id', [1, 2])->where('status', 'active')->get();
+
+        return view('maintenance-pending-approval', compact('maintenances', 'technicians'));
+    }
+
+    public function approve(Request $request, $id)
+    {
+        $request->validate([
+            'admin_signature' => 'required|string',
+            'admin_notes' => 'nullable|string|max:1000',
+            'quality_issues' => 'nullable|array',
+            'requires_rework' => 'nullable|boolean',
+            'rework_instructions' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            $maintenance = Maintenance::findOrFail($id);
+
+            $approvalStatus = $request->requires_rework ? 'needs_rework' : 'approved';
+            $mainStatus = $approvalStatus === 'approved' ? 'completed' : 'pending_approval';
+
+            $maintenance->update([
+                'status' => $mainStatus,
+                'approval_status' => $approvalStatus,
+                'approved_by_id' => auth()->id(),
+                'approved_at' => now(),
+                'admin_signature' => $request->admin_signature,
+                'admin_notes' => $request->admin_notes,
+                'quality_issues' => $request->quality_issues ?? [],
+                'requires_rework' => $request->requires_rework ?? false,
+                'rework_instructions' => $request->rework_instructions
+            ]);
+
+            // Create notification for technician
+            if ($approvalStatus === 'needs_rework') {
+                Notification::create([
+                    'user_id' => $maintenance->technician_id,
+                    'type' => 'maintenance_rework_required',
+                    'message' => "Maintenance task requires rework: {$maintenance->maintenance_task}",
+                    'is_read' => false,
+                    'link' => '/maintenance/upcoming'
+                ]);
+            } else {
+                Notification::create([
+                    'user_id' => $maintenance->technician_id,
+                    'type' => 'maintenance_approved',
+                    'message' => "Maintenance task approved: {$maintenance->maintenance_task}",
+                    'is_read' => false,
+                    'link' => '/maintenance/history'
+                ]);
+            }
+
+            $message = $approvalStatus === 'approved' ? 'Maintenance approved successfully' : 'Maintenance marked for rework';
+            return redirect()->route('maintenance.pending-approval')->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->route('maintenance.pending-approval')
+                ->with('error', 'Failed to process approval: ' . $e->getMessage());
+        }
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $request->validate([
+            'admin_notes' => 'required|string|max:1000',
+            'quality_issues' => 'nullable|array'
+        ]);
+
+        try {
+            $maintenance = Maintenance::findOrFail($id);
+
+            $maintenance->update([
+                'status' => 'needs_rework', // Send back to upcoming for rework
+                'approval_status' => 'rejected',
+                'approved_by_id' => auth()->id(),
+                'approved_at' => now(),
+                'admin_notes' => $request->admin_notes,
+                'quality_issues' => $request->quality_issues ?? [],
+                'requires_rework' => $request->has('requires_rework') ? true : false,
+                'rework_count' => $maintenance->rework_count + 1, // Increment rework counter
+                'rework_instructions' => $request->rework_instructions ?? null
+            ]);
+
+            // Create notification for technician
+            Notification::create([
+                'user_id' => $maintenance->technician_id,
+                'type' => 'maintenance_rejected',
+                'message' => "Maintenance task rejected: {$maintenance->maintenance_task}",
+                'is_read' => false,
+                'link' => '/maintenance/upcoming'
+            ]);
+
+            return redirect()->route('maintenance.pending-approval')
+                ->with('success', 'Maintenance rejected successfully');
+
+        } catch (\Exception $e) {
+            return redirect()->route('maintenance.pending-approval')
+                ->with('error', 'Failed to reject maintenance: ' . $e->getMessage());
         }
     }
 

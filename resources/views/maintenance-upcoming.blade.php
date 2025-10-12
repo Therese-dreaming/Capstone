@@ -205,13 +205,31 @@
                                                     {{ $maintenance->technician->name }}
                                                 </p>
                                             </div>
+                                            @if($maintenance->status === 'needs_rework')
+                                            <div class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                                                <div class="flex items-center mb-1">
+                                                    <svg class="w-4 h-4 text-amber-600 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                    <span class="text-xs font-semibold text-amber-800">Requires Rework</span>
+                                                </div>
+                                                @if($maintenance->rework_instructions)
+                                                <p class="text-xs text-amber-700 mt-1">{{ $maintenance->rework_instructions }}</p>
+                                                @endif
+                                                @if($maintenance->admin_notes)
+                                                <p class="text-xs text-amber-700 mt-1"><strong>Admin Notes:</strong> {{ $maintenance->admin_notes }}</p>
+                                                @endif
+                                            </div>
+                                            @endif
                                         </div>
                                         <div class="flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-start space-x-2 sm:space-x-0 sm:space-y-2 flex-shrink-0">
                                             <span class="px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap
                                                 @if($maintenance->status === 'pending') bg-yellow-100 text-yellow-800
                                                 @elseif($maintenance->status === 'completed') bg-green-100 text-green-800
+                                                @elseif($maintenance->status === 'needs_rework') bg-amber-100 text-amber-800
+                                                @elseif($maintenance->status === 'scheduled') bg-blue-100 text-blue-800
                                                 @else bg-gray-100 text-gray-800 @endif">
-                                                {{ ucfirst($maintenance->status) }}
+                                                {{ ucfirst(str_replace('_', ' ', $maintenance->status)) }}
                                             </span>
                                             <div class="flex space-x-1 sm:space-x-2">
                                                 @if(auth()->user()->id == $maintenance->technician_id)

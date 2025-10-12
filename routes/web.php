@@ -59,6 +59,7 @@ Route::get('/asset-list', function () {
 	return redirect()->route('login');
 })->name('asset-list.redirect');
 
+
 // Basic authenticated routes (accessible by all authenticated users)
 Route::middleware(['auth'])->group(function () {
 	// Profile and notification routes (accessible by all authenticated users)
@@ -78,9 +79,14 @@ Route::middleware(['auth'])->group(function () {
 	Route::get('/repair-request', [RepairRequestController::class, 'create'])->name('repair.request');
 	Route::post('/repair-request', [RepairRequestController::class, 'store'])->name('repair.request.store');
 
-	// Repair Calls route
-	Route::get('/repair-calls', [RepairRequestController::class, 'calls'])->name('repair.calls');
-	Route::post('/repair-calls/{id}/evaluate', [RepairRequestController::class, 'evaluate'])->name('repair.calls.evaluate');
+		// Repair Calls route
+		Route::get('/repair-calls', [RepairRequestController::class, 'calls'])->name('repair.calls');
+		Route::post('/repair-calls/{id}/evaluate', [RepairRequestController::class, 'evaluate'])->name('repair.calls.evaluate');
+
+		// Signature Delegation Routes (requesters access)
+		Route::get('/repair-requests/pending-signature', [RepairRequestController::class, 'pendingSignatures'])
+			->name('repair.pending-signature');
+		Route::post('/repair-requests/{id}/submit-signature', [RepairRequestController::class, 'submitSignature'])->name('repair.submitSignature');
 
 	// Repair Status route
 	Route::get('/repair-status', [RepairRequestController::class, 'status'])->name('repair.status');
@@ -165,6 +171,12 @@ Route::middleware(['auth'])->group(function () {
 		Route::post('/maintenance/store', [MaintenanceController::class, 'store'])->name('maintenance.store');
 		Route::get('/maintenance/upcoming', [MaintenanceController::class, 'upcoming'])->name('maintenance.upcoming');
 		Route::get('/maintenance/history', [MaintenanceController::class, 'history'])->name('maintenance.history');
+		
+		// Maintenance Approval Routes (Admin only - group_id = 1) - MUST be before {id} route
+		Route::get('/maintenance/pending-approval', [MaintenanceController::class, 'pendingApproval'])
+			->middleware([\App\Http\Middleware\CheckRole::class.':1'])
+			->name('maintenance.pending-approval');
+		
 		Route::get('/maintenance/{id}', [MaintenanceController::class, 'show'])->name('maintenance.show');
 		Route::patch('/maintenance/{id}/complete', [MaintenanceController::class, 'complete'])->name('maintenance.complete');
 		Route::delete('/maintenance/{id}', [MaintenanceController::class, 'destroy'])->name('maintenance.destroy');
@@ -185,6 +197,14 @@ Route::middleware(['auth'])->group(function () {
 		Route::get('/maintenance/get-lab-assets/{labNumber}', [MaintenanceController::class, 'getLabAssets'])->name('maintenance.getLabAssets');
 		Route::get('/maintenance/get-location-assets/{locationId}', [MaintenanceController::class, 'getLocationAssets'])->name('maintenance.getLocationAssets');
 		Route::get('/maintenance/history/export-pdf', [MaintenanceController::class, 'exportHistoryPDF'])->name('maintenance.history.exportPDF');
+		
+		// Additional Maintenance Approval Routes (Admin only - group_id = 1)
+		Route::patch('/maintenance/{id}/approve', [MaintenanceController::class, 'approve'])
+			->middleware([\App\Http\Middleware\CheckRole::class.':1'])
+			->name('maintenance.approve');
+		Route::patch('/maintenance/{id}/reject', [MaintenanceController::class, 'reject'])
+			->middleware([\App\Http\Middleware\CheckRole::class.':1'])
+			->name('maintenance.reject');
 
 		// Repair Request Routes
 		Route::middleware([\App\Http\Middleware\CheckRole::class.':1,3'])->group(function () {

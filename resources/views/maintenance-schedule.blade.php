@@ -183,7 +183,20 @@
 
             <!-- Submit Button Section -->
             <div class="pt-6 border-t border-gray-200">
-                <button type="button" onclick="showConfirmationModal()" 
+                <!-- No Assets Warning -->
+                <div id="noAssetsWarning" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                            <h3 class="text-sm font-semibold text-red-800 mb-1">No Assets Registered</h3>
+                            <p class="text-sm text-red-700">The selected location has no registered assets. Please register assets for this location before scheduling maintenance.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" id="submitButton" onclick="showConfirmationModal()" 
                         class="w-full bg-red-600 text-white py-4 px-6 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium transition-colors duration-200 shadow-md flex items-center justify-center">
                     <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -429,6 +442,52 @@
             
             // Store current location ID for asset search
             window.currentLocationId = locationId;
+            
+            // Check if location has any assets
+            checkLocationAssets(locationId);
+        }
+        
+        function checkLocationAssets(locationId) {
+            // Fetch assets for the selected location to check if any exist
+            fetch(`{{ url('maintenance/get-location-assets') }}/${locationId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(assets => {
+                const submitButton = document.getElementById('submitButton');
+                const noAssetsWarning = document.getElementById('noAssetsWarning');
+                
+                if (!assets || assets.length === 0) {
+                    // No assets found - disable form and show warning
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        submitButton.title = 'Cannot schedule maintenance - no assets registered in this location';
+                    }
+                    if (noAssetsWarning) {
+                        noAssetsWarning.classList.remove('hidden');
+                    }
+                    window.hasAssets = false;
+                } else {
+                    // Assets found - enable form and hide warning
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        submitButton.title = '';
+                    }
+                    if (noAssetsWarning) {
+                        noAssetsWarning.classList.add('hidden');
+                    }
+                    window.hasAssets = true;
+                }
+            })
+            .catch(error => {
+                console.error('Error checking assets:', error);
+            });
         }
 
         // Initialize asset autocomplete
@@ -762,6 +821,12 @@
 
             if (!form.location_id.value || selectedTasks.length === 0 || !form.scheduled_date.value || !form.technician_id.value || !form.target_date.value) {
                 showValidationModal('Please fill in all required fields');
+                return;
+            }
+            
+            // Check if location has assets
+            if (window.hasAssets === false) {
+                showValidationModal('Cannot schedule maintenance. The selected location has no registered assets. Please register assets for this location first.');
                 return;
             }
 

@@ -34,6 +34,14 @@ class RepairRequest extends Model
         'caller_signature',
         'created_by',
         'urgency_overridden',
+        'signature_type',
+        'delegate_name',
+        'signature_deadline',
+        'verification_status',
+        'rework_count',
+        'before_photos',
+        'after_photos',
+        'caller_signed_at',
     ];
 
     protected $casts = [
@@ -42,6 +50,11 @@ class RepairRequest extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'urgency_overridden' => 'boolean',
+        'before_photos' => 'array',
+        'after_photos' => 'array',
+        'signature_deadline' => 'datetime',
+        'caller_signed_at' => 'datetime',
+        'rework_count' => 'integer',
     ];
 
     public function asset()

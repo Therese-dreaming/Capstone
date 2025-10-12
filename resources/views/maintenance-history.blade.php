@@ -104,10 +104,38 @@
                         <input type="checkbox" name="mobile_selected[]" value="{{ $maintenance->id }}" class="rounded border-gray-300 text-red-600 focus:ring-red-500 mobile-checkbox">
                         <span class="font-semibold text-red-800 text-sm sm:text-base">{{ \Carbon\Carbon::parse($maintenance->scheduled_date)->format('M d, Y') }}</span>
                     </div>
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap
-                        {{ $maintenance->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                        {{ ucfirst($maintenance->status) }}
-                    </span>
+                    <div class="flex flex-col space-y-1">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap
+                            {{ $maintenance->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            {{ ucfirst($maintenance->status) }}
+                        </span>
+                        @if($maintenance->approval_status && $maintenance->approval_status !== 'not_required')
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap
+                            @if($maintenance->approval_status === 'approved') bg-blue-100 text-blue-800
+                            @elseif($maintenance->approval_status === 'pending_approval') bg-orange-100 text-orange-800
+                            @elseif($maintenance->approval_status === 'rejected') bg-red-100 text-red-800
+                            @elseif($maintenance->approval_status === 'needs_rework') bg-yellow-100 text-yellow-800
+                            @endif">
+                            {{ ucfirst(str_replace('_', ' ', $maintenance->approval_status)) }}
+                        </span>
+                        @endif
+                        @if($maintenance->admin_signature)
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 w-fit mt-1">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Signed
+                        </div>
+                        @endif
+                        @if($maintenance->rework_count > 0)
+                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 w-fit mt-1 border border-amber-300">
+                            <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Reworked {{ $maintenance->rework_count }}x
+                        </div>
+                        @endif
+                    </div>
                 </div>
                 <div class="text-xs sm:text-sm text-gray-700"><span class="font-semibold">Location:</span> <span class="break-words">{{ $maintenance->location ? ($maintenance->location->building . ' - Floor ' . $maintenance->location->floor . ' - Room ' . $maintenance->location->room_number) : 'N/A' }}</span></div>
                 <div class="text-xs sm:text-sm text-gray-700"><span class="font-semibold">Technician:</span> <span class="break-words">{{ $maintenance->technician->name }}</span></div>
@@ -157,6 +185,7 @@
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Location</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Technician</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Status</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-white">Signature</th>
                         <th class="px-6 py-3 text-left text-sm font-medium text-white">Actions</th>
                     </tr>
                 </thead>
@@ -176,17 +205,56 @@
                             {{ $maintenance->technician->name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full 
-                                    {{ $maintenance->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                {{ ucfirst($maintenance->status) }}
-                            </span>
+                            <div class="flex flex-col space-y-1">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full w-fit
+                                        {{ $maintenance->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                    {{ ucfirst($maintenance->status) }}
+                                </span>
+                                @if($maintenance->approval_status && $maintenance->approval_status !== 'not_required')
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full w-fit
+                                    @if($maintenance->approval_status === 'approved') bg-blue-100 text-blue-800
+                                    @elseif($maintenance->approval_status === 'pending_approval') bg-orange-100 text-orange-800
+                                    @elseif($maintenance->approval_status === 'rejected') bg-red-100 text-red-800
+                                    @elseif($maintenance->approval_status === 'needs_rework') bg-yellow-100 text-yellow-800
+                                    @endif">
+                                    {{ ucfirst(str_replace('_', ' ', $maintenance->approval_status)) }}
+                                </span>
+                                @endif
+                            </div>
                             @if($maintenance->asset_issues && is_array($maintenance->asset_issues) && !empty($maintenance->asset_issues))
-                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                                 Issues
                             </span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            @if($maintenance->admin_signature)
+                            <div class="flex flex-col space-y-1">
+                                <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 w-fit">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Signed
+                                </div>
+                                @if($maintenance->approvedBy)
+                                <div class="text-xs text-gray-500">
+                                    By: {{ $maintenance->approvedBy->name }}
+                                </div>
+                                @endif
+                            </div>
+                            @else
+                            <span class="text-xs text-gray-400">Not signed</span>
+                            @endif
+                            @if($maintenance->rework_count > 0)
+                            <div class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reworked {{ $maintenance->rework_count }}x
+                            </div>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -207,7 +275,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">No maintenance history found</td>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">No maintenance history found</td>
                     </tr>
                     @endforelse
                 </tbody>

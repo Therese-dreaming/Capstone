@@ -1,7 +1,8 @@
 <div class="mb-8">
     @php
-        // Get location changes and apply pagination
-        $locationChanges = collect($history['LOCATION_ID'] ?? []);
+        // Get location changes and apply pagination (support LOCATION_ID and LOCATION)
+        $locationChanges = collect($history['LOCATION_ID'] ?? collect())
+            ->concat(collect($history['LOCATION'] ?? collect()));
         $perPage = 10;
         $currentPage = request()->get('location_page', 1);
         $totalRecords = $locationChanges->count();

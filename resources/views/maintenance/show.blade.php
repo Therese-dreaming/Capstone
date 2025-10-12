@@ -95,8 +95,15 @@
                         <div class="min-w-0 flex-1">
                             <label class="block text-xs font-medium text-gray-500">Status</label>
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
-                                {{ $maintenance->status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                {{ ucfirst($maintenance->status) }}
+                                @if($maintenance->status === 'completed') bg-green-100 text-green-800
+                                @elseif($maintenance->status === 'pending_approval') bg-orange-100 text-orange-800
+                                @elseif($maintenance->status === 'scheduled') bg-blue-100 text-blue-800
+                                @else bg-red-100 text-red-800 @endif">
+                                @if($maintenance->status === 'pending_approval')
+                                    Pending Review
+                                @else
+                                    {{ ucfirst($maintenance->status) }}
+                                @endif
                             </span>
                         </div>
                     </div>
@@ -225,10 +232,229 @@
                     </div>
                 @endif
             </div>
+
+            <!-- Admin Signature Card -->
+            @if($maintenance->admin_signature)
+            <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 md:mr-3 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Admin Signature
+                </h2>
+                <div class="bg-indigo-50 rounded-lg p-3 sm:p-4 border border-indigo-200">
+                    <div class="flex justify-center">
+                        <img src="{{ $maintenance->admin_signature }}" alt="Admin Signature" class="max-w-full h-auto border-2 border-indigo-300 rounded bg-white p-2" style="max-height: 150px;">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <p class="text-xs text-indigo-700">
+                            <span class="font-medium">Signed by:</span> {{ $maintenance->approvedBy->name }}
+                        </p>
+                        <p class="text-xs text-indigo-600">
+                            {{ $maintenance->approved_at->format('M d, Y g:i A') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Admin Response Card -->
+            @if($maintenance->admin_notes || ($maintenance->quality_issues && is_array($maintenance->quality_issues) && !empty($maintenance->quality_issues)) || ($maintenance->requires_rework && $maintenance->rework_instructions))
+            <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-3 sm:mb-4">
+                    <h2 class="text-base sm:text-lg md:text-xl font-semibold text-gray-900 flex items-center">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 md:mr-3 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Admin Response
+                    </h2>
+                    @if($maintenance->rework_count > 0)
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Reworked {{ $maintenance->rework_count }}x
+                        </span>
+                    </div>
+                    @endif
+                </div>
+                
+                <div class="space-y-3 sm:space-y-4">
+                    @if($maintenance->admin_notes)
+                    <div class="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
+                        <div class="flex items-start space-x-2 sm:space-x-3">
+                            <div class="bg-blue-200 p-1.5 sm:p-2 rounded-full flex-shrink-0">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs sm:text-sm font-medium text-blue-900 mb-1">Admin Notes</p>
+                                <p class="text-xs sm:text-sm text-blue-800 break-words italic">"{{ $maintenance->admin_notes }}"</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($maintenance->quality_issues && is_array($maintenance->quality_issues) && !empty($maintenance->quality_issues))
+                    <div class="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200">
+                        <div class="flex items-start space-x-2 sm:space-x-3">
+                            <div class="bg-red-200 p-1.5 sm:p-2 rounded-full flex-shrink-0">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs sm:text-sm font-medium text-red-900 mb-2">Quality Issues Identified</p>
+                                <ul class="list-disc list-inside text-xs sm:text-sm text-red-800 space-y-1">
+                                    @foreach($maintenance->quality_issues as $issue)
+                                        <li class="break-words">{{ ucfirst(str_replace('_', ' ', $issue)) }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($maintenance->requires_rework && $maintenance->rework_instructions)
+                    <div class="bg-amber-50 rounded-lg p-3 sm:p-4 border border-amber-200">
+                        <div class="flex items-start space-x-2 sm:space-x-3">
+                            <div class="bg-amber-200 p-1.5 sm:p-2 rounded-full flex-shrink-0">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs sm:text-sm font-medium text-amber-900 mb-1">Rework Instructions</p>
+                                <p class="text-xs sm:text-sm text-amber-800 break-words">{{ $maintenance->rework_instructions }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- Right Column -->
-        <div class="space-y-4 sm:space-y-6">
+        <div class="space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- Status Timeline Card -->
+            <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 md:mr-3 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Status Timeline
+                </h2>
+                <div class="flow-root overflow-x-auto">
+                    <ul class="-mb-8">
+                        <!-- Created/Scheduled -->
+                        <li>
+                            <div class="relative pb-8">
+                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
+                                            <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-1.5">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">Task Scheduled</p>
+                                            <p class="text-xs text-gray-500">{{ $maintenance->created_at->format('M d, Y g:i A') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+
+                        <!-- Completed/Pending Approval -->
+                        @if($maintenance->completed_at)
+                        <li>
+                            <div class="relative pb-8">
+                                @if($maintenance->status === 'completed' || $maintenance->approval_status === 'approved')
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                @endif
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full {{ $maintenance->status === 'pending_approval' ? 'bg-orange-500' : 'bg-green-500' }} flex items-center justify-center ring-8 ring-white">
+                                            @if($maintenance->status === 'pending_approval')
+                                                <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            @else
+                                                <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-1.5">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">
+                                                @if($maintenance->status === 'pending_approval')
+                                                    Task Completed - Pending Review
+                                                @else
+                                                    Task Completed
+                                                @endif
+                                            </p>
+                                            <p class="text-xs text-gray-500">{{ $maintenance->completed_at->format('M d, Y g:i A') }}</p>
+                                            <p class="text-xs text-gray-500">by {{ $maintenance->actionBy ? $maintenance->actionBy->name : 'System' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        @endif
+
+                        <!-- Approved/Rejected -->
+                        @if($maintenance->approved_at && $maintenance->approvedBy)
+                        <li>
+                            <div class="relative">
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full {{ $maintenance->approval_status === 'approved' ? 'bg-green-600' : ($maintenance->approval_status === 'rejected' ? 'bg-red-500' : 'bg-yellow-500') }} flex items-center justify-center ring-8 ring-white">
+                                            @if($maintenance->approval_status === 'approved')
+                                                <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            @elseif($maintenance->approval_status === 'rejected')
+                                                <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            @else
+                                                <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-1.5">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">
+                                                @if($maintenance->approval_status === 'approved')
+                                                    Task Approved
+                                                @elseif($maintenance->approval_status === 'rejected')
+                                                    Task Rejected
+                                                @elseif($maintenance->approval_status === 'needs_rework')
+                                                    Needs Rework
+                                                @endif
+                                            </p>
+                                            <p class="text-xs text-gray-500">{{ $maintenance->approved_at->format('M d, Y g:i A') }}</p>
+                                            <p class="text-xs text-gray-500">by {{ $maintenance->approvedBy->name }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        @endif
+                    </ul>
+                </div>
+            </div>
+
             <!-- Excluded Assets Card -->
             <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
                 <h2 class="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">

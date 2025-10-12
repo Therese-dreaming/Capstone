@@ -1,7 +1,8 @@
 <div class="mb-8">
     @php
-        // Get price changes and apply pagination
-        $priceChanges = collect($history['PRICE'] ?? []);
+        // Get price changes and apply pagination (support PRICE and PURCHASE_PRICE)
+        $priceChanges = collect($history['PRICE'] ?? collect())
+            ->concat(collect($history['PURCHASE_PRICE'] ?? collect()));
         $perPage = 10;
         $currentPage = request()->get('price_page', 1);
         $totalRecords = $priceChanges->count();

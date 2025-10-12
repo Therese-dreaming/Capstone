@@ -177,6 +177,21 @@
                     </div>
                     Signatures
                 </h3>
+                <!-- Signature meta information -->
+                <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div class="bg-gray-50 border border-gray-200 rounded-md p-3">
+                        <p class="text-gray-500 font-medium">Verification Status</p>
+                        <p class="verification-status font-semibold mt-1"></p>
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 rounded-md p-3">
+                        <p class="text-gray-500 font-medium">Signature Type</p>
+                        <p class="signature-type font-semibold mt-1"></p>
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 rounded-md p-3 signature-extra hidden">
+                        <p class="text-gray-500 font-medium signature-extra-label"></p>
+                        <p class="signature-extra-value font-semibold mt-1"></p>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <p class="text-sm font-medium text-gray-700 mb-3">Technician's Signature</p>
@@ -238,6 +253,30 @@
                 <div class="bg-gray-50 p-4 rounded-lg">
                     <div class="photo-container">
                         <!-- Photo will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Photo Evidence (Before/After) -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        </svg>
+                    </div>
+                    Photo Evidence
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Before Photos</p>
+                        <div class="before-photos-container grid grid-cols-2 gap-3"></div>
+                        <p class="before-empty text-xs text-gray-500 hidden">No before photos uploaded</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">After Photos</p>
+                        <div class="after-photos-container grid grid-cols-2 gap-3"></div>
+                        <p class="after-empty text-xs text-gray-500 hidden">No after photos uploaded</p>
                     </div>
                 </div>
             </div>
@@ -552,6 +591,14 @@
                     // Set remarks
                     clone.querySelector('.remarks').textContent = request.remarks || 'No remarks recorded';
 
+                    // Helper to build image URL from stored path or absolute
+                    function buildImageUrl(path) {
+                        if (!path) return '';
+                        if (path.startsWith('http')) return path;
+                        if (path.startsWith('/')) return window.location.origin + path;
+                        return window.location.origin + '/storage/' + path;
+                    }
+
                     // Set signatures
                     const techSignatureContainer = clone.querySelector('.technician-signature-container');
                     const callerSignatureContainer = clone.querySelector('.caller-signature-container');
@@ -595,6 +642,68 @@
                         </div>
                     `;
                     }
+
+                    // Signature meta
+                    const verificationStatusEl = clone.querySelector('.verification-status');
+                    const signatureTypeEl = clone.querySelector('.signature-type');
+                    const signatureExtra = clone.querySelector('.signature-extra');
+                    const signatureExtraLabel = clone.querySelector('.signature-extra-label');
+                    const signatureExtraValue = clone.querySelector('.signature-extra-value');
+
+                    const statusLabelMap = { pending: 'Pending', verified: 'Verified', disputed: 'Disputed' };
+                    const typeLabelMap = { caller: 'Caller', delegate: 'Delegate', deferred: 'Deferred', none: 'None' };
+                    const vStatus = (request.verification_status || 'pending');
+                    const sType = (request.signature_type || 'none');
+                    verificationStatusEl.textContent = statusLabelMap[vStatus] || vStatus;
+                    signatureTypeEl.textContent = typeLabelMap[sType] || sType;
+
+                    // Extra info depending on signature type
+                    let extraLabel = '';
+                    let extraValue = '';
+                    if (sType === 'delegate') {
+                        extraLabel = 'Delegate Name';
+                        extraValue = request.delegate_name || '-';
+                    } else if (sType === 'deferred') {
+                        extraLabel = 'Signature Deadline';
+                        extraValue = request.signature_deadline ? formatDate(request.signature_deadline) : '-';
+                    } else if (sType === 'caller') {
+                        extraLabel = 'Caller Signed At';
+                        extraValue = request.caller_signed_at ? formatDate(request.caller_signed_at) : '-';
+                    }
+                    if (extraLabel) {
+                        signatureExtraLabel.textContent = extraLabel;
+                        signatureExtraValue.textContent = extraValue;
+                        signatureExtra.classList.remove('hidden');
+                    } else {
+                        signatureExtra.classList.add('hidden');
+                    }
+
+                    // Photo evidence (before/after)
+                    const beforeContainer = clone.querySelector('.before-photos-container');
+                    const afterContainer = clone.querySelector('.after-photos-container');
+                    const beforeEmpty = clone.querySelector('.before-empty');
+                    const afterEmpty = clone.querySelector('.after-empty');
+
+                    function renderPhotoGrid(arr, container, emptyEl) {
+                        container.innerHTML = '';
+                        if (Array.isArray(arr) && arr.length > 0) {
+                            emptyEl.classList.add('hidden');
+                            arr.forEach((p) => {
+                                const src = buildImageUrl(p);
+                                const col = document.createElement('div');
+                                col.className = 'relative group';
+                                col.innerHTML = `
+                                    <img src="${src}" alt="Evidence Photo" class="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90" onclick="showImageModal('${src}')"/>
+                                `;
+                                container.appendChild(col);
+                            });
+                        } else {
+                            emptyEl.classList.remove('hidden');
+                        }
+                    }
+
+                    renderPhotoGrid(request.before_photos, beforeContainer, beforeEmpty);
+                    renderPhotoGrid(request.after_photos, afterContainer, afterEmpty);
 
                     // Show register asset button for unregistered assets, or show asset info if registered
                     const registerAssetContainer = clone.querySelector('.register-asset-container');

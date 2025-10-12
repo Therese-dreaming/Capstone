@@ -1,57 +1,167 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex-1 p-4 md:p-8">
-    <div class="bg-white rounded-lg shadow-lg p-6">
-        <div class="mb-6">
-            <h2 class="text-2xl font-bold">Repair Calls</h2>
-            <p class="text-sm text-gray-600 mt-1">Track your repair requests and evaluate your technician after completion.</p>
+<div class="flex-1 p-4 md:p-8 bg-gray-50">
+    <!-- Page Header -->
+    <div class="mb-6 md:mb-8">
+        <div class="bg-red-800 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex items-center">
+                <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4">
+                    <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">My Repair Calls</h1>
+                    <p class="text-red-100 text-sm md:text-lg">Track your repair requests and evaluate completed work</p>
+                </div>
+            </div>
         </div>
+    </div>
 
-        {{-- Session Messages --}}
-        @if(session('success'))
-        <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
+    <!-- Summary Statistics -->
+    @php
+        $totalRequests = $requests->count();
+        $completedCount = $requests->where('status', 'completed')->count();
+        $inProgressCount = $requests->where('status', 'in_progress')->count();
+        $pendingEvaluation = $requests->filter(function($r) {
+            return in_array($r->status, ['completed', 'pulled_out']) && 
+                   !$r->evaluation && 
+                   !in_array($r->creator->group_id ?? null, [1, 2]) &&
+                   ($r->verification_status === 'verified');
+        })->count();
+    @endphp
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm text-gray-500">Total Requests</div>
+                    <div class="text-2xl font-bold text-gray-900">{{ $totalRequests }}</div>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm text-gray-500">In Progress</div>
+                    <div class="text-2xl font-bold text-blue-700">{{ $inProgressCount }}</div>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm text-gray-500">Completed</div>
+                    <div class="text-2xl font-bold text-green-700">{{ $completedCount }}</div>
+                </div>
+                <div class="bg-green-50 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm text-gray-500">Pending Evaluation</div>
+                    <div class="text-2xl font-bold {{ $pendingEvaluation > 0 ? 'text-orange-700' : 'text-gray-900' }}">{{ $pendingEvaluation }}</div>
+                </div>
+                <div class="bg-orange-50 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Session Messages --}}
+    @if(session('success'))
+    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center">
+        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
             <div class="font-semibold">Success!</div>
             <div>{{ session('success') }}</div>
         </div>
-        @endif
+    </div>
+    @endif
 
-        @if(session('error'))
-        <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+    @if(session('error'))
+    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center">
+        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
             <div class="font-semibold">Error!</div>
             <div>{{ session('error') }}</div>
         </div>
-        @endif
+    </div>
+    @endif
 
-        @if($requests->isEmpty())
-            <div class="text-center text-gray-500 py-12">No repair requests found.</div>
-        @else
-            <div class="space-y-6">
-                @foreach($requests as $request)
-                <div class="border rounded-lg p-4 shadow-sm bg-gray-50">
-                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
-                        <div>
-                            <div class="font-semibold text-red-800">Ticket: {{ $request->ticket_number }}</div>
-                            <div class="text-xs text-gray-500">Requested: {{ $request->created_at->format('M j, Y g:i A') }}</div>
+    @if($requests->isEmpty())
+        <div class="bg-white rounded-xl shadow p-12 text-center">
+            <div class="bg-gray-100 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">No Repair Requests</h3>
+            <p class="text-gray-600">You haven't submitted any repair requests yet.</p>
+        </div>
+    @else
+        <div class="grid grid-cols-1 gap-6">
+            @foreach($requests as $request)
+            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                <div class="p-6">
+                    <!-- Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 pb-4 border-b">
+                        <div class="mb-3 sm:mb-0">
+                            <h3 class="text-lg font-bold text-gray-900">{{ $request->ticket_number }}</h3>
+                            <p class="text-sm text-gray-500 mt-1">{{ $request->created_at->format('M j, Y g:i A') }}</p>
                         </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
-                            @if($request->status === 'urgent') bg-red-100 text-red-800
-                            @elseif($request->status === 'completed') bg-green-100 text-green-800
-                            @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
-                            @elseif($request->status === 'cancelled') bg-red-100 text-red-800
-                            @elseif($request->status === 'in_progress') bg-blue-100 text-blue-800
-                            @else bg-gray-100 text-gray-800 @endif">
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold
+                            @if($request->status === 'urgent') bg-red-100 text-red-800 border border-red-200
+                            @elseif($request->status === 'completed') bg-green-100 text-green-800 border border-green-200
+                            @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800 border border-yellow-200
+                            @elseif($request->status === 'cancelled') bg-red-100 text-red-800 border border-red-200
+                            @elseif($request->status === 'in_progress') bg-blue-100 text-blue-800 border border-blue-200
+                            @else bg-gray-100 text-gray-800 border border-gray-200 @endif">
                             {{ ucfirst(str_replace('_', ' ', $request->status)) }}
                         </span>
                     </div>
-                    <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Equipment:</span> {{ $request->equipment }}</div>
-                    <div class="text-sm text-gray-700 mb-1">
-                        <span class="font-semibold">Location:</span> 
-                        {{ $request->building }} - {{ $request->floor }} - {{ $request->room }}
+
+                    <!-- Request Details Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Equipment</p>
+                            <p class="text-sm text-gray-900">{{ $request->equipment }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</p>
+                            <p class="text-sm text-gray-900">{{ $request->building }} - {{ $request->floor }} - {{ $request->room }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Technician</p>
+                            <p class="text-sm text-gray-900">{{ $request->technician ? $request->technician->name : 'Not Assigned' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Issue</p>
+                            <p class="text-sm text-gray-900">{{ Str::limit($request->issue, 50) }}</p>
+                        </div>
                     </div>
-                    <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Technician:</span> {{ $request->technician ? $request->technician->name : 'Not Assigned' }}</div>
-                    <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Issue:</span> {{ $request->issue }}</div>
-                    <div class="text-sm text-gray-700 mb-1"><span class="font-semibold">Status:</span> {{ ucfirst(str_replace('_', ' ', $request->status)) }}</div>
                     
                     {{-- Evaluation Section --}}
                     @if($request->status === 'completed' || $request->status === 'pulled_out')
@@ -61,39 +171,63 @@
                                     <div class="font-semibold text-gray-700 mb-1">Evaluation Status</div>
                                     <div class="text-sm text-gray-600">Evaluation not required for admin/technician-created requests.</div>
                                 </div>
-                            @elseif(!$request->evaluation)
-                                <form method="POST" action="{{ route('repair.calls.evaluate', $request->id) }}" class="space-y-3" id="evaluation-form-{{ $request->id }}">
-                                    @csrf
-                                    <div>
-                                        <label class="block text-gray-700 text-sm font-semibold mb-1">Technician Rating <span class="text-red-600">*</span></label>
-                                        <div class="flex items-center space-x-4" id="rating-group-{{ $request->id }}">
-                                            @for($i = 1; $i <= 5; $i++)
-                                            <label class="flex items-center">
-                                                <input type="radio" name="rating" value="{{ $i }}" class="hidden rating-radio" required>
-                                                <div class="w-8 h-8 flex items-center justify-center border-2 border-gray-300 rounded-full cursor-pointer hover:bg-gray-100 rating-number">
-                                                    {{ $i }}
-                                                </div>
-                                            </label>
-                                            @endfor
+                            @elseif(!$request->evaluation && ($request->verification_status === 'verified'))
+                                <div class="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-5 border border-orange-200">
+                                    <h4 class="text-sm font-bold text-gray-900 mb-4 flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                        Rate Your Experience
+                                    </h4>
+                                    <form method="POST" action="{{ route('repair.calls.evaluate', $request->id) }}" class="space-y-4" id="evaluation-form-{{ $request->id }}">
+                                        @csrf
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-semibold mb-2">How would you rate the technician? <span class="text-red-600">*</span></label>
+                                            <div class="flex items-center space-x-2" id="star-rating-{{ $request->id }}">
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    <button type="button" class="star-btn text-gray-300 hover:text-yellow-400 focus:outline-none transition-colors duration-150" data-value="{{ $i }}" aria-label="Rate {{ $i }}">
+                                                        <svg class="w-8 h-8" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.175 0l-3.385 2.46c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118l-3.385-2.46c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.967z"/>
+                                                        </svg>
+                                                    </button>
+                                                @endfor
+                                                <input type="hidden" name="rating" id="rating-{{ $request->id }}" value="">
+                                            </div>
+                                            <div class="text-sm text-red-600 mt-1 hidden" id="rating-error-{{ $request->id }}"></div>
                                         </div>
-                                        <div class="text-sm text-red-600 mt-1 hidden" id="rating-error-{{ $request->id }}"></div>
-                                    </div>
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-semibold mb-2" for="feedback-{{ $request->id }}">Share your feedback (Optional)</label>
+                                            <textarea id="feedback-{{ $request->id }}" name="feedback" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none" placeholder="Tell us about your experience with the technician..."></textarea>
+                                            <div class="text-sm text-red-600 mt-1 hidden" id="feedback-error-{{ $request->id }}"></div>
+                                        </div>
+                                        <button type="submit" class="w-full px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-orange-600 to-red-600 rounded-lg hover:from-orange-700 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center">
+                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Submit Evaluation
+                                        </button>
+                                    </form>
+                                </div>
+                            @elseif(!$request->evaluation)
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
+                                    <svg class="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
                                     <div>
-                                        <label class="block text-gray-700 text-sm font-semibold mb-1" for="feedback-{{ $request->id }}">Feedback (Optional)</label>
-                                        <textarea id="feedback-{{ $request->id }}" name="feedback" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none" placeholder="Share your experience with the technician"></textarea>
-                                        <div class="text-sm text-red-600 mt-1 hidden" id="feedback-error-{{ $request->id }}"></div>
+                                        <div class="font-semibold text-yellow-800 mb-1">Evaluation Locked</div>
+                                        <div class="text-sm text-yellow-700">You can evaluate after your signature is submitted and verified. Please go to <a href="{{ route('repair.pending-signature') }}" class="underline font-semibold hover:text-yellow-900">Pending Signatures</a> to review and sign.</div>
                                     </div>
-                                    <div class="flex items-center space-x-2">
-                                        <input type="checkbox" id="is_anonymous-{{ $request->id }}" name="is_anonymous" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                                        <label for="is_anonymous-{{ $request->id }}" class="text-sm text-gray-700">Submit anonymously</label>
-                                    </div>
-                                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-[#960106] rounded-md hover:bg-[#7d0105] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">Submit Evaluation</button>
-                                </form>
+                                </div>
                             @else
-                                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-                                    <div class="font-semibold text-green-700 mb-1">Your Evaluation</div>
-                                    <div class="flex items-center mb-1">
-                                        <span class="font-semibold mr-2">Rating:</span>
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-5">
+                                    <div class="flex items-center mb-3">
+                                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <h4 class="font-semibold text-green-800">Your Evaluation</h4>
+                                    </div>
+                                    <div class="flex items-center mb-3">
+                                        <span class="text-sm font-semibold text-gray-700 mr-2">Rating:</span>
                                         <span class="inline-flex items-center">
                                             @for($i = 1; $i <= 5; $i++)
                                                 <svg class="w-5 h-5 {{ $i <= $request->evaluation->rating ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.175 0l-3.385 2.46c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118l-3.385-2.46c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.967z"/></svg>
@@ -101,21 +235,25 @@
                                         </span>
                                     </div>
                                     @if($request->evaluation->feedback)
-                                    <div class="mb-1"><span class="font-semibold">Feedback:</span> {{ $request->evaluation->feedback }}</div>
+                                    <div class="mb-3 p-3 bg-white rounded border border-green-100">
+                                        <span class="text-sm font-semibold text-gray-700">Feedback:</span>
+                                        <p class="text-sm text-gray-600 mt-1">{{ $request->evaluation->feedback }}</p>
+                                    </div>
                                     @endif
-                                    <div class="text-xs text-gray-500">
-                                        <span class="font-semibold">Submitted:</span> {{ $request->evaluation->created_at->format('M j, Y g:i A') }}
-                                        ({{ $request->evaluation->is_anonymous ? 'Anonymously' : 'Not anonymous' }})
+                                    <div class="text-xs text-gray-500 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>Submitted on {{ $request->evaluation->created_at->format('M j, Y g:i A') }}</span>
                                     </div>
                                 </div>
                             @endif
                         </div>
                     @endif
                 </div>
-                @endforeach
-            </div>
-        @endif
-    </div>
+            @endforeach
+        </div>
+    @endif
 </div>
 
 <script>
@@ -130,26 +268,30 @@
             }, 5000);
         });
 
-        // Rating selection functionality
-        document.querySelectorAll('[id^="rating-group-"]').forEach(function(group) {
-            const radios = group.querySelectorAll('.rating-radio');
-            const numbers = group.querySelectorAll('.rating-number');
-            
-            numbers.forEach((number, idx) => {
-                number.addEventListener('click', function() {
-                    const radio = radios[idx];
-                    radio.checked = true;
-                    numbers.forEach(n => n.classList.remove('bg-red-500', 'text-white', 'border-red-500'));
-                    this.classList.add('bg-red-500', 'text-white', 'border-red-500');
-                });
-            });
+        // Star rating selection functionality
+        document.querySelectorAll('[id^="star-rating-"]').forEach(function(container) {
+            const requestId = container.id.split('-').pop();
+            const stars = container.querySelectorAll('.star-btn');
+            const hiddenInput = document.getElementById(`rating-${requestId}`);
 
-            radios.forEach((radio, idx) => {
-                radio.addEventListener('change', function() {
-                    numbers.forEach(n => n.classList.remove('bg-red-500', 'text-white', 'border-red-500'));
-                    if (radio.checked) {
-                        numbers[idx].classList.add('bg-red-500', 'text-white', 'border-red-500');
+            function paintStars(value) {
+                stars.forEach((btn) => {
+                    const starVal = parseInt(btn.getAttribute('data-value'), 10);
+                    if (starVal <= value) {
+                        btn.classList.remove('text-gray-300');
+                        btn.classList.add('text-yellow-400');
+                    } else {
+                        btn.classList.add('text-gray-300');
+                        btn.classList.remove('text-yellow-400');
                     }
+                });
+            }
+
+            stars.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const value = parseInt(this.getAttribute('data-value'), 10);
+                    hiddenInput.value = value;
+                    paintStars(value);
                 });
             });
         });
@@ -180,10 +322,18 @@
 
                 // Get form data
                 const formData = new FormData(this);
-                
-                // Handle is_anonymous checkbox
-                const isAnonymousCheckbox = this.querySelector('input[name="is_anonymous"]');
-                formData.set('is_anonymous', isAnonymousCheckbox.checked ? '1' : '0');
+
+                // Validate star rating
+                const ratingInput = this.querySelector('input[name="rating"]');
+                if (!ratingInput || !ratingInput.value) {
+                    const formId = this.id.split('-')[2];
+                    const ratingError = document.getElementById(`rating-error-${formId}`);
+                    ratingError.textContent = 'Please select a rating';
+                    ratingError.classList.remove('hidden');
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Submit Evaluation';
+                    return;
+                }
                 
                 // Submit form via AJAX
                 fetch(this.action, {

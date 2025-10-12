@@ -411,7 +411,60 @@ class RepairRequestController extends Controller
             ]);
             \Log::info('Initial update data', ['update_data' => $updateData]);
 
-            // Handle photo upload if present
+            // Handle before/after photo uploads for completion
+            if ($request->status === 'completed') {
+                $beforePhotos = [];
+                $afterPhotos = [];
+                
+                if ($request->hasFile('before_photos')) {
+                    foreach ($request->file('before_photos') as $photo) {
+                        $path = $photo->store('repairs/before', 'public');
+                        $beforePhotos[] = $path;
+                    }
+                }
+                
+                if ($request->hasFile('after_photos')) {
+                    foreach ($request->file('after_photos') as $photo) {
+                        $path = $photo->store('repairs/after', 'public');
+                        $afterPhotos[] = $path;
+                    }
+                }
+                
+                $updateData['before_photos'] = $beforePhotos;
+                $updateData['after_photos'] = $afterPhotos;
+                
+                // Handle signature type and delegation
+                $callerPresent = $request->input('caller_present') === 'yes';
+                
+                if ($callerPresent) {
+                    // Caller is present - immediate signature
+                    if ($request->has('caller_signature')) {
+                        $updateData['signature_type'] = 'caller';
+                        $updateData['caller_signature'] = $request->caller_signature;
+                        $updateData['caller_signed_at'] = now();
+                        $updateData['verification_status'] = 'verified';
+                    }
+                } else {
+                    // Caller not present - check for delegate
+                    if ($request->has('delegate_name') && $request->filled('delegate_name')) {
+                        // Delegate will sign
+                        if ($request->has('delegate_signature')) {
+                            $updateData['signature_type'] = 'delegate';
+                            $updateData['delegate_name'] = $request->delegate_name; // Store delegate name as text
+                            $updateData['caller_signature'] = $request->delegate_signature;
+                            $updateData['caller_signed_at'] = now();
+                            $updateData['verification_status'] = 'verified';
+                        }
+                    } else {
+                        // Deferred signature - caller will sign within 48 hours
+                        $updateData['signature_type'] = 'deferred';
+                        $updateData['signature_deadline'] = now()->addHours(48);
+                        $updateData['verification_status'] = 'pending';
+                    }
+                }
+            }
+
+            // Handle photo upload if present (for issue reporting)
             if ($request->has('photo') && $request->photo) {
                 // Delete old photo if exists
                 if ($repairRequest->photo) {
@@ -599,6 +652,35 @@ class RepairRequestController extends Controller
                     \Log::info('Notified assigned technician', ['technician_id' => $newTechnicianId]);
                 } catch (\Exception $e) {
                     \Log::error('Failed to notify assigned technician', ['error' => $e->getMessage()]);
+                }
+            }
+
+            // Handle notifications for signature delegation (completion)
+            if ($request->status === 'completed' && isset($updateData['signature_type'])) {
+                try {
+                    if ($updateData['signature_type'] === 'deferred') {
+                        // Notify caller to sign within 48 hours
+                        Notification::create([
+                            'user_id' => $repairRequest->created_by,
+                            'type' => 'signature_required',
+                            'message' => "Repair completed for {$repairRequest->ticket_number}. Please review and sign within 48 hours.",
+                            'is_read' => false,
+                            'link' => '/repair-requests/pending-signature'
+                        ]);
+                        \Log::info('Notified caller for deferred signature', ['caller_id' => $repairRequest->created_by]);
+                    } elseif (in_array($updateData['signature_type'], ['caller', 'delegate'])) {
+                        // Notify caller that repair is completed and signed
+                        Notification::create([
+                            'user_id' => $repairRequest->created_by,
+                            'type' => 'repair_completed',
+                            'message' => "Repair for {$repairRequest->ticket_number} has been completed and signed.",
+                            'is_read' => false,
+                            'link' => "/repair-requests/{$repairRequest->id}"
+                        ]);
+                        \Log::info('Notified caller of completed repair', ['caller_id' => $repairRequest->created_by]);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create signature notification', ['error' => $e->getMessage()]);
                 }
             }
 
@@ -1141,6 +1223,17 @@ class RepairRequestController extends Controller
             return redirect()->back()->with('error', 'You can only evaluate after the repair is completed or pulled out.');
         }
 
+        // Require caller signature verification before evaluation
+        if ($repairRequest->verification_status !== 'verified') {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please submit and verify the caller signature before submitting an evaluation.'
+                ], 400);
+            }
+            return redirect()->back()->with('error', 'Please submit and verify the caller signature before submitting an evaluation.');
+        }
+
         if ($repairRequest->evaluation) {
             if ($request->ajax()) {
                 return response()->json([
@@ -1154,7 +1247,6 @@ class RepairRequestController extends Controller
         $validated = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
             'feedback' => 'nullable|string',
-            'is_anonymous' => 'nullable|boolean',
         ]);
 
         $repairRequest->evaluation()->create([
@@ -1163,7 +1255,7 @@ class RepairRequestController extends Controller
             'evaluator_id' => auth()->id(),
             'rating' => $validated['rating'],
             'feedback' => $validated['feedback'] ?? null,
-            'is_anonymous' => $request->has('is_anonymous'),
+            'is_anonymous' => false,
         ]);
 
         if ($request->ajax()) {
@@ -1275,5 +1367,92 @@ class RepairRequestController extends Controller
             'success' => true,
             'message' => 'Serial number saved and asset status updated to UNDER REPAIR.'
         ]);
+    }
+
+    // Show pending signatures for caller
+    public function pendingSignatures()
+    {
+        $user = auth()->user();
+        // Defensive: only requesters (group_id = 3) may access this page; return 403 to avoid redirect loops
+        if (!$user || (int)$user->group_id !== 3) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Get repair requests where user is the creator and signature is pending
+        $repairRequests = RepairRequest::where('created_by', $user->id)
+            ->where('signature_type', 'deferred')
+            ->where('verification_status', 'pending')
+            ->whereNotNull('signature_deadline')
+            ->with(['technician', 'asset'])
+            ->orderBy('signature_deadline', 'asc')
+            ->get();
+
+        return view('repair-pending-signature', compact('repairRequests'));
+    }
+
+    // Submit deferred signature
+    public function submitSignature(Request $request, $id)
+    {
+        $request->validate([
+            'caller_signature' => 'required|string',
+            'action' => 'required|in:approve,rework'
+        ]);
+
+        try {
+            $repairRequest = RepairRequest::findOrFail($id);
+            
+            // Verify user is authorized (creator)
+            if ($repairRequest->created_by !== auth()->id()) {
+                return redirect()->route('repair.pending-signature')
+                    ->with('error', 'You are not authorized to sign this repair request');
+            }
+
+            if ($request->action === 'approve') {
+                // Caller approves the work
+                $repairRequest->update([
+                    'caller_signature' => $request->caller_signature,
+                    'caller_signed_at' => now(),
+                    'verification_status' => 'verified'
+                ]);
+
+                // Notify technician
+                Notification::create([
+                    'user_id' => $repairRequest->technician_id,
+                    'type' => 'signature_approved',
+                    'message' => "Your repair work for {$repairRequest->ticket_number} has been approved by the caller.",
+                    'is_read' => false,
+                    'link' => "/repair-requests/{$repairRequest->id}"
+                ]);
+
+                return redirect()->route('repair.pending-signature')
+                    ->with('success', 'Signature submitted successfully. Work has been verified.');
+            } else {
+                // Caller requests rework - mark as disputed and return to in_progress
+                $repairRequest->rework_count = (int)($repairRequest->rework_count ?? 0) + 1;
+                $repairRequest->caller_signature = $request->caller_signature;
+                $repairRequest->caller_signed_at = now();
+                $repairRequest->verification_status = 'disputed';
+                $repairRequest->status = 'in_progress';
+                $repairRequest->completed_at = null; // clear completion since rework is requested
+                $repairRequest->remarks = ($repairRequest->remarks ?? '') . "\n\n[Caller Feedback]: " . ($request->rework_notes ?? 'Caller requested rework after review.');
+                $repairRequest->save();
+
+                // Notify technician
+                Notification::create([
+                    'user_id' => $repairRequest->technician_id,
+                    'type' => 'rework_requested',
+                    'message' => "Rework requested for repair {$repairRequest->ticket_number}. Please review caller feedback.",
+                    'is_read' => false,
+                    'link' => "/repair-requests/{$repairRequest->id}"
+                ]);
+
+                return redirect()->route('repair.pending-signature')
+                    ->with('success', 'Rework request submitted. Technician has been notified.');
+            }
+
+        } catch (\Exception $e) {
+            return redirect()->route('repair.pending-signature')
+                ->with('error', 'Failed to submit signature: ' . $e->getMessage());
+        }
     }
 }
