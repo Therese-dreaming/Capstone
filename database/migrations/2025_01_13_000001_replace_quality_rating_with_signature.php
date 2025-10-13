@@ -12,11 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('maintenances', function (Blueprint $table) {
-            // Remove quality_rating column
-            $table->dropColumn('quality_rating');
+            // Remove quality_rating column only if it exists
+            if (Schema::hasColumn('maintenances', 'quality_rating')) {
+                $table->dropColumn('quality_rating');
+            }
             
             // Add admin_signature column (stores base64 encoded signature image)
-            $table->text('admin_signature')->nullable()->after('quality_issues');
+            $table->text('admin_signature')->nullable();
         });
     }
 
@@ -26,11 +28,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('maintenances', function (Blueprint $table) {
-            // Remove admin_signature column
-            $table->dropColumn('admin_signature');
+            // Remove admin_signature column if it exists
+            if (Schema::hasColumn('maintenances', 'admin_signature')) {
+                $table->dropColumn('admin_signature');
+            }
             
-            // Restore quality_rating column
-            $table->integer('quality_rating')->nullable()->after('quality_issues');
+            // Restore quality_rating column only if it doesn't exist
+            if (!Schema::hasColumn('maintenances', 'quality_rating')) {
+                $table->integer('quality_rating')->nullable();
+            }
         });
     }
 };

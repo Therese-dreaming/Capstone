@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('maintenances', function (Blueprint $table) {
             // Add rework_count column to track how many times the task has been reworked
-            $table->integer('rework_count')->default(0)->after('requires_rework');
+            $table->integer('rework_count')->default(0);
         });
     }
 

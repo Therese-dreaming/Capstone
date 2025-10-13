@@ -517,6 +517,23 @@ class RepairRequestController extends Controller
 
             // Handle asset status updates for completed requests
             if ($request->status === 'completed') {
+                // Save current completion attempt to repair_histories before updating
+                \App\Models\RepairHistory::create([
+                    'repair_request_id' => $repairRequest->id,
+                    'technician_id' => auth()->id(),
+                    'attempt_number' => ($repairRequest->rework_count ?? 0) + 1,
+                    'findings' => $updateData['findings'] ?? null,
+                    'remarks' => $updateData['remarks'] ?? null,
+                    'before_photos' => $updateData['before_photos'] ?? null,
+                    'after_photos' => $updateData['after_photos'] ?? null,
+                    'technician_signature' => $updateData['technician_signature'] ?? null,
+                    'caller_signature' => $updateData['caller_signature'] ?? null,
+                    'time_started' => $repairRequest->time_started,
+                    'completed_at' => now(),
+                    'caller_signed_at' => $updateData['caller_signed_at'] ?? null,
+                    'verification_status' => null, // Will be set when caller signs
+                ]);
+                
                 // Get the serial number from the request or existing repair request
                 $serialNumber = $request->serial_number ?? $repairRequest->serial_number;
                 
@@ -1157,7 +1174,7 @@ class RepairRequestController extends Controller
 
     public function getData($id)
     {
-        $request = RepairRequest::with(['asset.location', 'technician', 'creator'])
+        $request = RepairRequest::with(['asset.location', 'technician', 'creator', 'evaluation', 'histories.technician'])
             ->findOrFail($id);
             
         // Access control: Secretaries/Technicians (group_id=2) can only view requests assigned to them
@@ -1415,6 +1432,19 @@ class RepairRequestController extends Controller
                     'verification_status' => 'verified'
                 ]);
 
+                // Update the latest repair history record with approval
+                $latestHistory = \App\Models\RepairHistory::where('repair_request_id', $repairRequest->id)
+                    ->orderBy('attempt_number', 'desc')
+                    ->first();
+                    
+                if ($latestHistory) {
+                    $latestHistory->update([
+                        'caller_signature' => $request->caller_signature,
+                        'caller_signed_at' => now(),
+                        'verification_status' => 'approved'
+                    ]);
+                }
+
                 // Notify technician
                 Notification::create([
                     'user_id' => $repairRequest->technician_id,
@@ -1435,6 +1465,20 @@ class RepairRequestController extends Controller
                 $repairRequest->status = 'in_progress';
                 $repairRequest->completed_at = null; // clear completion since rework is requested
                 $repairRequest->remarks = ($repairRequest->remarks ?? '') . "\n\n[Caller Feedback]: " . ($request->rework_notes ?? 'Caller requested rework after review.');
+                
+                // Update the latest repair history record with dispute
+                $latestHistory = \App\Models\RepairHistory::where('repair_request_id', $repairRequest->id)
+                    ->orderBy('attempt_number', 'desc')
+                    ->first();
+                    
+                if ($latestHistory) {
+                    $latestHistory->update([
+                        'caller_signature' => $request->caller_signature,
+                        'caller_signed_at' => now(),
+                        'verification_status' => 'disputed',
+                        'caller_feedback' => $request->rework_notes ?? 'Caller requested rework after review.'
+                    ]);
+                }
                 $repairRequest->save();
 
                 // Notify technician

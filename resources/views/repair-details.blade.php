@@ -52,13 +52,17 @@
 
     <!-- Main Container -->
     <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
-        <!-- Content -->
-        <div id="detailsContent" class="space-y-4">
+        <!-- Tabs Navigation (will be populated dynamically) -->
+        <div id="repairTabsNav" class="border-b border-gray-200 mb-6">
             <!-- Loading State -->
             <div class="text-center py-12">
                 <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-t-4 border-red-600 mx-auto"></div>
                 <p class="mt-6 text-gray-600 font-medium">Loading repair details...</p>
             </div>
+        </div>
+        
+        <!-- Tab Content (will be populated dynamically) -->
+        <div id="repairTabsContent" class="space-y-4">
         </div>
     </div>
 </div>
@@ -90,7 +94,7 @@
         <div class="space-y-6">
             <!-- Basic Information -->
             <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-centers">
                     <div class="bg-red-100 p-2 rounded-lg mr-3">
                         <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -205,6 +209,36 @@
                             <!-- Caller signature will be inserted here -->
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Technician Evaluation -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                    </div>
+                    Technician Evaluation
+                </h3>
+                <div class="evaluation-container">
+                    <!-- Evaluation will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Repair History -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    Repair History
+                </h3>
+                <div class="repair-history-container">
+                    <!-- Repair history will be inserted here -->
                 </div>
             </div>
         </div>
@@ -387,6 +421,499 @@
         });
     }
 
+    // Function to switch between repair tabs
+    function switchRepairTab(event, tabId) {
+        // Remove active class from all tabs
+        const tabs = document.querySelectorAll('.repair-tab-button');
+        tabs.forEach(tab => {
+            tab.classList.remove('border-red-600', 'text-red-600', 'bg-red-50');
+            tab.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        // Add active class to clicked tab
+        event.currentTarget.classList.remove('border-transparent', 'text-gray-500');
+        event.currentTarget.classList.add('border-red-600', 'text-red-600', 'bg-red-50');
+        
+        // Hide all tab panels
+        const panels = document.querySelectorAll('.repair-tab-panel');
+        panels.forEach(panel => {
+            panel.classList.add('hidden');
+        });
+        
+        // Show selected tab panel
+        const selectedPanel = document.getElementById(tabId);
+        if (selectedPanel) {
+            selectedPanel.classList.remove('hidden');
+        }
+    }
+
+    // Helper to build image URL
+    function buildImageUrl(path) {
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+        if (path.startsWith('/')) return window.location.origin + path;
+        return window.location.origin + '/storage/' + path;
+    }
+
+    // Build tabs for multiple repair attempts
+    function buildRepairTabs(request, tabsNav, tabsContent) {
+        let tabsHtml = '<nav class="flex flex-wrap gap-2 pb-4" aria-label="Repair Attempts">';
+        
+        // Create tab for each history + current
+        request.histories.forEach((history, index) => {
+            const isActive = index === request.histories.length - 1;
+            const statusIcon = history.verification_status === 'approved' ? '✓' : 
+                              history.verification_status === 'disputed' ? '↻' : '⋯';
+            const statusColor = history.verification_status === 'approved' ? 'green' :
+                               history.verification_status === 'disputed' ? 'red' : 'gray';
+            
+            tabsHtml += `
+                <button onclick="switchRepairTab(event, 'repair-tab-${history.id}')" 
+                    class="repair-tab-button ${isActive ? 'border-red-600 text-red-600 bg-red-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} 
+                    whitespace-nowrap py-3 px-5 border-b-2 font-medium text-sm flex items-center gap-2 transition-all">
+                    <span>Repair ${history.attempt_number}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-${statusColor}-100 text-${statusColor}-800">
+                        ${statusIcon}
+                    </span>
+                </button>
+            `;
+        });
+        
+        tabsHtml += '</nav>';
+        tabsNav.innerHTML = tabsHtml;
+        
+        // Build content for each tab
+        let contentHtml = '';
+        request.histories.forEach((history, index) => {
+            const isActive = index === request.histories.length - 1;
+            contentHtml += buildRepairTabContent(request, history, isActive);
+        });
+        
+        tabsContent.innerHTML = contentHtml;
+    }
+
+    // Build single repair view (no history yet)
+    function buildSingleRepairView(request, tabsNav, tabsContent) {
+        tabsNav.innerHTML = '<div class="pb-4"><h3 class="text-lg font-semibold text-gray-800">Current Repair Details</h3></div>';
+        
+        // Create a pseudo-history object from current request data
+        const currentData = {
+            id: 'current',
+            attempt_number: 1,
+            technician: request.technician,
+            findings: request.findings,
+            remarks: request.remarks,
+            before_photos: request.before_photos,
+            after_photos: request.after_photos,
+            technician_signature: request.technician_signature,
+            caller_signature: request.caller_signature,
+            time_started: request.time_started,
+            completed_at: request.completed_at,
+            caller_signed_at: request.caller_signed_at,
+            verification_status: request.verification_status
+        };
+        
+        tabsContent.innerHTML = buildRepairTabContent(request, currentData, true);
+    }
+
+    // Build content for a single repair tab
+    function buildRepairTabContent(request, history, isActive) {
+        const technicianName = history.technician ? history.technician.name : 'Not assigned';
+        const statusColor = history.verification_status === 'approved' ? 'green' :
+                           history.verification_status === 'disputed' ? 'red' : 'gray';
+        const statusText = history.verification_status === 'approved' ? 'Approved' :
+                          history.verification_status === 'disputed' ? 'Rework Requested' : 'Pending';
+        
+        // Get caller name
+        let callerName = 'N/A';
+        if (request.creator && request.creator.name) {
+            callerName = request.creator.name;
+        } else if (request.caller_name) {
+            callerName = request.caller_name;
+        }
+        
+        // Get location
+        let locationText = 'N/A';
+        if (request.building && request.floor && request.room) {
+            locationText = `${request.building} - ${request.floor} - ${request.room}`;
+        } else if (request.location) {
+            locationText = request.location;
+        }
+        
+        return `
+            <div id="repair-tab-${history.id}" class="repair-tab-panel ${isActive ? '' : 'hidden'}">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        ${buildBasicInfoSection(request, history, callerName, locationText, technicianName, statusText, statusColor)}
+                        ${buildReportedIssueSection(request)}
+                        ${buildFindingsSection(history)}
+                        ${buildRemarksSection(history)}
+                        ${buildTechnicianEvaluationSection(request)}
+                    </div>
+                    
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        ${buildPhotoEvidenceSection(request)}
+                        ${buildRepairPhotosSection(history)}
+                        ${buildTimelineSection(request, history)}
+                        ${buildSignaturesSection(history, request)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Section builders
+    function buildBasicInfoSection(request, history, callerName, locationText, technicianName, statusText, statusColor) {
+        return `
+            <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    Basic Information
+                </h3>
+                <div class="space-y-3">
+                    <!-- Status -->
+                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-${statusColor}-100 p-2 rounded-lg">
+                                <svg class="w-4 h-4 text-${statusColor}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700">Status</span>
+                        </div>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-${statusColor}-100 text-${statusColor}-800">${statusText}</span>
+                    </div>
+                    
+                    <!-- Ticket Number -->
+                    <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="bg-blue-100 p-2 rounded-lg flex-shrink-0">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-gray-500">Ticket Number</p>
+                            <p class="text-sm font-semibold text-gray-900 font-mono truncate">${request.ticket_number || 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Caller -->
+                    <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="bg-purple-100 p-2 rounded-lg flex-shrink-0">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-gray-500">Caller</p>
+                            <p class="text-sm font-semibold text-gray-900 truncate">${callerName}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="bg-green-100 p-2 rounded-lg flex-shrink-0">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-gray-500">Location</p>
+                            <p class="text-sm font-semibold text-gray-900 truncate">${locationText}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Equipment -->
+                    <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="bg-orange-100 p-2 rounded-lg flex-shrink-0">
+                            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-gray-500">Equipment</p>
+                            <p class="text-sm font-semibold text-gray-900 truncate">${request.equipment || 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Serial Number -->
+                    <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="bg-indigo-100 p-2 rounded-lg flex-shrink-0">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-gray-500">Serial Number</p>
+                            <p class="text-sm font-semibold text-gray-900 font-mono truncate">${request.serial_number || 'N/A'}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Technician -->
+                    <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <div class="bg-red-100 p-2 rounded-lg flex-shrink-0">
+                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-gray-500">Technician</p>
+                            <p class="text-sm font-semibold text-gray-900 truncate">${technicianName}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function buildFindingsSection(history) {
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    Findings
+                </h3>
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">${history.findings || 'No findings recorded'}</p>
+            </div>
+        `;
+    }
+
+    function buildRemarksSection(history) {
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                    </div>
+                    Remarks
+                </h3>
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">${history.remarks || 'No remarks recorded'}</p>
+                ${history.caller_feedback ? `
+                    <div class="mt-4 pt-4 border-t border-red-200 bg-red-50 rounded-lg p-4">
+                        <p class="text-sm font-semibold text-red-700 mb-2">Caller Feedback (Rework Reason):</p>
+                        <p class="text-sm text-red-900 whitespace-pre-wrap">${history.caller_feedback}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function buildReportedIssueSection(request) {
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    Reported Issue
+                </h3>
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">${request.issue || 'No issue recorded'}</p>
+            </div>
+        `;
+    }
+
+    function buildPhotoEvidenceSection(request) {
+        const photoPath = request.photo ? buildImageUrl(request.photo) : null;
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    Photo Evidence
+                </h3>
+                ${photoPath ? `
+                    <div class="flex justify-center">
+                        <img src="${photoPath}" alt="Issue Photo" class="max-w-xs h-auto rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${photoPath}')">
+                    </div>
+                ` : '<p class="text-sm text-gray-500 text-center py-8">No photo available</p>'}
+            </div>
+        `;
+    }
+
+    function buildRepairPhotosSection(history) {
+        const beforePhotos = Array.isArray(history.before_photos) ? history.before_photos : [];
+        const afterPhotos = Array.isArray(history.after_photos) ? history.after_photos : [];
+        
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    Repair Photos
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Before Photos Column -->
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-2 text-center">Before</p>
+                        ${beforePhotos.length > 0 ? `
+                            <div class="space-y-2">
+                                ${beforePhotos.map(p => `<img src="${buildImageUrl(p)}" alt="Before" class="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${buildImageUrl(p)}')">`).join('')}
+                            </div>
+                        ` : '<div class="h-32 flex items-center justify-center bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-xs text-gray-500">No photos</p></div>'}
+                    </div>
+                    
+                    <!-- After Photos Column -->
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-2 text-center">After</p>
+                        ${afterPhotos.length > 0 ? `
+                            <div class="space-y-2">
+                                ${afterPhotos.map(p => `<img src="${buildImageUrl(p)}" alt="After" class="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${buildImageUrl(p)}')">`).join('')}
+                            </div>
+                        ` : '<div class="h-32 flex items-center justify-center bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-xs text-gray-500">No photos</p></div>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function buildTimelineSection(request, history) {
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    Repair Timeline
+                </h3>
+                <div class="space-y-3">
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <p class="text-xs font-medium text-gray-500">CREATED</p>
+                        <p class="text-sm text-gray-900">${formatDate(request.created_at)}</p>
+                    </div>
+                    ${history.time_started ? `
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs font-medium text-gray-500">STARTED</p>
+                            <p class="text-sm text-gray-900">${formatDate(history.time_started)}</p>
+                        </div>
+                    ` : ''}
+                    ${history.completed_at ? `
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-xs font-medium text-gray-500">COMPLETED</p>
+                            <p class="text-sm text-gray-900">${formatDate(history.completed_at)}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function buildSignaturesSection(history, request) {
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </div>
+                    Signatures
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Technician Signature Column -->
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-2 text-center">Technician</p>
+                        ${history.technician_signature ? `
+                            <img src="${history.technician_signature}" alt="Technician Signature" class="w-full h-32 object-contain border rounded bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${history.technician_signature}')">
+                        ` : '<div class="h-32 flex items-center justify-center bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-xs text-gray-500">No signature</p></div>'}
+                    </div>
+                    
+                    <!-- Caller Signature Column -->
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-2 text-center">Caller</p>
+                        ${history.caller_signature ? `
+                            <img src="${history.caller_signature}" alt="Caller Signature" class="w-full h-32 object-contain border rounded bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${history.caller_signature}')">
+                            ${history.caller_signed_at ? `<p class="text-xs text-gray-500 mt-1 text-center">Signed: ${formatDate(history.caller_signed_at)}</p>` : ''}
+                        ` : '<div class="h-32 flex items-center justify-center bg-gray-50 rounded border border-dashed border-gray-300"><p class="text-xs text-gray-500">No signature</p></div>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function buildTechnicianEvaluationSection(request) {
+        if (!request.evaluation) {
+            return `
+                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-sm p-6 border-2 border-dashed border-gray-300">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <div class="bg-gray-200 p-2 rounded-lg mr-3">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                        </div>
+                        Technician Evaluation
+                    </h3>
+                    <div class="flex flex-col items-center justify-center py-8">
+                        <div class="bg-white rounded-full p-4 mb-4 shadow-sm">
+                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 font-medium mb-1">No Evaluation Yet</p>
+                        <p class="text-sm text-gray-500 text-center max-w-xs">The technician has not been evaluated for this repair work.</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        const rating = request.evaluation.rating || 0;
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            starsHtml += i <= rating ? 
+                '<svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' :
+                '<svg class="w-6 h-6 text-gray-300 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+        }
+        
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <div class="bg-red-100 p-2 rounded-lg mr-3">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                    </div>
+                    Technician Evaluation
+                </h3>
+                <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex gap-1">${starsHtml}</div>
+                        <span class="text-sm font-semibold text-yellow-800">${rating}/5</span>
+                    </div>
+                    ${request.evaluation.feedback ? `
+                        <div class="mt-3 pt-3 border-t border-yellow-200">
+                            <p class="text-sm font-medium text-gray-700 mb-1">Feedback:</p>
+                            <p class="text-sm text-gray-900">${request.evaluation.feedback}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
     // Load repair details when page loads
     document.addEventListener('DOMContentLoaded', function() {
         // Extract ID from URL path
@@ -399,13 +926,13 @@
     });
 
     function loadRepairDetails(id) {
-        const content = document.getElementById('detailsContent');
-        const template = document.getElementById('repairDetailsTemplate');
+        const tabsNav = document.getElementById('repairTabsNav');
+        const tabsContent = document.getElementById('repairTabsContent');
         const url = `{{ url('/repair-requests') }}/${id}/data`;
         console.log('Fetching from URL:', url);
 
         // Show loading state
-        content.innerHTML =
+        tabsNav.innerHTML =
             '<div class="text-center py-12">' +
             '<div class="animate-spin rounded-full h-16 w-16 border-b-4 border-t-4 border-red-600 mx-auto"></div>' +
             '<p class="mt-6 text-gray-600 font-medium">Loading repair details...</p>' +
@@ -429,361 +956,21 @@
                 console.log('Received data:', data);
                 console.log('Asset data:', data.asset);
                 console.log('Creator data:', data.creator);
+                console.log('Histories:', data.histories);
+                
                 if (data) {
                     const request = data;
-                    const clone = template.content.cloneNode(true);
-
-                    // Set status badge
-                    const statusBadge = clone.querySelector('.status-badge');
-                    statusBadge.className = `inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(request.status)}`;
-                    statusBadge.innerHTML = getStatusIcon(request.status) + formatStatus(request.status);
-
-                    // Set urgency level badge
-                    const urgencyLevelBadge = clone.querySelector('.urgency-level-badge');
-                    const urgencyText = clone.querySelector('.urgency-text');
-                    const urgencyLevel = request.urgency_level || 3;
-                    urgencyLevelBadge.className = `urgency-level-badge ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getUrgencyLevelColor(urgencyLevel)}`;
-                    urgencyText.textContent = `Level ${urgencyLevel}`;
-
-                    // Set dates
-                    clone.querySelector('.created-date').textContent = 'Created: ' + formatDate(request.created_at);
-                    clone.querySelector('.updated-date').textContent = 'Last Updated: ' + formatDate(request.updated_at);
-
-                    // Set basic information - use creator's full name if available, otherwise use caller_name
-                    let callerName = 'N/A';
-                    if (request.creator && request.creator.name) {
-                        callerName = request.creator.name;
-                    } else if (request.creator && (request.creator.first_name || request.creator.last_name)) {
-                        callerName = `${request.creator.first_name || ''} ${request.creator.last_name || ''}`.trim();
-                    } else if (request.caller_name) {
-                        callerName = request.caller_name;
-                    }
-                    clone.querySelector('.caller-name').textContent = callerName;
                     
-                    // Set original caller's location (always show the repair request location)
-                    let originalLocationText = 'N/A';
-                    if (request.building && request.floor && request.room) {
-                        // Use repair request location with building, floor, and room
-                        originalLocationText = `${request.building} - ${request.floor} - ${request.room}`;
-                        console.log('Original location (building/floor/room):', originalLocationText);
-                    } else if (request.location) {
-                        // Use repair request location
-                        originalLocationText = request.location;
-                        console.log('Original location (direct):', originalLocationText);
-                    }
-                    clone.querySelector('.location').textContent = originalLocationText;
-                    
-                    // Set current location (asset location) - only show if asset is linked
-                    const currentLocationContainer = clone.querySelector('.current-location-container');
-                    console.log('Location debug - Asset exists:', !!request.asset);
-                    console.log('Location debug - Asset location object:', request.asset?.location);
-                    
-                    if (request.asset && request.asset.location && 
-                        (request.asset.location.building || request.asset.location.floor || request.asset.location.room_number)) {
-                        // Show current location section
-                        currentLocationContainer.classList.remove('hidden');
-                        
-                        // Construct asset's current location
-                        const building = request.asset.location.building || '';
-                        const floor = request.asset.location.floor || '';
-                        const room = request.asset.location.room_number || '';
-                        const currentLocationText = [building, floor, room].filter(part => part.trim()).join(' - ');
-                        
-                        clone.querySelector('.current-location').textContent = currentLocationText;
-                        console.log('Current location (asset):', currentLocationText);
+                    // Build tabs based on repair history
+                    if (request.histories && request.histories.length > 0) {
+                        // Create tabs for each repair attempt
+                        buildRepairTabs(request, tabsNav, tabsContent);
                     } else {
-                        // Hide current location section if no asset is linked
-                        currentLocationContainer.classList.add('hidden');
-                        console.log('No asset linked - hiding current location section');
+                        // No history yet - show current repair details only
+                        buildSingleRepairView(request, tabsNav, tabsContent);
                     }
-                    
-                    clone.querySelector('.equipment').textContent = request.equipment || 'N/A';
-                    clone.querySelector('.serial-number').textContent = request.serial_number || 'N/A';
-                    
-                    // Set urgency level info
-                    const urgencyLevelInfo = clone.querySelector('.urgency-level-info');
-                    let urgencyDescription = '';
-                    switch (urgencyLevel) {
-                        case 1:
-                            urgencyDescription = 'Level 1 - Highest (Ongoing Class/Event)';
-                            break;
-                        case 2:
-                            urgencyDescription = 'Level 2 - Medium (Over 1 Week Old)';
-                            break;
-                        case 3:
-                            urgencyDescription = 'Level 3 - Low (New Request)';
-                            break;
-                        default:
-                            urgencyDescription = `Level ${urgencyLevel} - Unknown`;
-                    }
-                    urgencyLevelInfo.textContent = urgencyDescription;
-                    
-                    // Set ongoing activity info
-                    const ongoingActivity = clone.querySelector('.ongoing-activity');
-                    ongoingActivity.textContent = request.ongoing_activity === 'yes' ? 'Yes' : 'No';
-
-                    // Set issue and findings
-                    clone.querySelector('.issue').textContent = request.issue || 'No issue recorded';
-                    clone.querySelector('.findings').textContent = request.findings || 'No findings recorded';
-
-                    // Set photo
-                    const photoContainer = clone.querySelector('.photo-container');
-                    if (request.photo) {
-                        // Handle different photo path formats
-                        let photoPath;
-                        if (request.photo.startsWith('http')) {
-                            photoPath = request.photo;
-                        } else if (request.photo.startsWith('/')) {
-                            photoPath = window.location.origin + request.photo;
-                        } else {
-                            photoPath = window.location.origin + '/storage/' + request.photo;
-                        }
-                        
-                        photoContainer.innerHTML = `
-                        <div class="relative group w-full bg-gray-100 p-4 rounded-lg">
-                            <img src="${photoPath}"
-                                alt="Repair Photo"
-                                class="w-full h-auto max-h-[400px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-center py-8\'><svg class=\'w-12 h-12 mx-auto text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\' /></svg><p class=\'mt-2 text-gray-500\'>Photo not found</p></div>';"
-                                onclick="showImageModal('${photoPath}')">
-                        </div>
-                    `;
-                    } else {
-                        photoContainer.innerHTML = `
-                        <div class="text-center py-8">
-                            <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p class="mt-2 text-gray-500">No photo available</p>
-                        </div>
-                    `;
-                    }
-
-                    // Set timeline
-                    const timelineContainer = clone.querySelector('.timeline-container');
-                    timelineContainer.innerHTML = `
-                    <div class="relative">
-                        <div class="absolute left-[-30px] top-0 w-6 h-6 rounded-full bg-blue-100 border-2 border-blue-500 flex items-center justify-center hidden"></div>
-                        <div class="bg-gray-50 p-3 rounded-lg">
-                            <p class="text-xs font-medium text-gray-500">CREATED</p>
-                            <p class="text-sm text-gray-900">${formatDate(request.created_at)}</p>
-                        </div>
-                    </div>
-                    ${request.time_started ? `
-                        <div class="relative">
-                            <div class="absolute left-[-30px] top-0 w-6 h-6 rounded-full bg-yellow-100 border-2 border-yellow-500 flex items-center justify-center hidden"></div>
-                            <div class="bg-gray-50 p-3 rounded-lg">
-                                <p class="text-xs font-medium text-gray-500">STARTED</p>
-                                <p class="text-sm text-gray-900">${formatDate(request.time_started)}</p>
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${request.completed_at ? `
-                        <div class="relative">
-                            <div class="bg-gray-50 p-3 rounded-lg">
-                                <p class="text-xs font-medium text-gray-500">COMPLETED</p>
-                                <p class="text-sm text-gray-900">${formatDate(request.completed_at)}</p>
-                            </div>
-                        </div>
-                    ` : ''}
-                `;
-
-                    // Set remarks
-                    clone.querySelector('.remarks').textContent = request.remarks || 'No remarks recorded';
-
-                    // Helper to build image URL from stored path or absolute
-                    function buildImageUrl(path) {
-                        if (!path) return '';
-                        if (path.startsWith('http')) return path;
-                        if (path.startsWith('/')) return window.location.origin + path;
-                        return window.location.origin + '/storage/' + path;
-                    }
-
-                    // Set signatures
-                    const techSignatureContainer = clone.querySelector('.technician-signature-container');
-                    const callerSignatureContainer = clone.querySelector('.caller-signature-container');
-
-                    if (request.technician_signature) {
-                        techSignatureContainer.innerHTML = `
-                        <div class="border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                            <img src="${request.technician_signature}" 
-                                alt="Technician Signature" 
-                                class="w-full h-32 object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                                onclick="showImageModal('${request.technician_signature}')">
-                        </div>
-                    `;
-                    } else {
-                        techSignatureContainer.innerHTML = `
-                        <div class="border rounded-lg p-4 bg-gray-50 text-center">
-                            <svg class="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="text-gray-500 italic mt-2">No signature provided</p>
-                        </div>
-                    `;
-                    }
-
-                    if (request.caller_signature) {
-                        callerSignatureContainer.innerHTML = `
-                        <div class="border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                            <img src="${request.caller_signature}" 
-                                alt="Caller Signature" 
-                                class="w-full h-32 object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                                onclick="showImageModal('${request.caller_signature}')">
-                        </div>
-                    `;
-                    } else {
-                        callerSignatureContainer.innerHTML = `
-                        <div class="border rounded-lg p-4 bg-gray-50 text-center">
-                            <svg class="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="text-gray-500 italic mt-2">No signature provided</p>
-                        </div>
-                    `;
-                    }
-
-                    // Signature meta
-                    const verificationStatusEl = clone.querySelector('.verification-status');
-                    const signatureTypeEl = clone.querySelector('.signature-type');
-                    const signatureExtra = clone.querySelector('.signature-extra');
-                    const signatureExtraLabel = clone.querySelector('.signature-extra-label');
-                    const signatureExtraValue = clone.querySelector('.signature-extra-value');
-
-                    const statusLabelMap = { pending: 'Pending', verified: 'Verified', disputed: 'Disputed' };
-                    const typeLabelMap = { caller: 'Caller', delegate: 'Delegate', deferred: 'Deferred', none: 'None' };
-                    const vStatus = (request.verification_status || 'pending');
-                    const sType = (request.signature_type || 'none');
-                    verificationStatusEl.textContent = statusLabelMap[vStatus] || vStatus;
-                    signatureTypeEl.textContent = typeLabelMap[sType] || sType;
-
-                    // Extra info depending on signature type
-                    let extraLabel = '';
-                    let extraValue = '';
-                    if (sType === 'delegate') {
-                        extraLabel = 'Delegate Name';
-                        extraValue = request.delegate_name || '-';
-                    } else if (sType === 'deferred') {
-                        extraLabel = 'Signature Deadline';
-                        extraValue = request.signature_deadline ? formatDate(request.signature_deadline) : '-';
-                    } else if (sType === 'caller') {
-                        extraLabel = 'Caller Signed At';
-                        extraValue = request.caller_signed_at ? formatDate(request.caller_signed_at) : '-';
-                    }
-                    if (extraLabel) {
-                        signatureExtraLabel.textContent = extraLabel;
-                        signatureExtraValue.textContent = extraValue;
-                        signatureExtra.classList.remove('hidden');
-                    } else {
-                        signatureExtra.classList.add('hidden');
-                    }
-
-                    // Photo evidence (before/after)
-                    const beforeContainer = clone.querySelector('.before-photos-container');
-                    const afterContainer = clone.querySelector('.after-photos-container');
-                    const beforeEmpty = clone.querySelector('.before-empty');
-                    const afterEmpty = clone.querySelector('.after-empty');
-
-                    function renderPhotoGrid(arr, container, emptyEl) {
-                        container.innerHTML = '';
-                        if (Array.isArray(arr) && arr.length > 0) {
-                            emptyEl.classList.add('hidden');
-                            arr.forEach((p) => {
-                                const src = buildImageUrl(p);
-                                const col = document.createElement('div');
-                                col.className = 'relative group';
-                                col.innerHTML = `
-                                    <img src="${src}" alt="Evidence Photo" class="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90" onclick="showImageModal('${src}')"/>
-                                `;
-                                container.appendChild(col);
-                            });
-                        } else {
-                            emptyEl.classList.remove('hidden');
-                        }
-                    }
-
-                    renderPhotoGrid(request.before_photos, beforeContainer, beforeEmpty);
-                    renderPhotoGrid(request.after_photos, afterContainer, afterEmpty);
-
-                    // Show register asset button for unregistered assets, or show asset info if registered
-                    const registerAssetContainer = clone.querySelector('.register-asset-container');
-                    const registerAssetBtn = clone.querySelector('.register-asset-btn');
-                    
-                    if (!request.serial_number) {
-                        // Asset not registered yet - show register button
-                        registerAssetContainer.classList.remove('hidden');
-                        // Set up the register asset button with pre-filled data
-                        const registerUrl = new URL('{{ route("assets.create") }}', window.location.origin);
-                        registerUrl.searchParams.set('equipment', request.equipment || '');
-                        registerUrl.searchParams.set('location', request.location || '');
-                        registerUrl.searchParams.set('category', request.category_id || '');
-                        registerUrl.searchParams.set('findings', request.findings || '');
-                        registerUrl.searchParams.set('remarks', request.remarks || '');
-                        // Add non-registered asset context
-                        registerUrl.searchParams.set('from_non_registered', '1');
-                        
-                        // Set asset status based on repair request status
-                        let assetStatus = 'PULLED OUT'; // Default status
-                        
-                        // Normalize status for comparison (handle case variations and spaces)
-                        const normalizedStatus = (request.status || '').toLowerCase().replace(/[_\s]/g, '');
-                        
-                        switch(normalizedStatus) {
-                            case 'completed':
-                                assetStatus = 'IN USE';
-                                break;
-                            case 'pulledout':
-                                assetStatus = 'PULLED OUT';
-                                break;
-                            case 'cancelled':
-                            case 'canceled':
-                                assetStatus = 'IN USE'; // Assume it was working if cancelled
-                                break;
-                            case 'inprogress':
-                            case 'ongoing':
-                            case 'assigned':
-                                assetStatus = 'UNDER REPAIR';
-                                break;
-                            case 'pending':
-                            case 'open':
-                            case 'new':
-                                assetStatus = 'UNDER REPAIR';
-                                break;
-                            default:
-                                assetStatus = 'PULLED OUT';
-                        }
-                        
-                        registerUrl.searchParams.set('status', assetStatus);
-                        // Add repair request ID for automatic linking
-                        registerUrl.searchParams.set('repair_request_id', request.id || '');
-                        registerUrl.searchParams.set('auto_link_repair', '1');
-                        registerAssetBtn.href = registerUrl.toString();
-                    } else {
-                        // Asset is registered - show asset information
-                        registerAssetContainer.classList.remove('hidden');
-                        
-                        registerAssetContainer.innerHTML = `
-                            <p class="text-xs font-medium text-green-600 uppercase tracking-wide mb-3">Asset Registered & Linked</p>
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <div class="flex items-center text-green-800">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span class="font-medium">Asset has been registered and linked to this repair request</span>
-                                </div>
-                                <div class="mt-2 text-sm text-green-700">
-                                    <p><strong>Serial Number:</strong> ${request.serial_number}</p>
-                                    <p><strong>Asset Status:</strong> ${request.asset && request.asset.status ? request.asset.status : formatStatus(request.status)}</p>
-                                    <p class="text-xs text-green-600 mt-1"><em>Current location is displayed above in the "Current Location (Asset)" section</em></p>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    content.innerHTML = '';
-                    content.appendChild(clone);
                 } else {
-                    content.innerHTML = `
+                    tabsNav.innerHTML = `
                     <div class="text-center py-12">
                         <div class="text-red-600 mb-4">
                             <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -798,7 +985,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                content.innerHTML = `
+                tabsNav.innerHTML = `
                 <div class="text-center py-12">
                     <div class="text-red-600 mb-4">
                         <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -812,63 +999,51 @@
             });
     }
 
-    function showImageModal(imageUrl) {
-        const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        if (!modal || !modalImage) return;
-
-        modalImage.src = imageUrl;
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeImageModal() {
-        const modal = document.getElementById('imageModal');
-        if (!modal) return;
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        const modalImage = document.getElementById('modalImage');
-        if (modalImage) {
-            modalImage.src = '';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const imageModal = document.getElementById('imageModal');
-        if (imageModal) {
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !imageModal.classList.contains('hidden')) {
-                    closeImageModal();
-                }
-            });
-
-            imageModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeImageModal();
-                }
-            });
-        }
-    });
-
-    window.showImageModal = showImageModal;
-    window.closeImageModal = closeImageModal;
-
-    // Check if there's a success message (indicating asset was just registered)
-    // and refresh the repair details to show the linked asset
-    @if(session('success'))
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get the repair ID from the URL
-        const urlParts = window.location.pathname.split('/');
-        const repairId = urlParts[urlParts.length - 1];
+    // Helper function for image modal (if not already defined)
+    function showImageModal(imageSrc) {
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+        modal.onclick = function() { document.body.removeChild(modal); };
         
-        if (repairId && !isNaN(repairId)) {
-            // Small delay to ensure the success message is visible first
-            setTimeout(function() {
-                console.log('Refreshing repair details after successful asset registration');
-                loadRepairDetails(repairId);
-            }, 1000);
-        }
-    });
-    @endif
+        const img = document.createElement('img');
+        img.src = imageSrc;
+        img.className = 'max-w-full max-h-full object-contain';
+        img.onclick = function(e) { e.stopPropagation(); };
+        
+        modal.appendChild(img);
+        document.body.appendChild(modal);
+    }
+
+    // Status helper functions
+    function getStatusColor(status) {
+        const colors = {
+            'completed': 'bg-green-100 text-green-800',
+            'in_progress': 'bg-blue-100 text-blue-800',
+            'pending': 'bg-yellow-100 text-yellow-800',
+            'cancelled': 'bg-red-100 text-red-800',
+            'pulled_out': 'bg-purple-100 text-purple-800'
+        };
+        return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function getStatusIcon(status) {
+        // Return empty string or add icons if needed
+        return '';
+    }
+
+    function formatStatus(status) {
+        const statusMap = {
+            'in_progress': 'In Progress',
+            'pulled_out': 'Pulled Out'
+        };
+        return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    // Remove old template (not needed anymore)
+    const oldTemplate = document.getElementById('repairDetailsTemplate');
+    if (oldTemplate) {
+        oldTemplate.remove();
+    }
 </script>
 @endsection

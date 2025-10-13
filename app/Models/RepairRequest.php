@@ -87,4 +87,9 @@ class RepairRequest extends Model
     {
         return $this->hasMany(NonRegisteredAsset::class, 'ticket_number', 'ticket_number');
     }
+
+    public function histories()
+    {
+        return $this->hasMany(RepairHistory::class)->orderBy('attempt_number', 'asc');
+    }
 }

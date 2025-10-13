@@ -363,13 +363,25 @@
 
             // Set signature data to hidden inputs
             document.getElementById('technicianSignatureInput').value = technicianSignature;
+            
+            // Only set caller signature if caller is present AND signed
             const callerSigInput = document.getElementById('callerSignatureInput');
             if (callerSigInput) {
-                callerSigInput.value = callerSignature;
+                if (callerPresent && callerPad && !callerPad.isEmpty()) {
+                    callerSigInput.value = callerPad.toDataURL();
+                } else {
+                    callerSigInput.value = ''; // Explicitly set to empty
+                }
             }
+            
+            // Only set delegate signature if delegate name provided AND signed
             const delegateSigInput = document.getElementById('delegateSignatureInput');
-            if (delegateSigInput && delegatePad && !delegatePad.isEmpty()) {
-                delegateSigInput.value = delegatePad.toDataURL();
+            if (delegateSigInput) {
+                if (delegateName && delegatePad && !delegatePad.isEmpty()) {
+                    delegateSigInput.value = delegatePad.toDataURL();
+                } else {
+                    delegateSigInput.value = ''; // Explicitly set to empty
+                }
             }
 
             // Submit the form via AJAX

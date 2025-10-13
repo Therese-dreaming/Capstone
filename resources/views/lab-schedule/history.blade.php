@@ -38,7 +38,7 @@
                 <div class="flex-shrink-0">
                     <button onclick="openSignatureModal()" class="text-sm px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-md hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 flex items-center justify-center border border-white/30">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                         <span class="hidden sm:inline">Preview PDF</span>
@@ -651,16 +651,23 @@
     function openSignatureModal() {
         // Store current filters
         const purposeFilterElement = document.getElementById('purposeFilter');
-        const selectedPurposes = Array.from(purposeFilterElement.selectedOptions).map(option => option.value);
+        const selectedPurposes = purposeFilterElement ? Array.from(purposeFilterElement.selectedOptions).map(option => option.value) : [];
+        
+        const statusFilter = document.getElementById('statusFilter');
+        const laboratoryFilter = document.getElementById('laboratoryFilter');
+        const timeInStartDate = document.getElementById('timeInStartDate');
+        const timeInEndDate = document.getElementById('timeInEndDate');
+        const timeOutStartDate = document.getElementById('timeOutStartDate');
+        const timeOutEndDate = document.getElementById('timeOutEndDate');
         
         currentFilters = {
-            status: document.getElementById('statusFilter').value,
-            laboratory: document.getElementById('laboratoryFilter').value,
+            status: statusFilter ? statusFilter.value : '',
+            laboratory: laboratoryFilter ? laboratoryFilter.value : '',
             purpose: selectedPurposes,
-            time_in_start_date: document.getElementById('timeInStartDate').value,
-            time_in_end_date: document.getElementById('timeInEndDate').value,
-            time_out_start_date: document.getElementById('timeOutStartDate').value,
-            time_out_end_date: document.getElementById('timeOutEndDate').value
+            time_in_start_date: timeInStartDate ? timeInStartDate.value : '',
+            time_in_end_date: timeInEndDate ? timeInEndDate.value : '',
+            time_out_start_date: timeOutStartDate ? timeOutStartDate.value : '',
+            time_out_end_date: timeOutEndDate ? timeOutEndDate.value : ''
         };
 
         // Clear existing entries and add one default entry
@@ -857,35 +864,97 @@
             }
         }
 
-        // Build query parameters with filters and signatures
-        const params = new URLSearchParams();
+        // Create a form to submit via POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('lab-schedule.exportPDF') }}';
+        form.target = '_blank';
+        
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
         
         // Add single value filters
-        if (currentFilters.status) params.append('status', currentFilters.status);
-        if (currentFilters.laboratory) params.append('laboratory', currentFilters.laboratory);
-        if (currentFilters.time_in_start_date) params.append('time_in_start_date', currentFilters.time_in_start_date);
-        if (currentFilters.time_in_end_date) params.append('time_in_end_date', currentFilters.time_in_end_date);
-        if (currentFilters.time_out_start_date) params.append('time_out_start_date', currentFilters.time_out_start_date);
-        if (currentFilters.time_out_end_date) params.append('time_out_end_date', currentFilters.time_out_end_date);
+        if (currentFilters.status) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'status';
+            input.value = currentFilters.status;
+            form.appendChild(input);
+        }
+        
+        if (currentFilters.laboratory) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'laboratory';
+            input.value = currentFilters.laboratory;
+            form.appendChild(input);
+        }
+        
+        if (currentFilters.time_in_start_date) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'time_in_start_date';
+            input.value = currentFilters.time_in_start_date;
+            form.appendChild(input);
+        }
+        
+        if (currentFilters.time_in_end_date) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'time_in_end_date';
+            input.value = currentFilters.time_in_end_date;
+            form.appendChild(input);
+        }
+        
+        if (currentFilters.time_out_start_date) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'time_out_start_date';
+            input.value = currentFilters.time_out_start_date;
+            form.appendChild(input);
+        }
+        
+        if (currentFilters.time_out_end_date) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'time_out_end_date';
+            input.value = currentFilters.time_out_end_date;
+            form.appendChild(input);
+        }
         
         // Add multiple purpose selections
         if (currentFilters.purpose && currentFilters.purpose.length > 0) {
             currentFilters.purpose.forEach(purpose => {
-                if (purpose) params.append('purpose[]', purpose);
+                if (purpose) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'purpose[]';
+                    input.value = purpose;
+                    form.appendChild(input);
+                }
             });
         }
         
         // Add signatures as JSON
         if (signatures.length > 0) {
-            params.append('signatures', JSON.stringify(signatures));
+            const sigInput = document.createElement('input');
+            sigInput.type = 'hidden';
+            sigInput.name = 'signatures';
+            sigInput.value = JSON.stringify(signatures);
+            form.appendChild(sigInput);
         }
-
-        // Generate PDF URL and open in new tab
-        const pdfUrl = `{{ route('lab-schedule.exportPDF') }}?${params.toString()}`;
         
-        // Close modal and open PDF
+        // Submit form
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+        
+        // Close modal
         closeSignatureModal();
-        window.open(pdfUrl, '_blank');
     }
 </script>
 @endsection

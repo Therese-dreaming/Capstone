@@ -131,7 +131,7 @@
                         <div class="font-bold text-base sm:text-lg text-red-800">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y') }}</div>
                         <div class="text-xs sm:text-sm text-gray-500">{{ \Carbon\Carbon::parse($request->created_at)->format('g:i A') }}</div>
                     </div>
-                    <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2">
+                    <div class="flex flex-wrap sm:flex-col items-start sm:items-end gap-1 sm:gap-2">
                         <!-- Urgency Level Badge -->
                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap
                             @if($request->urgency_level == 1) bg-red-100 text-red-800 border border-red-200
@@ -168,7 +168,8 @@
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            Rework Requested
+                            <span class="hidden sm:inline">Rework Requested</span>
+                            <span class="sm:hidden">Rework</span>
                         </span>
                         @endif
 
@@ -176,7 +177,7 @@
                         <!-- Rework Count Badge -->
                         <span class="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-purple-100 text-purple-800 border border-purple-200" title="Times reworked">
                             <svg class="w-3 h-3 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-4h2v4zm0-6H9V5h2v2z"/></svg>
-                            Reworks: {{ $request->rework_count }}
+                            <span class="hidden sm:inline">Reworks: </span>{{ $request->rework_count }}
                         </span>
                         @endif
                     </div>

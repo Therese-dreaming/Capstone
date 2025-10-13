@@ -371,10 +371,19 @@ class ReportController extends Controller
         // Add debug logging
         \Log::info('Fetching history for asset: ' . $asset->id);
 
-        // Get general history with eager loading
+        // Get general history with eager loading (excluding REPAIR type as we'll get those from repair_histories)
         $history = AssetHistory::with(['asset', 'user'])
             ->where('asset_id', $asset->id)
+            ->where('change_type', '!=', 'REPAIR')
             ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get repair histories directly from repair_histories table
+        $repairHistories = \App\Models\RepairHistory::with(['repairRequest', 'technician'])
+            ->whereHas('repairRequest', function($query) use ($asset) {
+                $query->where('serial_number', $asset->serial_number);
+            })
+            ->orderBy('completed_at', 'desc')
             ->get();
 
         // Get maintenance history - use the asset's location_id
@@ -393,31 +402,10 @@ class ReportController extends Controller
                 ->get();
         }
 
-        // Debug the history records
-        \Log::info('History records:', [
-            'total_records' => $history->count(),
-            'repair_records' => $history->where('change_type', 'REPAIR')->count(),
-            'all_change_types' => $history->pluck('change_type')->unique()->toArray()
-        ]);
-
-        // Debug specific repair records
-        $repairRecords = $history->where('change_type', 'REPAIR');
-        \Log::info('Repair records details:', [
-            'count' => $repairRecords->count(),
-            'records' => $repairRecords->map(function($record) {
-                return [
-                    'id' => $record->id,
-                    'asset_id' => $record->asset_id,
-                    'change_type' => $record->change_type,
-                    'remarks' => $record->remarks,
-                    'created_at' => $record->created_at
-                ];
-            })->toArray()
-        ]);
-
+        // Group history by change_type
         $history = $history->groupBy('change_type');
 
-        return view('reports.asset-history', compact('asset', 'history', 'assetMaintenances'));
+        return view('reports.asset-history', compact('asset', 'history', 'assetMaintenances', 'repairHistories'));
     }
 
     public function procurementHistory(Request $request)

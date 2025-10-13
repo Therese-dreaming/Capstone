@@ -407,31 +407,54 @@
     let currentFilters = {};
 
     function openSignatureModal() {
+        // Check if required elements exist
+        const labFilter = document.getElementById('labFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const issueFilter = document.getElementById('issueFilter');
+        const signatureEntries = document.getElementById('signatureEntries');
+        const signatureModal = document.getElementById('signatureModal');
+        
+        if (!labFilter || !statusFilter || !startDate || !endDate || !issueFilter || !signatureEntries || !signatureModal) {
+            console.error('Required elements not found for signature modal');
+            return;
+        }
+        
         // Store current filters
         currentFilters = {
-            lab: document.getElementById('labFilter').value,
-            status: document.getElementById('statusFilter').value,
-            start_date: document.getElementById('startDate').value,
-            end_date: document.getElementById('endDate').value,
-            issue: document.getElementById('issueFilter').value
+            lab: labFilter.value || '',
+            status: statusFilter.value || '',
+            start_date: startDate.value || '',
+            end_date: endDate.value || '',
+            issue: issueFilter.value || ''
         };
 
         // Clear existing entries and add one default entry
-        document.getElementById('signatureEntries').innerHTML = '';
+        signatureEntries.innerHTML = '';
         signatureCounter = 0;
         addSignatureEntry();
         
         // Show modal
-        document.getElementById('signatureModal').classList.remove('hidden');
-        document.getElementById('signatureModal').classList.add('flex');
+        signatureModal.classList.remove('hidden');
+        signatureModal.classList.add('flex');
     }
 
     function closeSignatureModal() {
-        document.getElementById('signatureModal').classList.add('hidden');
-        document.getElementById('signatureModal').classList.remove('flex');
+        const signatureModal = document.getElementById('signatureModal');
+        if (signatureModal) {
+            signatureModal.classList.add('hidden');
+            signatureModal.classList.remove('flex');
+        }
     }
 
     function addSignatureEntry() {
+        const signatureEntries = document.getElementById('signatureEntries');
+        if (!signatureEntries) {
+            console.error('Signature entries container not found');
+            return;
+        }
+        
         signatureCounter++;
         const entryId = `signature-${signatureCounter}`;
         
@@ -474,7 +497,7 @@
             </div>
         `;
         
-        document.getElementById('signatureEntries').insertAdjacentHTML('beforeend', entryHtml);
+        signatureEntries.insertAdjacentHTML('beforeend', entryHtml);
         initializeSignaturePad(`${entryId}-canvas`);
     }
 

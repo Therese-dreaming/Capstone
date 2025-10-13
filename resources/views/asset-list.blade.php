@@ -597,6 +597,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
+        <button onclick="downloadImage()" class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white rounded-full px-4 py-2 shadow-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="font-medium">Download</span>
+        </button>
     </div>
 </div>
 
@@ -1039,6 +1045,51 @@
         const modal = document.getElementById('imageModal');
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto';
+    }
+
+    function downloadImage() {
+        const enlargedImage = document.getElementById('enlargedImage');
+        const imageSrc = enlargedImage.src;
+        
+        // Extract filename from URL
+        const urlParts = imageSrc.split('/');
+        const filename = urlParts[urlParts.length - 1] || 'qr-code.png';
+        
+        // Use fetch to get the image as a blob to avoid CORS issues
+        fetch(imageSrc)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Create a temporary URL for the blob
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                // Create a temporary anchor element and trigger download
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                
+                // Clean up
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            })
+            .catch(error => {
+                console.error('Error downloading image:', error);
+                
+                // Fallback: try direct download
+                const link = document.createElement('a');
+                link.href = imageSrc;
+                link.download = filename;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
     }
 
     // Event Listeners

@@ -236,8 +236,8 @@ Route::middleware(['auth'])->group(function () {
 		// Lab Schedule Routes
 		Route::get('/lab-schedule/history', [LabScheduleController::class, 'history'])->name('lab-schedule.history');
 		Route::post('/lab-schedule/destroy-multiple', [LabScheduleController::class, 'destroyMultiple'])->name('lab-schedule.destroyMultiple');
-		Route::get('/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab-schedule.previewPDF');
-		Route::get('/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab-schedule.exportPDF');
+		Route::match(['get', 'post'], '/lab-schedule/preview-pdf', [LabScheduleController::class, 'previewPDF'])->name('lab-schedule.previewPDF');
+		Route::match(['get', 'post'], '/lab-schedule/export-pdf', [LabScheduleController::class, 'exportPDF'])->name('lab-schedule.exportPDF');
 
 		// History routes
 		Route::get('/actions-history', [DashboardController::class, 'userActionsHistory'])->name('user.actions.history');

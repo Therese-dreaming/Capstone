@@ -1,14 +1,7 @@
 <div class="mb-8">
     @php
-        // Debug: Log what we're receiving
-        \Log::info('Repairs partial received data:', [
-            'history_keys' => is_array($history) ? array_keys($history) : $history->keys()->toArray(),
-            'repair_records_count' => isset($history['REPAIR']) ? count($history['REPAIR']) : 0,
-            'full_history' => is_array($history) ? $history : $history->toArray()
-        ]);
-
-        // Get repair records and apply pagination
-        $repairRecords = collect($history['REPAIR'] ?? []);
+        // Get repair histories and apply pagination
+        $repairRecords = $repairHistories ?? collect();
         $perPage = 10;
         $currentPage = request()->get('repair_page', 1);
         $totalRecords = $repairRecords->count();
@@ -33,106 +26,49 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($currentPageRecords as $record)
-                    @php
-                        // Extract ticket number to find the repair request
-                        preg_match('/Ticket: (REQ-\d{8}-\d{4})/', $record->remarks, $matches);
-                        $ticketNo = $matches[1] ?? null;
-                        
-                        // Get repair request
-                        $repairRequest = $ticketNo ? \App\Models\RepairRequest::where('ticket_number', $ticketNo)->first() : null;
-                    @endphp
                     <tr class="hover:bg-gray-50 transition-colors duration-200">
                         <td class="px-6 py-4 text-sm text-gray-900">
                             <div>
-                                <div class="font-medium">Requested: {{ $record->created_at->format('M d, Y') }}</div>
-                                <div class="text-gray-600">Completed: {{ \Carbon\Carbon::parse($record->completed_at ?? $record->created_at)->format('M d, Y') }}</div>
+                                <div class="font-medium">Requested: {{ $record->repairRequest->created_at->format('M d, Y') }}</div>
+                                <div class="text-gray-600">Completed: {{ \Carbon\Carbon::parse($record->completed_at)->format('M d, Y') }}</div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            @php
-                                // Extract ticket number from remarks (for existing records) or use old_value (for new records)
-                                $ticketNo = 'N/A';
-                                if ($record->change_type === 'REPAIR') {
-                                    // Try to extract from remarks first (existing records)
-                                    if (preg_match('/Ticket: (REQ-\d{8}-\d{4})/s', $record->remarks, $matches)) {
-                                        $ticketNo = $matches[1];
-                                    } else {
-                                        // For new records, old_value should contain ticket number
-                                        $ticketNo = $record->old_value;
-                                    }
-                                }
-                                
-                                // Get repair request for linking
-                                $repairRequest = $ticketNo && $ticketNo !== 'N/A' ? \App\Models\RepairRequest::where('ticket_number', $ticketNo)->first() : null;
-                            @endphp
-                            @if($ticketNo && $ticketNo !== 'N/A')
-                                <a href="{{ route('repair.details', ['id' => $repairRequest->id ?? 'unknown']) }}" 
-                                   class="text-red-600 hover:text-red-800 hover:underline font-medium">
-                                    {{ $ticketNo }}
-                                </a>
-                            @else
-                                {{ $ticketNo }}
-                            @endif
+                            <a href="{{ route('repair.details', ['id' => $record->repairRequest->id]) }}" 
+                               class="text-red-600 hover:text-red-800 hover:underline font-medium">
+                                {{ $record->repairRequest->ticket_number }}
+                            </a>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
-                            @php
-                                // Get issue from repair request if available, otherwise from old_value
-                                $issue = 'N/A';
-                                if ($repairRequest) {
-                                    $issue = $repairRequest->issue ?? 'N/A';
-                                } elseif ($record->change_type !== 'REPAIR') {
-                                    // For non-repair records, use old_value
-                                    $issue = $record->old_value ?? 'N/A';
-                                } else {
-                                    // For repair records without repair request, try to extract from remarks
-                                    if (preg_match('/Issue: (.+?)\n/', $record->remarks . "\n", $matches)) {
-                                        $issue = $matches[1];
-                                    } else {
-                                        $issue = $record->old_value ?? 'N/A';
-                                    }
-                                }
-                            @endphp
-                            {{ $issue }}
+                            {{ $record->repairRequest->issue ?? 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {{ $record->user->name ?? 'N/A' }}
+                            {{ $record->technician->name ?? 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            @if($repairRequest)
-                                @if($repairRequest->status === 'cancelled')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        Cancelled
-                                    </span>
-                                @elseif($repairRequest->status === 'pulled_out')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        Pulled Out
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Completed
-                                    </span>
-                                @endif
+                            @if($record->verification_status === 'approved')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Approved
+                                </span>
+                            @elseif($record->verification_status === 'disputed')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Rework Requested
+                                </span>
                             @else
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    N/A
+                                    Pending
                                 </span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600">
-                            @php
-                                // Check if this was a previously non-registered asset
-                                $wasNonRegistered = strpos($record->remarks, 'Asset was previously non-registered') !== false;
-                            @endphp
                             <div>
-                                {{ $record->remarks ?? 'N/A' }}
-                                @if($wasNonRegistered)
-                                    <div class="mt-1">
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Previously Non-Registered
-                                        </span>
+                                <div class="font-medium text-gray-700">Attempt #{{ $record->attempt_number }}</div>
+                                @if($record->findings)
+                                    <div class="mt-1">{{ Str::limit($record->findings, 100) }}</div>
+                                @endif
+                                @if($record->caller_feedback)
+                                    <div class="mt-2 text-red-600">
+                                        <span class="font-medium">Feedback:</span> {{ $record->caller_feedback }}
                                     </div>
                                 @endif
                             </div>
@@ -157,92 +93,67 @@
     <!-- Repair Cards (Mobile View) -->
     <div class="md:hidden">
         @php
-            // Sort repair records by date (newest first) and apply pagination
-            $sortedRepairs = $currentPageRecords->sortByDesc('created_at');
+            // Sort repair records by date (newest first)
+            $sortedRepairs = $currentPageRecords->sortByDesc('completed_at');
 
             // Group repair records by day
             $repairsByDay = $sortedRepairs->groupBy(function($record) {
-                return $record->created_at->format('Y-m-d');
+                return \Carbon\Carbon::parse($record->completed_at)->format('Y-m-d');
             });
         @endphp
 
         @forelse($repairsByDay as $day => $records)
             @php
-                $firstRecord = $records->first(); // Still need this to get the date for the header
-                $fullDate = $firstRecord->created_at->format('F d, Y');
+                $firstRecord = $records->first();
+                $fullDate = \Carbon\Carbon::parse($firstRecord->completed_at)->format('F d, Y');
             @endphp
 
             <div class="mb-6">
                 <h3 class="text-lg font-bold text-gray-800 mb-3 border-b border-gray-200 pb-2">{{ $fullDate }}</h3>
                 <div class="grid grid-cols-1 gap-4">
                     @foreach($records as $record)
-                        @php
-                            // Extract ticket number from remarks (for existing records) or use old_value (for new records)
-                            $ticketNo = 'N/A';
-                            if ($record->change_type === 'REPAIR') {
-                                // Try to extract from remarks first (existing records)
-                                if (preg_match('/Ticket: (REQ-\d{8}-\d{4})/s', $record->remarks, $matches)) {
-                                    $ticketNo = $matches[1];
-                                } else {
-                                    // For new records, old_value should contain ticket number
-                                    $ticketNo = $record->old_value;
-                                }
-                            }
-                            
-                            // Get issue from repair request if available
-                            $issue = 'N/A';
-                            if ($ticketNo && $ticketNo !== 'N/A') {
-                                $repairRequest = \App\Models\RepairRequest::where('ticket_number', $ticketNo)->first();
-                                if ($repairRequest) {
-                                    $issue = $repairRequest->issue ?? 'N/A';
-                                }
-                            } else {
-                                // For repair records without repair request, try to extract from remarks
-                                if (preg_match('/Issue: (.+?)\n/', $record->remarks . "\n", $matches)) {
-                                    $issue = $matches[1];
-                                } else {
-                                    $issue = $record->old_value ?? 'N/A';
-                                }
-                            }
-                        @endphp
                         <div class="bg-white rounded-lg shadow p-4">
-                            <div class="text-sm text-gray-500 mb-2">{{ $record->created_at->format('M d, Y - h:i A') }}</div>
-                                                        <div class="mb-2">
-                                <span class="font-medium text-gray-700">Type:</span> Repair Request
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($record->completed_at)->format('M d, Y - h:i A') }}</div>
+                                @if($record->verification_status === 'approved')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Approved
+                                    </span>
+                                @elseif($record->verification_status === 'disputed')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Rework
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Pending
+                                    </span>
+                                @endif
                             </div>
-                            @if($ticketNo && $ticketNo !== 'N/A')
+                            <div class="mb-2">
+                                <span class="font-medium text-gray-700">Attempt:</span> #{{ $record->attempt_number }}
+                            </div>
                             <div class="mb-2">
                                 <span class="font-medium text-gray-700">Ticket:</span>
-                                <a href="{{ route('repair.details', ['id' => $repairRequest->id ?? 'unknown']) }}" 
+                                <a href="{{ route('repair.details', ['id' => $record->repairRequest->id]) }}" 
                                    class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
-                                    {{ $ticketNo }}
+                                    {{ $record->repairRequest->ticket_number }}
                                 </a>
                             </div>
-                            @endif
                             <div class="mb-2">
                                 <span class="font-medium text-gray-700">Issue:</span>
-                                <span class="text-gray-700">{{ $issue }}</span>
+                                <span class="text-gray-700">{{ $record->repairRequest->issue ?? 'N/A' }}</span>
                             </div>
                             <div class="text-sm text-gray-600 mb-2">
-                                <span class="font-medium">Requested By:</span> {{ $record->user->name ?? 'N/A' }}
+                                <span class="font-medium">Technician:</span> {{ $record->technician->name ?? 'N/A' }}
                             </div>
-                            @if($record->remarks)
+                            @if($record->findings)
                             <div class="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-200">
-                                <span class="font-medium">Remarks:</span> {{ $record->remarks }}
-                                @php
-                                    // Check if this was a previously non-registered asset
-                                    $wasNonRegistered = strpos($record->remarks, 'Asset was previously non-registered') !== false;
-                                @endphp
-                                @if($wasNonRegistered)
-                                    <div class="mt-2">
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Previously Non-Registered
-                                        </span>
-                                    </div>
-                                @endif
+                                <span class="font-medium">Findings:</span> {{ $record->findings }}
+                            </div>
+                            @endif
+                            @if($record->caller_feedback)
+                            <div class="text-sm text-red-600 mt-2 pt-2 border-t border-red-200">
+                                <span class="font-medium">Feedback:</span> {{ $record->caller_feedback }}
                             </div>
                             @endif
                         </div>

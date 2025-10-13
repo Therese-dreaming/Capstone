@@ -228,20 +228,32 @@
             <div class="bg-white rounded-lg shadow p-4 flex flex-col gap-2 border border-gray-200 relative transition ring-0" data-id="{{ $request->id }}" onclick="toggleCardSelection(this)">
                 <div class="flex justify-between items-center">
                     <span class="font-semibold text-red-800">{{ \Carbon\Carbon::parse($request->created_at)->format('M j, Y (g:i A)') }}</span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        @if($request->status === 'cancelled') bg-red-100 text-red-800
-                        @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
-                        @else bg-green-100 text-green-800 @endif">
-                        {{ ucfirst(str_replace('_', ' ', $request->status)) }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            @if($request->status === 'cancelled') bg-red-100 text-red-800
+                            @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
+                            @else bg-green-100 text-green-800 @endif">
+                            {{ ucfirst(str_replace('_', ' ', $request->status)) }}
+                        </span>
+                        @if($request->status === 'completed')
+                            @if(!$request->caller_signature || trim($request->caller_signature) === '' || $request->caller_signature === 'null')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200" title="Signature pending">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                    No Signature
+                                </span>
+                            @endif
+                        @endif
+                    </div>
                 </div>
                 <div class="text-sm text-gray-700"><span class="font-semibold">Completion Date:</span> {{ \Carbon\Carbon::parse($request->completed_at)->format('M j, Y (g:i A)') }}</div>
                 <div class="text-sm">
                     <span class="font-semibold">Item:</span>
                     @if($request->asset && $request->asset->serial_number)
-                        <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                        <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
                     @elseif(!empty($request->serial_number))
-                        <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->serial_number }}</a>
+                        <a href="{{ route('assets.index', ['search' => $request->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->serial_number }}</a>
                     @else
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-gray-900">{{ $request->equipment }}</span>
@@ -347,18 +359,30 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                @if($request->status === 'cancelled') bg-red-100 text-red-800
-                                @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
-                                @else bg-green-100 text-green-800 @endif">
-                                {{ ucfirst(str_replace('_', ' ', $request->status)) }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    @if($request->status === 'cancelled') bg-red-100 text-red-800
+                                    @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
+                                    @else bg-green-100 text-green-800 @endif">
+                                    {{ ucfirst(str_replace('_', ' ', $request->status)) }}
+                                </span>
+                                @if($request->status === 'completed')
+                                    @if(!$request->caller_signature || trim($request->caller_signature) === '' || $request->caller_signature === 'null')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200" title="Signature pending">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                            No Signature
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             @if($request->asset && $request->asset->serial_number)
-                                <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
+                                <a href="{{ route('assets.index', ['search' => $request->asset->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->asset->serial_number }}</a>
                             @elseif(!empty($request->serial_number))
-                                <a href="{{ route('repair.details', ['id' => $request->id]) }}" class="font-bold text-red-600 hover:underline">{{ $request->serial_number }}</a>
+                                <a href="{{ route('assets.index', ['search' => $request->serial_number]) }}" class="font-bold text-red-600 hover:underline">{{ $request->serial_number }}</a>
                             @else
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-gray-900">{{ $request->equipment }}</span>
