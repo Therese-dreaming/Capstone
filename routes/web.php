@@ -233,6 +233,13 @@ Route::middleware(['auth'])->group(function () {
 		Route::get('/repair-requests/{id}/identify-asset', [App\Http\Controllers\RepairRequestController::class, 'showIdentifyAssetForm'])->name('repair.identify-asset');
 		Route::post('/repair-requests/{id}/save-serial-number', [App\Http\Controllers\RepairRequestController::class, 'saveSerialNumber'])->name('repair.save-serial-number');
 
+		Route::middleware([\App\Http\Middleware\CheckRole::class.':1'])->group(function () {
+			Route::post('/repair-requests/{id}/send-reminder', [RepairRequestController::class, 'sendReminder'])->name('repair-requests.send-reminder');
+			Route::post('/repair-requests/{id}/auto-approve', [RepairRequestController::class, 'autoApprove'])->name('repair-requests.auto-approve');
+			Route::post('/repair-requests/send-reminder-all', [RepairRequestController::class, 'sendReminderToAll'])->name('repair-requests.send-reminder-all');
+			Route::post('/repair-requests/auto-approve-all', [RepairRequestController::class, 'autoApproveAll'])->name('repair-requests.auto-approve-all');
+		});
+
 		// Lab Schedule Routes
 		Route::get('/lab-schedule/history', [LabScheduleController::class, 'history'])->name('lab-schedule.history');
 		Route::post('/lab-schedule/destroy-multiple', [LabScheduleController::class, 'destroyMultiple'])->name('lab-schedule.destroyMultiple');

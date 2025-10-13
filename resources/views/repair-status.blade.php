@@ -124,7 +124,7 @@
         <!-- Cards for all screen sizes -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" id="requestsCards">
             @foreach($requests as $request)
-            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 border border-gray-200 hover:shadow-xl transition-all duration-200">
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 border border-gray-200 hover:shadow-xl transition-all duration-200" data-technician-id="{{ $request->technician_id ?? '' }}">
                 <!-- Header with Date and Status -->
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-2">
                     <div class="space-y-1">
@@ -247,13 +247,15 @@
                     </a>
                     @endif
                     
-                    @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
+                    @if(auth()->user()->group_id == 1)
                     <button onclick="openUpdateModal('{{ $request->id }}')" class="bg-yellow-600 text-white p-2 rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200" title="Edit">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
+                    @endif
                     
+                    @if(auth()->user()->group_id == 1 || (auth()->user()->group_id == 2 && $request->technician_id == auth()->id()))
                     @if(!$request->technician_id)
                     <button onclick="openAssignTechnicianModal('{{ $request->id }}')" class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200" title="Assign Technician">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1112,16 +1114,19 @@
                 });
 
                 // Add event listener for update modal technician select to show ongoing counts
-                document.getElementById('technician_id').addEventListener('change', function() {
-                    const ongoingCount = this.options[this.selectedIndex].dataset.ongoing;
-                    const repairsCount = this.options[this.selectedIndex].dataset.repairs;
-                    const maintenanceCount = this.options[this.selectedIndex].dataset.maintenance;
+                const technicianSelect = document.getElementById('technician_id');
+                if (technicianSelect) {
+                    technicianSelect.addEventListener('change', function() {
+                        const ongoingCount = this.options[this.selectedIndex].dataset.ongoing;
+                        const repairsCount = this.options[this.selectedIndex].dataset.repairs;
+                        const maintenanceCount = this.options[this.selectedIndex].dataset.maintenance;
 
-                    document.getElementById('updateTechnicianOngoingCount').textContent = ongoingCount;
-                    document.getElementById('updateTechnicianRepairsCount').textContent = repairsCount;
-                    document.getElementById('updateTechnicianMaintenanceCount').textContent = maintenanceCount;
-                    document.getElementById('updateTechnicianOngoingHint').classList.remove('hidden');
-                });
+                        document.getElementById('updateTechnicianOngoingCount').textContent = ongoingCount;
+                        document.getElementById('updateTechnicianRepairsCount').textContent = repairsCount;
+                        document.getElementById('updateTechnicianMaintenanceCount').textContent = maintenanceCount;
+                        document.getElementById('updateTechnicianOngoingHint').classList.remove('hidden');
+                    });
+                }
 
                 // Add event listener for assign technician form
                 document.getElementById('assignTechnicianForm').addEventListener('submit', function(e) {
@@ -1217,15 +1222,17 @@
                         const fromDate = dateFrom && dateFrom.value ? new Date(dateFrom.value) : null;
                         const toDate = dateTo && dateTo.value ? new Date(dateTo.value) : null;
                         const showAssignedOnly = showAssignedCheckbox ? showAssignedCheckbox.checked : false;
-                        const currentUser = '{{ auth()->user()->name }}';
+                        const currentUserId = '{{ auth()->id() }}';
 
                         cards.forEach(card => {
                             let ticketNo = '';
                             let item = '';
                             let location = '';
-                            let technician = '';
                             let status = '';
                             let date = '';
+
+                            // Get technician ID from data attribute
+                            const technicianId = card.getAttribute('data-technician-id');
 
                             // Get all text content from the card
                             card.querySelectorAll('.text-sm').forEach(div => {
@@ -1236,8 +1243,6 @@
                                     item = text.replace('item:', '').trim();
                                 } else if (text.includes('location:')) {
                                     location = text.replace('location:', '').trim();
-                                } else if (text.includes('technician:')) {
-                                    technician = text.replace('technician:', '').trim();
                                 }
                             });
 
@@ -1289,7 +1294,7 @@
                                               (!toDate || (date && date.setHours(0,0,0,0) <= toDate.setHours(0,0,0,0)));
 
                             const matchesAssigned = !showAssignedOnly || 
-                                technician === currentUser.toLowerCase();
+                                (technicianId && technicianId === currentUserId);
 
                             // Show/hide card based on all filters
                             card.style.display = (matchesSearch && matchesStatus && matchesUrgency && matchesDate && matchesAssigned) ? '' : 'none';

@@ -8,20 +8,6 @@
             <p class="text-sm text-gray-600 mt-1">Please fill out the details of the repair completion</p>
         </div>
 
-        {{-- Message Container --}}
-        <div id="message-container">
-            @if(session('success'))
-            <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
-                {{ session('success') }}
-            </div>
-            @endif
-
-            @if(session('error'))
-            <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                {{ session('error') }}
-            </div>
-            @endif
-        </div>
 
         <form id="completionForm" method="POST" action="{{ route('repair-requests.update', $repairRequest->id) }}" class="space-y-6" enctype="multipart/form-data">
             @csrf
@@ -530,28 +516,13 @@
         });
     }
 
-    // Function to show messages
+    // Function to show messages (updated to use toast)
     function showMessage(message, type = 'success') {
-        const messageContainer = document.getElementById('message-container');
-        const messageDiv = document.createElement('div');
-        
-        messageDiv.className = type === 'success' 
-            ? 'mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700'
-            : 'mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700';
-        
-        messageDiv.innerHTML = `
-            <strong class="font-bold">${type === 'success' ? 'Success!' : 'Error!'}</strong>
-            <span class="block sm:inline">${message}</span>
-        `;
-        
-        // Clear any existing messages
-        messageContainer.innerHTML = '';
-        messageContainer.appendChild(messageDiv);
-        
-        // Auto-hide the message after 5 seconds
-        setTimeout(() => {
-            messageDiv.remove();
-        }, 5000);
+        if (type === 'success') {
+            showSuccessToast(message);
+        } else {
+            showErrorToast(message);
+        }
     }
 
     // Caller presence toggle
@@ -727,6 +698,62 @@
         modal.appendChild(container);
         document.body.appendChild(modal);
     }
+
+    // Toast notification functions
+    function showToastMessage() {
+        @if(session('success'))
+            showSuccessToast("{{ session('success') }}");
+        @endif
+
+        @if(session('error'))
+            showErrorToast("{{ session('error') }}");
+        @endif
+    }
+
+    function showSuccessToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 z-[70] bg-green-50 border border-green-200 rounded-xl text-green-700 p-4 flex items-center shadow-lg max-w-md animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5 mr-3 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="flex-1">
+                <div class="font-semibold">Success!</div>
+                <div class="text-sm">${message}</div>
+            </div>
+            <button onclick="this.parentElement.remove()" class="ml-3 text-green-600 hover:text-green-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function showErrorToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 z-[70] bg-red-50 border border-red-200 rounded-xl text-red-700 p-4 flex items-center shadow-lg max-w-md animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5 mr-3 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div class="flex-1">
+                <div class="font-semibold">Error!</div>
+                <div class="text-sm">${message}</div>
+            </div>
+            <button onclick="this.parentElement.remove()" class="ml-3 text-red-600 hover:text-red-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    // Show toast on page load if there are session messages
+    document.addEventListener('DOMContentLoaded', showToastMessage);
 </script>
 
 <style>
@@ -739,6 +766,19 @@
         touch-action: none;
     }
 
+    @keyframes slide-in {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 
+    .animate-slide-in {
+        animation: slide-in 0.3s ease-out;
+    }
 </style>
 @endsection 
