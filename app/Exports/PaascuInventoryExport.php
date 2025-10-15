@@ -5,7 +5,6 @@ namespace App\Exports;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -14,7 +13,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class PaascuInventoryExport implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithMultipleSheets
+class PaascuInventoryExport implements FromCollection, WithMapping, WithStyles, WithMultipleSheets
 {
     protected $assets;
     protected $filters;
@@ -318,6 +317,11 @@ class PaascuInventoryExport implements FromCollection, WithMapping, WithStyles, 
         }
         $sheet->getRowDimension($headerRow)->setRowHeight(20);
 
+        // Auto-size columns based on content
+        foreach (range('A', 'N') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
         return $sheet;
     }
 
@@ -337,25 +341,6 @@ class PaascuInventoryExport implements FromCollection, WithMapping, WithStyles, 
         }
     }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 18, // Serial Number
-            'B' => 35, // Equipment Name
-            'C' => 25, // Category
-            'D' => 15, // Building
-            'E' => 10, // Floor
-            'F' => 10, // Room
-            'G' => 18, // Purchase Price
-            'H' => 18, // Purchase Date
-            'I' => 15, // Status
-            'J' => 25, // Vendor
-            'K' => 25, // Model
-            'L' => 35, // Specifications
-            'M' => 18, // Warranty Expiry
-            'N' => 18, // Last Maintenance
-        ];
-    }
 
     public function sheets(): array
     {
@@ -366,7 +351,7 @@ class PaascuInventoryExport implements FromCollection, WithMapping, WithStyles, 
     }
 }
 
-class PaascuSummarySheet implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithTitle
+class PaascuSummarySheet implements FromCollection, WithMapping, WithStyles, WithTitle
 {
     protected $assets;
     protected $filters;
@@ -590,21 +575,14 @@ class PaascuSummarySheet implements FromCollection, WithMapping, WithStyles, Wit
         }
         $sheet->getRowDimension($headerRow)->setRowHeight(20);
 
+        // Auto-size columns based on content
+        foreach (range('A', 'G') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
         return $sheet;
     }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 18, // Type
-            'B' => 35, // Name
-            'C' => 18, // Total Count
-            'D' => 18, // Total Value
-            'E' => 15, // In Use
-            'F' => 20, // Under Repair
-            'G' => 15, // Disposed
-        ];
-    }
 
     public function title(): string
     {

@@ -5,7 +5,6 @@ namespace App\Exports;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -15,7 +14,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Illuminate\Support\Facades\DB;
 use App\Models\Laboratory;
 
-class PaascuUtilizationExport implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithMultipleSheets
+class PaascuUtilizationExport implements FromCollection, WithMapping, WithStyles, WithMultipleSheets
 {
     protected $usageData;
     protected $summary;
@@ -286,23 +285,14 @@ class PaascuUtilizationExport implements FromCollection, WithMapping, WithStyles
         }
         $sheet->getRowDimension($headerRow)->setRowHeight(20);
 
+        // Auto-size columns based on content
+        foreach (range('A', 'I') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
         return $sheet;
     }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 15, // Period
-            'B' => 25, // Department
-            'C' => 20, // Laboratory
-            'D' => 15, // Total Sessions
-            'E' => 15, // Total Hours
-            'F' => 20, // Average Duration
-            'G' => 15, // Unique Users
-            'H' => 20, // Purpose
-            'I' => 18, // Utilization Rate
-        ];
-    }
 
     public function sheets(): array
     {
@@ -314,7 +304,7 @@ class PaascuUtilizationExport implements FromCollection, WithMapping, WithStyles
     }
 }
 
-class PaascuUtilizationSummarySheet implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithTitle
+class PaascuUtilizationSummarySheet implements FromCollection, WithMapping, WithStyles, WithTitle
 {
     protected $usageData;
     protected $summary;
@@ -581,18 +571,14 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithMapping, With
             $sheet->mergeCells("B{$row}:D{$row}");
         }
 
+        // Auto-size columns based on content
+        foreach (range('A', 'D') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
         return $sheet;
     }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 20, // Type
-            'B' => 30, // Metric
-            'C' => 15, // Value
-            'D' => 40, // Details
-        ];
-    }
 
     public function title(): string
     {
@@ -600,7 +586,7 @@ class PaascuUtilizationSummarySheet implements FromCollection, WithMapping, With
     }
 } 
 
-class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithMapping, WithStyles, WithColumnWidths, WithTitle
+class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithMapping, WithStyles, WithTitle
 {
     protected $filters;
 
@@ -844,20 +830,14 @@ class PaascuLabWeeklyUtilizationSheet implements FromCollection, WithMapping, Wi
         }
         $sheet->getRowDimension($headerRow)->setRowHeight(20);
 
+        // Auto-size columns based on content
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
         return $sheet;
     }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 30,
-            'B' => 35,
-            'C' => 28,
-            'D' => 28,
-            'E' => 20,
-            'F' => 28,
-        ];
-    }
 
     public function title(): string
     {
