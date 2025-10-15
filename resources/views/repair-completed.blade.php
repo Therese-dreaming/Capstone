@@ -40,9 +40,25 @@
                         <p class="text-red-100 text-sm md:text-lg">View, filter, and manage completed and cancelled repairs</p>
                     </div>
                 </div>
-                <div class="flex-shrink-0">
-                    <button onclick="openSignatureModal()" class="text-sm px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-md hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 flex items-center justify-center border border-white/30">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 flex gap-2">
+                    @if(auth()->user()->group_id == 1)
+                        <button onclick="sendReminderToAll()" class="text-sm px-3 py-2 bg-yellow-500/90 backdrop-blur-sm text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 flex items-center justify-center border border-yellow-400/30" title="Send reminder to all pending 48+ hours">
+                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span class="hidden sm:inline">Remind All</span>
+                            <span class="sm:hidden">Remind</span>
+                        </button>
+                        <button onclick="autoApproveAll()" class="text-sm px-3 py-2 bg-green-500/90 backdrop-blur-sm text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center justify-center border border-green-400/30" title="Auto-approve all pending 72+ hours">
+                            <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="hidden sm:inline">Approve All</span>
+                            <span class="sm:hidden">Approve</span>
+                        </button>
+                    @endif
+                    <button onclick="openSignatureModal()" class="text-sm px-3 py-2 bg-white/20 backdrop-blur-sm text-white rounded-md hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-red-800 flex items-center justify-center border border-white/30">
+                        <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
@@ -232,17 +248,43 @@
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                             @if($request->status === 'cancelled') bg-red-100 text-red-800
                             @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
+                            @elseif($request->status === 'in_review') bg-blue-100 text-blue-800
                             @else bg-green-100 text-green-800 @endif">
                             {{ ucfirst(str_replace('_', ' ', $request->status)) }}
                         </span>
-                        @if($request->status === 'completed')
+                        @if($request->status === 'in_review')
                             @if(!$request->caller_signature || trim($request->caller_signature) === '' || $request->caller_signature === 'null')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200" title="Signature pending">
-                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
-                                    No Signature
-                                </span>
+                                <div class="flex flex-col gap-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200" title="Signature pending">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                        No Signature
+                                    </span>
+                                    @php
+                                        $completedAt = \Carbon\Carbon::parse($request->completed_at);
+                                        $totalMinutes = $completedAt->diffInMinutes(now());
+                                        $hours = floor($totalMinutes / 60);
+                                        $minutes = $totalMinutes % 60;
+                                        $timeString = $hours . 'h ' . $minutes . 'm';
+                                    @endphp
+                                    @if($hours >= 48)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $hours >= 72 ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-yellow-100 text-yellow-800 border border-yellow-200' }}">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            {{ $timeString }} pending
+                                        </span>
+                                        @if($request->reminder_sent_at)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200" title="Reminder sent on {{ $request->reminder_sent_at->format('M j, Y g:i A') }}">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Reminder sent
+                                            </span>
+                                        @endif
+                                    @endif
+                                </div>
                             @endif
                         @endif
                     </div>
@@ -273,13 +315,35 @@
                 <div class="text-sm"><span class="font-semibold">Findings:</span> {{ $request->findings }}</div>
                 <div class="text-sm"><span class="font-semibold">Remarks:</span> {{ $request->remarks }}</div>
                 <div class="flex gap-2 mt-2">
-                    <button onclick="event.stopPropagation(); window.location.href='{{ route('repair.details', ['id' => $request->id]) }}'" class="text-blue-600 hover:text-blue-800">
+                    <button onclick="event.stopPropagation(); window.location.href='{{ route('repair.details', ['id' => $request->id]) }}'" class="text-blue-600 hover:text-blue-800" title="View Details">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                     </button>
-                    <button onclick="event.stopPropagation(); confirmDelete({{ $request->id }})" class="text-red-600 hover:text-red-800">
+                    
+                    @if($request->status === 'in_review' && (!$request->caller_signature || trim($request->caller_signature) === '' || $request->caller_signature === 'null'))
+                        @php
+                            $completedAt = \Carbon\Carbon::parse($request->completed_at);
+                            $hoursSinceCompletion = $completedAt->diffInHours(now());
+                        @endphp
+                        
+                        @if($hoursSinceCompletion >= 72)
+                            <button onclick="event.stopPropagation(); autoApproveRequest({{ $request->id }})" class="text-green-600 hover:text-green-800" title="Auto-Approve (72+ hours)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                        @elseif($hoursSinceCompletion >= 48)
+                            <button onclick="event.stopPropagation(); sendReminder({{ $request->id }})" class="text-yellow-600 hover:text-yellow-800" title="Send Reminder (48+ hours)">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                            </button>
+                        @endif
+                    @endif
+                    
+                    <button onclick="event.stopPropagation(); confirmDelete({{ $request->id }})" class="text-red-600 hover:text-red-800" title="Delete">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -363,17 +427,43 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                     @if($request->status === 'cancelled') bg-red-100 text-red-800
                                     @elseif($request->status === 'pulled_out') bg-yellow-100 text-yellow-800
+                                    @elseif($request->status === 'in_review') bg-blue-100 text-blue-800
                                     @else bg-green-100 text-green-800 @endif">
                                     {{ ucfirst(str_replace('_', ' ', $request->status)) }}
                                 </span>
-                                @if($request->status === 'completed')
+                                @if($request->status === 'in_review')
                                     @if(!$request->caller_signature || trim($request->caller_signature) === '' || $request->caller_signature === 'null')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200" title="Signature pending">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                            No Signature
-                                        </span>
+                                        <div class="flex flex-col gap-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200" title="Signature pending">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                </svg>
+                                                No Signature
+                                            </span>
+                                            @php
+                                                $completedAt = \Carbon\Carbon::parse($request->completed_at);
+                                                $totalMinutes = $completedAt->diffInMinutes(now());
+                                                $hours = floor($totalMinutes / 60);
+                                                $minutes = $totalMinutes % 60;
+                                                $timeString = $hours . 'h ' . $minutes . 'm';
+                                            @endphp
+                                            @if($hours >= 48)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $hours >= 72 ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-yellow-100 text-yellow-800 border border-yellow-200' }}">
+                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    {{ $timeString }} pending
+                                                </span>
+                                                @if($request->reminder_sent_at)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200" title="Reminder sent on {{ $request->reminder_sent_at->format('M j, Y g:i A') }}">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Reminder sent
+                                                    </span>
+                                                @endif
+                                            @endif
+                                        </div>
                                     @endif
                                 @endif
                             </div>
@@ -398,13 +488,35 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $request->ticket_number }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div class="flex space-x-2">
-                                <button onclick="window.location.href='{{ route('repair.details', ['id' => $request->id]) }}'" class="text-blue-600 hover:text-blue-800">
+                                <button onclick="window.location.href='{{ route('repair.details', ['id' => $request->id]) }}'" class="text-blue-600 hover:text-blue-800" title="View Details">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
                                 </button>
-                                <button onclick="event.stopPropagation(); confirmDelete({{ $request->id }})" class="text-red-600 hover:text-red-800">
+                                
+                                @if($request->status === 'in_review' && (!$request->caller_signature || trim($request->caller_signature) === '' || $request->caller_signature === 'null'))
+                                    @php
+                                        $completedAt = \Carbon\Carbon::parse($request->completed_at);
+                                        $hoursSinceCompletion = $completedAt->diffInHours(now());
+                                    @endphp
+                                    
+                                    @if($hoursSinceCompletion >= 72)
+                                        <button onclick="event.stopPropagation(); autoApproveRequest({{ $request->id }})" class="text-green-600 hover:text-green-800" title="Auto-Approve (72+ hours)">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </button>
+                                    @elseif($hoursSinceCompletion >= 48)
+                                        <button onclick="event.stopPropagation(); sendReminder({{ $request->id }})" class="text-yellow-600 hover:text-yellow-800" title="Send Reminder (48+ hours)">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                            </svg>
+                                        </button>
+                                    @endif
+                                @endif
+                                
+                                <button onclick="event.stopPropagation(); confirmDelete({{ $request->id }})" class="text-red-600 hover:text-red-800" title="Delete">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
@@ -458,6 +570,98 @@
             </button>
             <button onclick="executeDelete()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                 Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reminder Modal -->
+<div id="reminderModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] items-center justify-center">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Send Reminder</h3>
+        </div>
+        <p class="text-gray-600 mb-6">Send a reminder notification to the user to sign this repair request? The user will be notified to complete the pending signature.</p>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeReminderModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                Cancel
+            </button>
+            <button onclick="executeSendReminder()" class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                Send Reminder
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-Approve Modal -->
+<div id="autoApproveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] items-center justify-center">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Auto-Approve Request</h3>
+        </div>
+        <p class="text-gray-600 mb-6">Auto-approve this repair request? This will mark it as verified without caller signature since it has exceeded 72 hours without response.</p>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeAutoApproveModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                Cancel
+            </button>
+            <button onclick="executeAutoApprove()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Auto-Approve
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Remind All Modal -->
+<div id="remindAllModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] items-center justify-center">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Send Reminders to All</h3>
+        </div>
+        <p class="text-gray-600 mb-6">Send reminder notifications to all users with pending signatures (48+ hours without reminder sent)? This will notify all eligible users to complete their pending signatures.</p>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeRemindAllModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                Cancel
+            </button>
+            <button onclick="executeRemindAll()" class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                Send Reminders
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Approve All Modal -->
+<div id="approveAllModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] items-center justify-center">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Auto-Approve All Requests</h3>
+        </div>
+        <p class="text-gray-600 mb-6">Auto-approve all repair requests that have been pending for 72+ hours without signature? This will mark all eligible requests as verified and notify the relevant users.</p>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeApproveAllModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                Cancel
+            </button>
+            <button onclick="executeApproveAll()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Auto-Approve All
             </button>
         </div>
     </div>
@@ -962,6 +1166,196 @@
         
         // Trigger filter to show all results
         filterHistory();
+    }
+
+    // Reminder Modal Functions
+    let currentReminderRequestId = null;
+
+    function sendReminder(requestId) {
+        currentReminderRequestId = requestId;
+        document.getElementById('reminderModal').classList.remove('hidden');
+        document.getElementById('reminderModal').classList.add('flex');
+    }
+
+    function closeReminderModal() {
+        document.getElementById('reminderModal').classList.add('hidden');
+        document.getElementById('reminderModal').classList.remove('flex');
+        currentReminderRequestId = null;
+    }
+
+    function executeSendReminder() {
+        if (!currentReminderRequestId) return;
+
+        fetch(`/repair-requests/${currentReminderRequestId}/send-reminder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            closeReminderModal();
+            if (data.success) {
+                showSuccessMessage('Reminder sent successfully!');
+            } else {
+                showErrorMessage('Error: ' + (data.message || 'Failed to send reminder'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            closeReminderModal();
+            showErrorMessage('An error occurred while sending the reminder');
+        });
+    }
+
+    // Auto-Approve Modal Functions
+    let currentAutoApproveRequestId = null;
+
+    function autoApproveRequest(requestId) {
+        currentAutoApproveRequestId = requestId;
+        document.getElementById('autoApproveModal').classList.remove('hidden');
+        document.getElementById('autoApproveModal').classList.add('flex');
+    }
+
+    function closeAutoApproveModal() {
+        document.getElementById('autoApproveModal').classList.add('hidden');
+        document.getElementById('autoApproveModal').classList.remove('flex');
+        currentAutoApproveRequestId = null;
+    }
+
+    function executeAutoApprove() {
+        if (!currentAutoApproveRequestId) return;
+
+        fetch(`/repair-requests/${currentAutoApproveRequestId}/auto-approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            closeAutoApproveModal();
+            if (data.success) {
+                showSuccessMessage('Request auto-approved successfully!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showErrorMessage('Error: ' + (data.message || 'Failed to auto-approve request'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            closeAutoApproveModal();
+            showErrorMessage('An error occurred while auto-approving the request');
+        });
+    }
+
+    // Helper functions to show messages
+    function showSuccessMessage(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 z-[70] bg-green-50 border border-green-200 rounded-xl text-green-700 p-4 flex items-center shadow-lg';
+        successDiv.innerHTML = `
+            <svg class="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <div class="font-semibold">Success!</div>
+                <div>${message}</div>
+            </div>
+        `;
+        document.body.appendChild(successDiv);
+        setTimeout(() => successDiv.remove(), 3000);
+    }
+
+    function showErrorMessage(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 z-[70] bg-red-50 border border-red-200 rounded-xl text-red-700 p-4 flex items-center shadow-lg';
+        errorDiv.innerHTML = `
+            <svg class="w-5 h-5 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+                <div class="font-semibold">Error!</div>
+                <div>${message}</div>
+            </div>
+        `;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 3000);
+    }
+
+    // Remind All Modal Functions
+    function sendReminderToAll() {
+        document.getElementById('remindAllModal').classList.remove('hidden');
+        document.getElementById('remindAllModal').classList.add('flex');
+    }
+
+    function closeRemindAllModal() {
+        document.getElementById('remindAllModal').classList.add('hidden');
+        document.getElementById('remindAllModal').classList.remove('flex');
+    }
+
+    function executeRemindAll() {
+        fetch('/repair-requests/send-reminder-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            closeRemindAllModal();
+            if (data.success) {
+                showSuccessMessage(data.message);
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showErrorMessage(data.message || 'Failed to send reminders');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            closeRemindAllModal();
+            showErrorMessage('An error occurred while sending reminders');
+        });
+    }
+
+    // Approve All Modal Functions
+    function autoApproveAll() {
+        document.getElementById('approveAllModal').classList.remove('hidden');
+        document.getElementById('approveAllModal').classList.add('flex');
+    }
+
+    function closeApproveAllModal() {
+        document.getElementById('approveAllModal').classList.add('hidden');
+        document.getElementById('approveAllModal').classList.remove('flex');
+    }
+
+    function executeApproveAll() {
+        fetch('/repair-requests/auto-approve-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            closeApproveAllModal();
+            if (data.success) {
+                showSuccessMessage(data.message);
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showErrorMessage(data.message || 'Failed to auto-approve requests');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            closeApproveAllModal();
+            showErrorMessage('An error occurred while auto-approving requests');
+        });
     }
 </script>
 @endsection

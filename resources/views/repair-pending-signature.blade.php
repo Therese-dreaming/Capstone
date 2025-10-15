@@ -40,6 +40,26 @@
         </div>
     @endif
 
+    <!-- Pending Signatures Count Card -->
+    <div class="mb-6">
+        <div class="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl shadow-lg p-4 md:p-6 text-white">
+            <div class="flex items-center">
+                <div class="bg-white/20 p-3 md:p-4 rounded-full backdrop-blur-sm mr-3 md:mr-4 flex-shrink-0">
+                    <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-orange-100 text-xs sm:text-sm font-medium mb-1">Pending Signatures</p>
+                    <p class="text-3xl sm:text-4xl md:text-5xl font-bold">{{ $repairRequests->count() }}</p>
+                    <p class="text-orange-100 text-xs sm:text-sm mt-1">
+                        {{ $repairRequests->count() === 1 ? 'repair request' : 'repair requests' }} awaiting your signature
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if($repairRequests->isEmpty())
         <!-- Empty State -->
         <div class="bg-white rounded-xl shadow-md p-6 md:p-8 text-center">

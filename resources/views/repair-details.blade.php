@@ -761,6 +761,29 @@
                         </div>
                     </div>
                     
+                    <!-- Register Asset Button (show if no serial number) -->
+                    ${!request.serial_number || request.serial_number === 'N/A' ? `
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <p class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-3">Asset Registration</p>
+                        ${(() => {
+                            // Determine status based on completion type
+                            let assetStatus = 'IN USE'; // default for completed
+                            if (request.remarks && request.remarks.includes('Original completion type: pulled_out')) {
+                                assetStatus = 'PULLED OUT';
+                            } else if (request.status === 'pulled_out') {
+                                assetStatus = 'PULLED OUT';
+                            }
+                            return `<a href="/assets/create?repair_request_id=${request.id}&equipment=${encodeURIComponent(request.equipment || '')}&location=${encodeURIComponent(locationText)}&status=${assetStatus}&from_non_registered=1" 
+                               class="inline-flex items-center px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 text-sm font-medium">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Register & Link Asset
+                            </a>`;
+                        })()}
+                    </div>
+                    ` : ''}
+                    
                     <!-- Technician -->
                     <div class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                         <div class="bg-red-100 p-2 rounded-lg flex-shrink-0">

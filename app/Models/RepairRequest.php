@@ -42,6 +42,7 @@ class RepairRequest extends Model
         'before_photos',
         'after_photos',
         'caller_signed_at',
+        'reminder_sent_at',
     ];
 
     protected $casts = [
@@ -55,6 +56,7 @@ class RepairRequest extends Model
         'signature_deadline' => 'datetime',
         'caller_signed_at' => 'datetime',
         'rework_count' => 'integer',
+        'reminder_sent_at' => 'datetime',
     ];
 
     public function asset()

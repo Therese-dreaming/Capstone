@@ -131,11 +131,32 @@
                         </svg>
                         <span>Repair Calls</span>
                     </a>
-                    <a href="{{ route('repair.pending-signature') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.pending-signature') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        <span>Pending Signatures</span>
+                    @php
+                        $pendingSignatureCount = \App\Models\RepairRequest::where('created_by', auth()->id())
+                            ->where(function($query) {
+                                $query->where('status', 'in_review')
+                                      ->orWhere(function($q) {
+                                          $q->whereIn('status', ['completed', 'pulled_out'])
+                                            ->whereNull('caller_signature')
+                                            ->whereNotNull('completed_at');
+                                      });
+                            })
+                            ->whereNull('caller_signature')
+                            ->whereNotNull('completed_at')
+                            ->count();
+                    @endphp
+                    <a href="{{ route('repair.pending-signature') }}" class="flex items-center justify-between px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.pending-signature') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span>Pending Signatures</span>
+                        </div>
+                        @if($pendingSignatureCount > 0)
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full {{ request()->routeIs('repair.pending-signature') ? 'bg-white text-red-600' : 'bg-red-600 text-white' }}">
+                                {{ $pendingSignatureCount }}
+                            </span>
+                        @endif
                     </a>
                     <a href="{{ route('lab.logging') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab.logging') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

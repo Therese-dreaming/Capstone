@@ -296,7 +296,8 @@ class RepairRequestController extends Controller
         }
 
         // Build the query with search functionality
-        $query = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out']);
+        // Exclude 'in_review' as well since it should appear in completed view
+        $query = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out', 'in_review']);
 
         // Add search condition if search term is provided
         if ($request->has('search')) {
@@ -322,7 +323,7 @@ class RepairRequestController extends Controller
             ->pluck('count', 'technician_id');
 
         $repairOngoing = RepairRequest::select('technician_id', DB::raw('COUNT(*) as count'))
-            ->whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])
+            ->whereNotIn('status', ['completed', 'cancelled', 'pulled_out', 'in_review'])
             ->whereNotNull('technician_id')
             ->groupBy('technician_id')
             ->pluck('count', 'technician_id');
@@ -515,8 +516,19 @@ class RepairRequestController extends Controller
                 }
             }
 
-            // Handle asset status updates for completed requests
-            if ($request->status === 'completed') {
+            // Handle asset status updates for completed/pulled_out requests
+            if ($request->status === 'completed' || $request->status === 'pulled_out') {
+                // Store the original intended status
+                $originalStatus = $request->status;
+                
+                // Check if there's no caller signature - if so, set status to 'in_review'
+                if (empty($updateData['caller_signature'])) {
+                    $updateData['status'] = 'in_review';
+                    // Store original status in remarks so we can restore it later
+                    $updateData['remarks'] = ($updateData['remarks'] ?? '') . "\n\n[System Note]: Original completion type: " . $originalStatus;
+                    \Log::info('No caller signature provided, changing status to in_review', ['original_status' => $originalStatus]);
+                }
+                
                 // Save current completion attempt to repair_histories before updating
                 \App\Models\RepairHistory::create([
                     'repair_request_id' => $repairRequest->id,
@@ -838,7 +850,7 @@ class RepairRequestController extends Controller
             })
             ->count();
 
-        $query = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out'])
+        $query = RepairRequest::whereIn('status', ['completed', 'cancelled', 'pulled_out', 'in_review'])
             ->with(['technician', 'asset']);
 
         // Apply filters
@@ -957,7 +969,7 @@ class RepairRequestController extends Controller
      */
     public function updateUrgencyLevels()
     {
-        $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->get();
+        $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out', 'in_review'])->get();
         
         foreach ($pendingRequests as $request) {
             // Skip if urgency was manually overridden
@@ -1004,7 +1016,7 @@ class RepairRequestController extends Controller
      */
     private function updateUrgencyLevelsSilently()
     {
-        $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out'])->get();
+        $pendingRequests = RepairRequest::whereNotIn('status', ['completed', 'cancelled', 'pulled_out', 'in_review'])->get();
         
         foreach ($pendingRequests as $request) {
             // Skip if urgency was manually overridden
@@ -1297,13 +1309,20 @@ class RepairRequestController extends Controller
             'status' => 'required|in:completed,pulled_out'
         ]);
 
+        // Determine the final status based on caller signature
+        $finalStatus = $validated['status'];
+        if ($validated['status'] === 'completed' && empty($validated['caller_signature'])) {
+            // If no caller signature, set status to 'in_review' instead of 'completed'
+            $finalStatus = 'in_review';
+        }
+
         // Update the repair request
         $repairRequest->update([
             'findings' => $validated['findings'],
             'remarks' => $validated['remarks'],
             'technician_signature' => $validated['technician_signature'],
             'caller_signature' => $validated['caller_signature'] ?? null,
-            'status' => $validated['status'],
+            'status' => $finalStatus,
             'completed_at' => now(),
             'technician_id' => auth()->id()
         ]);
@@ -1396,12 +1415,20 @@ class RepairRequestController extends Controller
         }
         
         // Get repair requests where user is the creator and signature is pending
+        // This includes 'in_review' status AND legacy 'pulled_out'/'completed' without signature
         $repairRequests = RepairRequest::where('created_by', $user->id)
-            ->where('signature_type', 'deferred')
-            ->where('verification_status', 'pending')
-            ->whereNotNull('signature_deadline')
+            ->where(function($query) {
+                $query->where('status', 'in_review')
+                      ->orWhere(function($q) {
+                          $q->whereIn('status', ['completed', 'pulled_out'])
+                            ->whereNull('caller_signature')
+                            ->whereNotNull('completed_at');
+                      });
+            })
+            ->whereNull('caller_signature')
+            ->whereNotNull('completed_at')
             ->with(['technician', 'asset'])
-            ->orderBy('signature_deadline', 'asc')
+            ->orderBy('completed_at', 'asc')
             ->get();
 
         return view('repair-pending-signature', compact('repairRequests'));
@@ -1425,11 +1452,18 @@ class RepairRequestController extends Controller
             }
 
             if ($request->action === 'approve') {
+                // Determine the final status based on original completion type
+                $finalStatus = 'completed'; // default
+                if (strpos($repairRequest->remarks, 'Original completion type: pulled_out') !== false) {
+                    $finalStatus = 'pulled_out';
+                }
+                
                 // Caller approves the work
                 $repairRequest->update([
                     'caller_signature' => $request->caller_signature,
                     'caller_signed_at' => now(),
-                    'verification_status' => 'verified'
+                    'verification_status' => 'verified',
+                    'status' => $finalStatus // Restore original status (completed or pulled_out)
                 ]);
 
                 // Update the latest repair history record with approval
@@ -1497,6 +1531,245 @@ class RepairRequestController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('repair.pending-signature')
                 ->with('error', 'Failed to submit signature: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send reminder to user for pending signature
+     */
+    public function sendReminder($id)
+    {
+        try {
+            $request = RepairRequest::findOrFail($id);
+
+            // Check if request is in_review and has no signature
+            if ($request->status !== 'in_review' || $request->caller_signature) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This request does not need a reminder'
+                ], 400);
+            }
+
+            // Check if reminder has already been sent
+            if ($request->reminder_sent_at) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A reminder has already been sent for this request on ' . 
+                                $request->reminder_sent_at->format('M j, Y g:i A')
+                ], 400);
+            }
+
+            // Update reminder sent timestamp
+            $request->update([
+                'reminder_sent_at' => now()
+            ]);
+
+            // Create notification for the requester
+            Notification::create([
+                'user_id' => $request->created_by,
+                'type' => 'signature_reminder',
+                'message' => "Reminder: Please sign the completed repair request {$request->ticket_number}. It has been pending for over 48 hours.",
+                'is_read' => false,
+                'link' => "/repair-requests/pending-signature"
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reminder sent successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sending reminder: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Auto-approve a repair request after 72 hours
+     */
+    public function autoApprove($id)
+    {
+        try {
+            $request = RepairRequest::findOrFail($id);
+
+            // Check if request is in_review and has no signature
+            if ($request->status !== 'in_review' || $request->caller_signature) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This request cannot be auto-approved'
+                ], 400);
+            }
+
+            // Check if it's been at least 72 hours
+            $completedAt = \Carbon\Carbon::parse($request->completed_at);
+            $hoursSinceCompletion = $completedAt->diffInHours(now());
+
+            if ($hoursSinceCompletion < 72) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request can only be auto-approved after 72 hours'
+                ], 400);
+            }
+
+            // Determine the final status based on original completion type
+            $finalStatus = 'completed'; // default
+            if (strpos($request->remarks, 'Original completion type: pulled_out') !== false) {
+                $finalStatus = 'pulled_out';
+            }
+            
+            // Update verification status and change status to original completion type
+            $request->update([
+                'verification_status' => 'verified',
+                'status' => $finalStatus, // Restore original status (completed or pulled_out)
+                'remarks' => ($request->remarks ?? '') . "\n\n[Auto-Approved]: No response after 72 hours. Auto-approved by system on " . now()->format('M j, Y g:i A')
+            ]);
+
+            // Notify technician
+            Notification::create([
+                'user_id' => $request->technician_id,
+                'type' => 'auto_approved',
+                'message' => "Your repair work for {$request->ticket_number} has been auto-approved after 72 hours of no response.",
+                'is_read' => false,
+                'link' => "/repair-requests/{$request->id}"
+            ]);
+
+            // Notify requester
+            Notification::create([
+                'user_id' => $request->created_by,
+                'type' => 'auto_approved',
+                'message' => "Repair request {$request->ticket_number} has been auto-approved due to no response within 72 hours.",
+                'is_read' => false,
+                'link' => "/repair-requests/{$request->id}"
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request auto-approved successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error auto-approving request: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send reminder to all eligible requests (48+ hours, no reminder sent yet)
+     */
+    public function sendReminderToAll()
+    {
+        try {
+            // Find all in_review requests without signature, 48+ hours old, no reminder sent
+            $eligibleRequests = RepairRequest::where('status', 'in_review')
+                ->whereNull('caller_signature')
+                ->whereNull('reminder_sent_at')
+                ->whereNotNull('completed_at')
+                ->where('completed_at', '<=', now()->subHours(48))
+                ->get();
+
+            if ($eligibleRequests->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No eligible requests found (must be 48+ hours old without reminder sent)'
+                ], 400);
+            }
+
+            $count = 0;
+            foreach ($eligibleRequests as $request) {
+                // Update reminder sent timestamp
+                $request->update(['reminder_sent_at' => now()]);
+
+                // Create notification
+                Notification::create([
+                    'user_id' => $request->created_by,
+                    'type' => 'signature_reminder',
+                    'message' => "Reminder: Please sign the completed repair request {$request->ticket_number}. It has been pending for over 48 hours.",
+                    'is_read' => false,
+                    'link' => "/repair-requests/pending-signature"
+                ]);
+
+                $count++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully sent reminders to {$count} user(s)"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sending reminders: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Auto-approve all eligible requests (72+ hours old)
+     */
+    public function autoApproveAll()
+    {
+        try {
+            // Find all in_review requests without signature, 72+ hours old
+            $eligibleRequests = RepairRequest::where('status', 'in_review')
+                ->whereNull('caller_signature')
+                ->whereNotNull('completed_at')
+                ->where('completed_at', '<=', now()->subHours(72))
+                ->get();
+
+            if ($eligibleRequests->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No eligible requests found (must be 72+ hours old without signature)'
+                ], 400);
+            }
+
+            $count = 0;
+            foreach ($eligibleRequests as $request) {
+                // Determine the final status based on original completion type
+                $finalStatus = 'completed'; // default
+                if (strpos($request->remarks, 'Original completion type: pulled_out') !== false) {
+                    $finalStatus = 'pulled_out';
+                }
+                
+                // Update verification status and change status to original completion type
+                $request->update([
+                    'verification_status' => 'verified',
+                    'status' => $finalStatus, // Restore original status (completed or pulled_out)
+                    'remarks' => ($request->remarks ?? '') . "\n\n[Auto-Approved]: No response after 72 hours. Auto-approved by admin on " . now()->format('M j, Y g:i A')
+                ]);
+
+                // Notify technician
+                Notification::create([
+                    'user_id' => $request->technician_id,
+                    'type' => 'auto_approved',
+                    'message' => "Your repair work for {$request->ticket_number} has been auto-approved after 72 hours of no response.",
+                    'is_read' => false,
+                    'link' => "/repair-requests/{$request->id}"
+                ]);
+
+                // Notify requester
+                Notification::create([
+                    'user_id' => $request->created_by,
+                    'type' => 'auto_approved',
+                    'message' => "Repair request {$request->ticket_number} has been auto-approved due to no response within 72 hours.",
+                    'is_read' => false,
+                    'link' => "/repair-requests/{$request->id}"
+                ]);
+
+                $count++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully auto-approved {$count} request(s)"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error auto-approving requests: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
