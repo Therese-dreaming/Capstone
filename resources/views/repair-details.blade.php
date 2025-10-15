@@ -50,6 +50,9 @@
         </div>
     </div>
 
+    <!-- Signature Reminder Alert (will be shown dynamically) -->
+    <div id="signatureReminderAlert" class="hidden mb-6"></div>
+
     <!-- Main Container -->
     <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
         <!-- Tabs Navigation (will be populated dynamically) -->
@@ -564,6 +567,108 @@
         `;
     }
 
+    // Check signature reminder and show alert
+    function checkSignatureReminder(request) {
+        const alertContainer = document.getElementById('signatureReminderAlert');
+        
+        // Only check if user is the caller and request is completed
+        const currentUserId = {{ auth()->id() }};
+        const isCallerView = request.user_id === currentUserId;
+        
+        if (!isCallerView || !request.histories || request.histories.length === 0) {
+            alertContainer.classList.add('hidden');
+            return;
+        }
+        
+        // Get the latest history
+        const latestHistory = request.histories[request.histories.length - 1];
+        
+        // Check if completed but not signed
+        if (latestHistory.completed_at && !latestHistory.caller_signed_at) {
+            const completedDate = new Date(latestHistory.completed_at);
+            const now = new Date();
+            const hoursSinceCompletion = Math.floor((now - completedDate) / (1000 * 60 * 60));
+            
+            let alertHtml = '';
+            
+            // 72+ hours: Auto-approval warning
+            if (hoursSinceCompletion >= 72) {
+                alertHtml = `
+                    <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-md">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-red-800 mb-1">⚠️ Auto-Approval Imminent</h3>
+                                <p class="text-sm text-red-700">This repair has been completed for over 72 hours without your signature. It will be automatically approved soon. Please review and sign immediately if you have any concerns.</p>
+                                <p class="text-xs text-red-600 mt-2">Completed: ${formatDate(latestHistory.completed_at)} (${hoursSinceCompletion} hours ago)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // 48-72 hours: Supervisor notified
+            else if (hoursSinceCompletion >= 48) {
+                alertHtml = `
+                    <div class="p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg shadow-md">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-orange-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-orange-800 mb-1">🔔 Supervisor Notified</h3>
+                                <p class="text-sm text-orange-700">This repair has been unsigned for 48+ hours. Supervisors have been notified. Please review and sign within 24 hours or it will be auto-approved.</p>
+                                <p class="text-xs text-orange-600 mt-2">Completed: ${formatDate(latestHistory.completed_at)} (${hoursSinceCompletion} hours ago)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // 24-48 hours: Second reminder
+            else if (hoursSinceCompletion >= 24) {
+                alertHtml = `
+                    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg shadow-md">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-yellow-800 mb-1">⏰ Signature Reminder</h3>
+                                <p class="text-sm text-yellow-700">This repair was completed over 24 hours ago and is still awaiting your signature. Please review and sign to confirm the repair quality.</p>
+                                <p class="text-xs text-yellow-600 mt-2">Completed: ${formatDate(latestHistory.completed_at)} (${hoursSinceCompletion} hours ago)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // 0-24 hours: First reminder
+            else {
+                alertHtml = `
+                    <div class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg shadow-md">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-blue-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-blue-800 mb-1">📝 Signature Required</h3>
+                                <p class="text-sm text-blue-700">This repair has been completed and is awaiting your signature. Please review the repair details and sign to confirm.</p>
+                                <p class="text-xs text-blue-600 mt-2">Completed: ${formatDate(latestHistory.completed_at)} (${hoursSinceCompletion} hours ago)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (alertHtml) {
+                alertContainer.innerHTML = alertHtml;
+                alertContainer.classList.remove('hidden');
+            }
+        } else {
+            alertContainer.classList.add('hidden');
+        }
+    }
+
     // Section builders
     function buildBasicInfoSection(request, history, callerName, locationText, technicianName, statusText, statusColor) {
         return `
@@ -960,6 +1065,9 @@
                 
                 if (data) {
                     const request = data;
+                    
+                    // Check for unsigned repairs and show reminder
+                    checkSignatureReminder(request);
                     
                     // Build tabs based on repair history
                     if (request.histories && request.histories.length > 0) {

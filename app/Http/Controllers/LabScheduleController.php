@@ -104,16 +104,22 @@ class LabScheduleController extends Controller
             }
 
             // This is a time-in action (require purpose here)
-            if (!$request->filled('purpose')) {
+            if (!$request->filled('purposes') && !$request->filled('purpose')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Purpose is required for time in.'
+                    'message' => 'Purpose is required for time-in'
                 ], 422);
             }
+            
+            // Handle both 'purposes' (array) and 'purpose' (string) for backward compatibility
+            $purposeValue = $request->purposes 
+                ? (is_array($request->purposes) ? implode(', ', $request->purposes) : $request->purposes)
+                : $request->purpose;
+            
             $labLog = new LabLog([
                 'user_id' => $user->id,
                 'laboratory' => $request->laboratory,
-                'purpose' => $request->purpose,
+                'purpose' => $purposeValue,
                 'time_in' => now(),
                 'status' => 'on-going'
             ]);

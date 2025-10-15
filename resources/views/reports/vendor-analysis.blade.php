@@ -719,20 +719,35 @@
             }
         }
 
-        // Build query parameters with signatures
-        const params = new URLSearchParams();
+        // Create a form to submit via POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('reports.vendor-analysis.exportPDF') }}';
+        form.target = '_blank';
+        
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
         
         // Add signatures as JSON
         if (signatures.length > 0) {
-            params.append('signatures', JSON.stringify(signatures));
+            const sigInput = document.createElement('input');
+            sigInput.type = 'hidden';
+            sigInput.name = 'signatures';
+            sigInput.value = JSON.stringify(signatures);
+            form.appendChild(sigInput);
         }
-
-        // Generate PDF URL and open in new tab
-        const pdfUrl = `{{ route('reports.vendor-analysis.exportPDF') }}?${params.toString()}`;
         
-        // Close modal and open PDF
+        // Submit form
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+        
+        // Close modal
         closeSignatureModal();
-        window.open(pdfUrl, '_blank');
     }
 </script>
 

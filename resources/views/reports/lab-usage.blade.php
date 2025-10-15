@@ -1070,33 +1070,90 @@ function generatePDFWithSignatures() {
         }
     }
 
-    // Build query parameters with filters and signatures
-    const params = new URLSearchParams();
+    // Create a form to submit via POST
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('reports.lab-usage.export') }}';
+    form.target = '_blank';
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = '{{ csrf_token() }}';
+    form.appendChild(csrfInput);
     
     // Add filter parameters
-    if (currentFilters.start_date) params.append('start_date', currentFilters.start_date);
-    if (currentFilters.end_date) params.append('end_date', currentFilters.end_date);
-    if (currentFilters.department_id) params.append('department_id', currentFilters.department_id);
-    if (currentFilters.lab_id) params.append('lab_id', currentFilters.lab_id);
-    if (currentFilters.purpose) params.append('purpose', currentFilters.purpose);
-    if (currentFilters.period) params.append('period', currentFilters.period);
+    if (currentFilters.start_date) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'start_date';
+        input.value = currentFilters.start_date;
+        form.appendChild(input);
+    }
+    
+    if (currentFilters.end_date) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'end_date';
+        input.value = currentFilters.end_date;
+        form.appendChild(input);
+    }
+    
+    if (currentFilters.department_id) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'department_id';
+        input.value = currentFilters.department_id;
+        form.appendChild(input);
+    }
+    
+    if (currentFilters.lab_id) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'lab_id';
+        input.value = currentFilters.lab_id;
+        form.appendChild(input);
+    }
+    
+    if (currentFilters.purpose) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'purpose';
+        input.value = currentFilters.purpose;
+        form.appendChild(input);
+    }
+    
+    if (currentFilters.period) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'period';
+        input.value = currentFilters.period;
+        form.appendChild(input);
+    }
     
     // Add signatures as JSON
     if (signatures.length > 0) {
-        params.append('signatures', JSON.stringify(signatures));
+        const sigInput = document.createElement('input');
+        sigInput.type = 'hidden';
+        sigInput.name = 'signatures';
+        sigInput.value = JSON.stringify(signatures);
+        form.appendChild(sigInput);
     }
-
-    // Generate PDF URL and open in new tab
-    const pdfUrl = `{{ route('reports.lab-usage.export') }}?${params.toString()}`;
     
-    // Close modal and open PDF
+    // Submit form
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    
+    // Close modal
     closeSignatureModal();
-    window.open(pdfUrl, '_blank');
 }
 
 function exportPaascuUtilization() {
     // Get current filter values
     const startDate = document.querySelector('input[name="start_date"]').value;
+    const endDate = document.querySelector('input[name="end_date"]').value;
     const departmentId = document.querySelector('select[name="department_id"]').value;
     const labId = document.querySelector('select[name="lab_id"]').value;
     const period = document.querySelector('select[name="period"]').value;
