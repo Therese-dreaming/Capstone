@@ -19,6 +19,28 @@
             padding-bottom: 15px;
         }
         
+        .header-table {
+            margin: 0 auto;
+            border: none;
+            width: auto;
+        }
+        
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: middle;
+        }
+        
+        .header-logo {
+            width: 60px;
+            height: 60px;
+            padding-right: 8px;
+        }
+        
+        .header-text {
+            text-align: left;
+        }
+        
         h1 { 
             color: #000000;
             font-size: 18px;
@@ -204,8 +226,17 @@
 </head>
 <body>
     <div class="header">
-        <h1>Repair History Report</h1>
-        <p class="subtitle">Comprehensive Repair Activity Overview</p>
+        <table class="header-table">
+            <tr>
+                <td>
+                    <img src="{{ public_path('images/logo-small.png') }}" alt="Logo" class="header-logo">
+                </td>
+                <td class="header-text">
+                    <h1>Repair History Report</h1>
+                    <p class="subtitle">Comprehensive Repair Activity Overview</p>
+                </td>
+            </tr>
+        </table>
     </div>
     
     <div class="report-info">
