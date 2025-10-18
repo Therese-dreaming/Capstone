@@ -179,7 +179,7 @@
                     </div>
                     
                     <input type="hidden" name="photo" id="photoData">
-                    <p class="text-sm text-gray-600 text-center">Take a photo or upload an image of the issue. Maximum file size: 5MB</p>
+                    <p class="text-sm text-gray-600 text-center">Take a photo or upload an image of the issue. Maximum file size: 10MB</p>
                 </div>
             </div>
 
@@ -394,9 +394,9 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            // Check file size (5MB limit)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('File size exceeds 5MB limit');
+            // Check file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size exceeds 10MB limit');
                 return;
             }
 

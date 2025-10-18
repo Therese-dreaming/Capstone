@@ -200,8 +200,8 @@ class AssetController extends Controller
                 'purchase_date' => 'required|date',
                 'warranty_period' => 'required|date|after_or_equal:purchase_date',
                 'purchase_price' => 'required|numeric|min:0',
-                'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'acquisition_document' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf|max:2048',
+                'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+                'acquisition_document' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf|max:10240',
                 'quantity' => 'nullable|integer|min:1|max:100',
             ]);
 
