@@ -154,11 +154,9 @@
         }
         
         .signature-footer {
-            margin-top: 40px;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
+            margin-top: 20px;
             text-align: right;
+            padding-top: 20px;
         }
         
         .signature-entry {
@@ -166,6 +164,7 @@
             display: inline-block;
             text-align: center;
             margin-right: 30px;
+            position: relative;
         }
         
         .signature-label {
@@ -175,17 +174,36 @@
             margin-bottom: 5px;
         }
         
+        .signature-container {
+            position: relative;
+            width: 180px;
+            height: 70px;
+            display: inline-block;
+        }
+        
         .signature-name {
             font-size: 10px;
             color: #000000;
-            margin-bottom: 5px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 2px;
+            padding-top: 35px;
         }
         
         .signature-image {
             max-width: 180px;
-            max-height: 90px;
+            max-height: 60px;
             border: none;
             background-color: transparent;
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
         }
         
         .signature-line {
@@ -285,12 +303,12 @@
         @foreach($signatures as $signature)
         <div class="signature-entry">
             <div class="signature-label">{{ $signature['label'] }}:</div>
-            <div class="signature-name">{{ $signature['name'] }}</div>
-            @if(isset($signature['signature_base64']) && !empty($signature['signature_base64']))
-                <img src="{{ $signature['signature_base64'] }}" alt="Signature" class="signature-image">
-            @else
-                <div class="signature-line"></div>
-            @endif
+            <div class="signature-container">
+                @if(isset($signature['signature_base64']) && !empty($signature['signature_base64']))
+                    <img src="{{ $signature['signature_base64'] }}" alt="Signature" class="signature-image">
+                @endif
+                <div class="signature-name">{{ $signature['name'] }}</div>
+            </div>
         </div>
         @endforeach
     </div>

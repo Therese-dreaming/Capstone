@@ -560,9 +560,8 @@
         let lastX = 0;
         let lastY = 0;
 
-        // Set canvas background to white
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Clear canvas to transparent (no white background)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Set drawing styles
         ctx.strokeStyle = '#000000';
@@ -648,8 +647,8 @@
     function clearSignature(canvasId) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Clear to transparent instead of white
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     function generatePDFWithSignatures() {
@@ -746,6 +745,12 @@
 </div>
 
 <style>
+    /* Canvas styling for signature pad */
+    canvas {
+        background-color: #f9fafb;
+        border-radius: 0.375rem;
+    }
+    
     @media print {
         /* Hide navigation elements and buttons */
         aside.fixed,
