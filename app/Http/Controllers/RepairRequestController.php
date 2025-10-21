@@ -47,7 +47,7 @@ class RepairRequestController extends Controller
             'urgency_level' => 'nullable|integer|min:1|max:3',
             'ongoing_activity' => 'nullable|in:yes,no',
             'technician_id' => 'nullable|exists:users,id',
-            'photo' => 'nullable|string|max:5242880' // 5MB base64 string
+            'photo' => 'nullable|string|max:14680064' // 10MB base64 string (~10MB * 1.37)
         ]);
 
         // If user is secretary, force technician_id to be their own ID
@@ -395,6 +395,14 @@ class RepairRequestController extends Controller
             // Find the repair request
             $repairRequest = RepairRequest::findOrFail($id);
             \Log::info('Found repair request', ['repair_request' => $repairRequest->toArray()]);
+            
+            // Validate photo uploads if present
+            if ($request->hasFile('before_photos') || $request->hasFile('after_photos')) {
+                $request->validate([
+                    'before_photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+                    'after_photos.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+                ]);
+            }
             
             // Prepare update data
             $updateData = $request->only([

@@ -83,7 +83,7 @@
                         <input type="file" name="before_photos[]" id="beforePhotosInput" multiple accept="image/*" required
                             class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                             onchange="previewImages(this, 'beforePhotosPreview')">
-                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos</p>
+                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each)</p>
                         <!-- Preview Container -->
                         <div id="beforePhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
                     </div>
@@ -92,7 +92,7 @@
                         <input type="file" name="after_photos[]" id="afterPhotosInput" multiple accept="image/*" required
                             class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                             onchange="previewImages(this, 'afterPhotosPreview')">
-                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos</p>
+                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each)</p>
                         <!-- Preview Container -->
                         <div id="afterPhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
                     </div>
@@ -593,6 +593,15 @@
                 // Validate file type
                 if (!file.type.startsWith('image/')) {
                     console.error('File is not an image:', file.name);
+                    showErrorToast(`${file.name} is not a valid image file`);
+                    return;
+                }
+                
+                // Validate file size (10MB limit)
+                const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                if (file.size > maxSize) {
+                    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    showErrorToast(`${file.name} exceeds 10MB limit (${fileSizeMB}MB)`);
                     return;
                 }
                 

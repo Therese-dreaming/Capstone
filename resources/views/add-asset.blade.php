@@ -76,7 +76,7 @@
                 <svg class="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="text-sm md:text-base text-yellow-700">Maximum file size allowed is 2MB</span>
+                <span class="text-sm md:text-base text-yellow-700">Maximum file size allowed is 10MB</span>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
@@ -314,7 +314,7 @@
                                                 </span>
                                                 <p class="pl-1">or drag and drop</p>
                                             </div>
-                                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
                                         </div>
                                     </div>
                                     <!-- Image Preview -->
@@ -356,7 +356,7 @@
                                                 </span>
                                                 <p class="pl-1">or drag and drop</p>
                                             </div>
-                                            <p class="text-xs text-gray-500">PNG, JPG, GIF, PDF up to 2MB</p>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF, PDF up to 10MB</p>
                                         </div>
                                     </div>
                                     <!-- Acquisition Document Preview -->
@@ -454,8 +454,8 @@
         if (input.files && input.files[0]) {
             const fileSize = input.files[0].size / 1024 / 1024; // Convert to MB
 
-            if (fileSize > 2) {
-                fileError.textContent = 'File size exceeds 2MB limit. Please choose a smaller file.';
+            if (fileSize > 10) {
+                fileError.textContent = 'File size exceeds 10MB limit. Please choose a smaller file.';
                 fileError.classList.remove('hidden');
                 input.value = ''; // Clear the file input
                 submitButton.disabled = true;
@@ -1185,8 +1185,8 @@
         
         if (input.files && input.files[0]) {
             const fileSize = input.files[0].size / 1024 / 1024;
-            if (fileSize > 2) {
-                fileError.textContent = 'File size exceeds 2MB limit. Please choose a smaller file.';
+            if (fileSize > 10) {
+                fileError.textContent = 'File size exceeds 10MB limit. Please choose a smaller file.';
                 fileError.classList.remove('hidden');
                 input.value = '';
                 submitButton.disabled = true;
