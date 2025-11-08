@@ -12,7 +12,8 @@ class LabLog extends Model
         'purpose',
         'time_in',
         'time_out',
-        'status'
+        'status',
+        'notes'
     ];
 
     protected $casts = [

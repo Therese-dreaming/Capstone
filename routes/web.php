@@ -39,9 +39,11 @@ Route::get('/lab-schedule/logs', [LabScheduleController::class, 'getLabLogs']);
 Route::get('/lab-schedule/check-availability/{laboratory}', [LabScheduleController::class, 'checkAvailability']);
 Route::get('/lab-schedule/all-labs-status', [LabScheduleController::class, 'getAllLabsStatus']);
 Route::get('/lab-schedule/check-user-ongoing-session', [LabScheduleController::class, 'checkUserOngoingSession']);
-// Manual logout (admin/faculty tool)
+// Manual logout and login (admin/faculty tool)
 Route::get('/lab-schedule/manual-logout', [LabScheduleController::class, 'manualLogoutPage'])->name('lab.manualLogout');
 Route::post('/lab-schedule/manual-logout', [LabScheduleController::class, 'manualLogoutSubmit'])->name('lab.manualLogout.submit');
+Route::post('/lab-schedule/manual-login', [LabScheduleController::class, 'manualLoginSubmit'])->name('lab.manualLogin.submit');
+Route::get('/api/search-faculty', [LabScheduleController::class, 'searchFaculty']);
 
 // Add the fetch route here, outside of any middleware
 Route::get('/assets/fetch/{serialNumber}', [AssetController::class, 'fetch'])

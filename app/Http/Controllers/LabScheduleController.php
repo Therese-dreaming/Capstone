@@ -381,10 +381,18 @@ class LabScheduleController extends Controller
 
         $ongoingLogs = $query->paginate(10)->withQueryString();
 
+        // Get recent manual logins (created today)
+        $recentManualLogins = LabLog::with('user')
+            ->whereDate('created_at', Carbon::today())
+            ->whereNotNull('notes') // Assuming manual logins have notes
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'manual_page');
+
         $laboratories = \App\Models\Laboratory::orderBy('number')->pluck('number');
 
         return view('lab-schedule.manual-logout', [
             'ongoingLogs' => $ongoingLogs,
+            'recentManualLogins' => $recentManualLogins,
             'laboratories' => $laboratories
         ]);
     }
@@ -409,6 +417,102 @@ class LabScheduleController extends Controller
         $log->save();
 
         return redirect()->route('lab.manualLogout')->with('status', 'Manual logout recorded for '.$log->user->name.' in Laboratory '.$log->laboratory.'.');
+    }
+
+    public function manualLoginSubmit(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'laboratory' => 'required|string',
+            'time_in' => 'required|date',
+            'purpose' => 'required|array|min:1',
+            'purpose.*' => 'in:teaching,research,personal,other',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        // Check if user exists and is faculty/teacher
+        $user = User::where('id', $request->user_id)
+            ->where(function ($query) {
+                $query->where('position', 'Teacher')
+                    ->orWhere('position', 'Faculty');
+            })
+            ->first();
+
+        if (!$user) {
+            return back()->withErrors(['user_id' => 'User not found or not authorized to use laboratories.'])->withInput();
+        }
+
+        // Check if laboratory exists
+        $laboratory = \App\Models\Laboratory::where('number', $request->laboratory)->first();
+        if (!$laboratory) {
+            return back()->withErrors(['laboratory' => 'Laboratory not found.'])->withInput();
+        }
+
+        // Check if laboratory is available (no ongoing sessions at the requested time)
+        $timeIn = Carbon::parse($request->time_in);
+        $ongoingInLab = LabLog::where('laboratory', $request->laboratory)
+            ->where('status', 'on-going')
+            ->where(function ($query) use ($timeIn) {
+                $query->where('time_in', '<=', $timeIn);
+            })
+            ->exists();
+
+        if ($ongoingInLab) {
+            return back()->withErrors(['laboratory' => 'Laboratory ' . $request->laboratory . ' is currently unavailable. There is an ongoing session.'])->withInput();
+        }
+
+        // Check if user already has an ongoing session in any lab
+        $existingSession = LabLog::where('user_id', $request->user_id)
+            ->where('status', 'on-going')
+            ->first();
+
+        if ($existingSession) {
+            return back()->withErrors(['user_id' => 'User already has an ongoing session in Laboratory '.$existingSession->laboratory.'. Please log out first.'])->withInput();
+        }
+
+        // Validate time_in is not in the future
+        if ($timeIn->isFuture()) {
+            return back()->withErrors(['time_in' => 'Time in cannot be in the future.'])->withInput();
+        }
+
+        // Create manual login with multiple purposes
+        $purposes = implode(', ', $request->purpose);
+        
+        $log = new LabLog();
+        $log->user_id = $request->user_id;
+        $log->laboratory = $request->laboratory;
+        $log->time_in = $timeIn;
+        $log->purpose = $purposes;
+        $log->status = 'on-going';
+        $log->notes = $request->notes ? 'Manual Login: ' . $request->notes : 'Manual Login';
+        $log->save();
+
+        return redirect()->route('lab.manualLogout')->with('status', 'Manual log-in created for '.$user->name.' in Laboratory '.$request->laboratory.'.');
+    }
+
+    public function searchFaculty(Request $request)
+    {
+        $query = $request->input('q', '');
+        
+        if (empty($query)) {
+            return response()->json([]);
+        }
+
+        // Search by ID, name, or username
+        $users = User::where(function ($q) use ($query) {
+                $q->where('id', 'like', '%' . $query . '%')
+                  ->orWhere('name', 'like', '%' . $query . '%')
+                  ->orWhere('username', 'like', '%' . $query . '%');
+            })
+            ->where(function ($q) {
+                $q->where('position', 'Teacher')
+                  ->orWhere('position', 'Faculty');
+            })
+            ->select('id', 'name', 'username', 'position', 'department')
+            ->limit(10)
+            ->get();
+
+        return response()->json($users);
     }
 
     public function history(Request $request)
