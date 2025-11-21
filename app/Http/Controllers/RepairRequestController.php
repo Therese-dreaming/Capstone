@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\AssetHistory;  // Add this import
 use App\Models\Asset;  // Add this import
 use App\Models\Notification;
+use App\Models\Building;
+use App\Models\Floor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;  // Change this line
@@ -28,7 +30,9 @@ class RepairRequestController extends Controller
         $technicians = User::whereIn('group_id', [1, 2])
             ->where('status', 'active')
             ->get();
-        return view('repair-request', compact('categories', 'technicians'));
+        $buildings = Building::where('is_active', true)->orderBy('name')->get();
+        $floors = Floor::with('building')->where('is_active', true)->orderBy('building_id')->orderBy('floor_number')->orderBy('name')->get();
+        return view('repair-request', compact('categories', 'technicians', 'buildings', 'floors'));
     }
 
     public function store(Request $request)

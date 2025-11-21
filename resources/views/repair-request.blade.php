@@ -109,13 +109,35 @@
                 <!-- Building -->
                 <div class="space-y-2">
                     <label class="block text-sm font-semibold text-gray-700">Building</label>
-                    <input type="text" name="building" id="building" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" placeholder="Enter building name" required>
+                    <div class="relative">
+                        <input type="text" name="building" id="building" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" placeholder="Enter building name or select from suggestions" required autocomplete="off" oninput="handleBuildingInput()" onfocus="showBuildingSuggestions()" onblur="hideBuildingSuggestions()" onkeydown="handleBuildingKeydown(event)">
+                        <div id="building-suggestions-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto" onmousedown="preventBlur(event)">
+                            <div id="building-suggestions-list">
+                                @foreach($buildings as $building)
+                                    <div class="building-suggestion-item px-4 py-3 cursor-pointer hover:bg-red-50 active:bg-red-100 transition-colors duration-150 border-b border-gray-100 last:border-b-0" data-building-id="{{ $building->id }}" data-building-name="{{ $building->name }}" onclick="selectBuilding('{{ $building->name }}', {{ $building->id }})">
+                                        <div class="font-medium text-gray-800">{{ $building->name }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div id="building-no-results" class="hidden px-4 py-3 text-center text-gray-500 text-sm">
+                                No matching buildings found
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Type to search or select from suggestions</p>
                 </div>
 
                 <!-- Floor -->
                 <div class="space-y-2">
                     <label class="block text-sm font-semibold text-gray-700">Floor</label>
-                    <input type="text" name="floor" id="floor" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" placeholder="Enter floor (e.g., 1st Floor, 2nd Floor)" required>
+                    <select name="floor" id="floor" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200" required onchange="handleFloorChange()">
+                        <option value="">Select a floor</option>
+                        @foreach($floors as $floor)
+                            <option value="{{ $floor->name }}" data-building-id="{{ $floor->building_id }}" data-building-name="{{ $floor->building->name }}">{{ $floor->name }}</option>
+                        @endforeach
+                        <option value="other">Other</option>
+                    </select>
+                    <input type="text" name="floor_other" id="floor_other" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 mt-2 hidden" placeholder="Please specify floor name">
                 </div>
 
                 <!-- Room -->
@@ -264,8 +286,33 @@
             // Calculate initial urgency level
             calculateUrgencyLevel();
             
+            // Initialize floor handler
+            handleBuildingInput();
+            handleFloorChange();
+            
             // Add form submission event listener
             document.getElementById('repairForm').addEventListener('submit', function(e) {
+                // Handle floor value (building is already a text input, no special handling needed)
+                const floorSelect = document.getElementById('floor');
+                const floorOther = document.getElementById('floor_other');
+                if (floorSelect.value === 'other') {
+                    if (!floorOther.value.trim()) {
+                        e.preventDefault();
+                        alert('Please specify the floor name.');
+                        floorOther.focus();
+                        return false;
+                    }
+                    // Create a hidden input with the actual floor value
+                    const floorInput = document.createElement('input');
+                    floorInput.type = 'hidden';
+                    floorInput.name = 'floor';
+                    floorInput.value = floorOther.value.trim();
+                    this.appendChild(floorInput);
+                    floorSelect.disabled = true; // Disable to prevent sending "other"
+                } else {
+                    floorOther.disabled = true; // Disable to prevent sending empty value
+                }
+                
                 // Calculate urgency level before submission
                 calculateUrgencyLevel();
                 
@@ -345,8 +392,19 @@
         }
 
         function isUrgentRequest() {
-            const building = document.getElementById('building').value;
-            const floor = document.getElementById('floor').value;
+            const buildingInput = document.getElementById('building');
+            const floorSelect = document.getElementById('floor');
+            const floorOther = document.getElementById('floor_other');
+            
+            // Get building value (from text input)
+            const building = buildingInput.value.trim();
+            
+            // Get floor value (from select or other input)
+            let floor = floorSelect.value;
+            if (floor === 'other') {
+                floor = floorOther.value.trim();
+            }
+            
             const room = document.getElementById('room').value;
             const location = `${building} ${floor} ${room}`.trim();
             const hasOngoingActivity = document.querySelector('input[name="ongoing_activity"]').checked;
@@ -431,6 +489,212 @@
             preview.classList.add('hidden');
             cameraInput.value = '';
             fileInput.value = '';
+        }
+
+        let buildingSuggestionsTimeout = null;
+
+        function handleBuildingInput() {
+            const buildingInput = document.getElementById('building');
+            const dropdown = document.getElementById('building-suggestions-dropdown');
+            const searchValue = buildingInput.value.trim().toLowerCase();
+            
+            // Show dropdown if input has focus
+            if (document.activeElement === buildingInput) {
+                showBuildingSuggestions();
+            }
+            
+            // Filter suggestions based on input
+            filterBuildingSuggestions(searchValue);
+            
+            // Filter floors based on building input value
+            filterFloorsByBuilding();
+        }
+
+        function showBuildingSuggestions() {
+            const dropdown = document.getElementById('building-suggestions-dropdown');
+            const buildingInput = document.getElementById('building');
+            
+            // Clear any pending hide timeout
+            if (buildingSuggestionsTimeout) {
+                clearTimeout(buildingSuggestionsTimeout);
+                buildingSuggestionsTimeout = null;
+            }
+            
+            dropdown.classList.remove('hidden');
+            
+            // Filter suggestions based on current input value
+            const searchValue = buildingInput.value.trim().toLowerCase();
+            filterBuildingSuggestions(searchValue);
+        }
+
+        function filterBuildingSuggestions(searchValue) {
+            const suggestions = document.querySelectorAll('.building-suggestion-item');
+            const noResults = document.getElementById('building-no-results');
+            let visibleCount = 0;
+            
+            suggestions.forEach(item => {
+                const buildingName = item.getAttribute('data-building-name').toLowerCase();
+                if (searchValue === '' || buildingName.includes(searchValue)) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Show/hide "no results" message
+            if (visibleCount === 0 && searchValue !== '') {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+
+        function hideBuildingSuggestions() {
+            // Add a small delay to allow clicks on suggestions
+            buildingSuggestionsTimeout = setTimeout(() => {
+                const dropdown = document.getElementById('building-suggestions-dropdown');
+                dropdown.classList.add('hidden');
+            }, 200);
+        }
+
+        function preventBlur(event) {
+            // Prevent the input from losing focus when clicking on dropdown
+            event.preventDefault();
+        }
+
+        function selectBuilding(buildingName, buildingId) {
+            const buildingInput = document.getElementById('building');
+            const dropdown = document.getElementById('building-suggestions-dropdown');
+            
+            // Clear the timeout to prevent hiding
+            if (buildingSuggestionsTimeout) {
+                clearTimeout(buildingSuggestionsTimeout);
+                buildingSuggestionsTimeout = null;
+            }
+            
+            // Set the building value
+            buildingInput.value = buildingName;
+            
+            // Hide the dropdown
+            dropdown.classList.add('hidden');
+            
+            // Filter floors based on selected building
+            filterFloorsByBuildingWithId(buildingId);
+            
+            // Focus back on input
+            buildingInput.focus();
+        }
+
+        function handleBuildingKeydown(event) {
+            const dropdown = document.getElementById('building-suggestions-dropdown');
+            
+            if (event.key === 'Escape') {
+                // Close dropdown on Escape
+                dropdown.classList.add('hidden');
+                return;
+            }
+            
+            if (event.key === 'Enter') {
+                // Select first visible suggestion on Enter
+                const visibleSuggestions = Array.from(document.querySelectorAll('.building-suggestion-item')).filter(item => item.style.display !== 'none');
+                if (visibleSuggestions.length > 0) {
+                    event.preventDefault();
+                    const firstSuggestion = visibleSuggestions[0];
+                    const buildingName = firstSuggestion.getAttribute('data-building-name');
+                    const buildingId = parseInt(firstSuggestion.getAttribute('data-building-id'));
+                    selectBuilding(buildingName, buildingId);
+                }
+            }
+        }
+
+        function handleFloorChange() {
+            const floorSelect = document.getElementById('floor');
+            const floorOther = document.getElementById('floor_other');
+            
+            if (floorSelect.value === 'other') {
+                floorOther.classList.remove('hidden');
+                floorOther.required = true;
+                floorOther.value = '';
+            } else {
+                floorOther.classList.add('hidden');
+                floorOther.required = false;
+                floorOther.value = '';
+            }
+        }
+
+        function filterFloorsByBuilding() {
+            const buildingInput = document.getElementById('building');
+            const buildingValue = buildingInput.value.trim().toLowerCase();
+            
+            if (!buildingValue) {
+                // Show all floors if building is empty
+                showAllFloors();
+                return;
+            }
+            
+            // Try to find matching building from suggestions
+            const dropdown = document.getElementById('building-suggestions-dropdown');
+            const matchingSuggestion = dropdown.querySelector(`[data-building-name="${buildingInput.value.trim()}"]`);
+            
+            if (matchingSuggestion) {
+                // Building matches a suggestion exactly - use its ID
+                const buildingId = parseInt(matchingSuggestion.getAttribute('data-building-id'));
+                filterFloorsByBuildingWithId(buildingId);
+            } else {
+                // Try to find building by matching name from floor options
+                const floorSelect = document.getElementById('floor');
+                const floorOptions = floorSelect.querySelectorAll('option[data-building-id]');
+                const buildingIds = new Set();
+                
+                floorOptions.forEach(option => {
+                    const buildingName = option.getAttribute('data-building-name');
+                    if (buildingName && buildingName.toLowerCase() === buildingValue) {
+                        buildingIds.add(parseInt(option.getAttribute('data-building-id')));
+                    }
+                });
+                
+                // If we found exactly one matching building, use it
+                if (buildingIds.size === 1) {
+                    filterFloorsByBuildingWithId(Array.from(buildingIds)[0]);
+                } else {
+                    // No matching building found - show all floors
+                    showAllFloors();
+                }
+            }
+        }
+
+        function filterFloorsByBuildingWithId(buildingId) {
+            const floorSelect = document.getElementById('floor');
+            const floorOptions = floorSelect.querySelectorAll('option[data-building-id]');
+            
+            // Filter floors based on building ID
+            floorOptions.forEach(option => {
+                const floorBuildingId = parseInt(option.getAttribute('data-building-id'));
+                if (floorBuildingId === buildingId) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Reset floor selection if current selection is not valid for this building
+            const currentFloor = floorSelect.value;
+            if (currentFloor && currentFloor !== 'other') {
+                const currentOption = floorSelect.querySelector(`option[value="${currentFloor}"][data-building-id]`);
+                if (currentOption && currentOption.style.display === 'none') {
+                    floorSelect.value = '';
+                    handleFloorChange();
+                }
+            }
+        }
+
+        function showAllFloors() {
+            const floorSelect = document.getElementById('floor');
+            const floorOptions = floorSelect.querySelectorAll('option[data-building-id]');
+            floorOptions.forEach(option => {
+                option.style.display = '';
+            });
         }
     </script>
 </div>
