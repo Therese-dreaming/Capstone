@@ -48,6 +48,8 @@ Route::get('/api/search-faculty', [LabScheduleController::class, 'searchFaculty'
 // Add the fetch route here, outside of any middleware
 Route::get('/assets/fetch/{serialNumber}', [AssetController::class, 'fetch'])
 	->name('assets.fetch');
+Route::get('/assets/search-serials', [AssetController::class, 'searchSerialNumbers'])
+	->name('assets.searchSerials');
 
 // Redirect /asset-list to appropriate route based on user role
 Route::get('/asset-list', function () {
