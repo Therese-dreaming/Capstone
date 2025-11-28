@@ -112,6 +112,7 @@
                             <option value="College" {{ old('department', $user->department) == 'College' ? 'selected' : '' }}>College</option>
                             <option value="ICTC" {{ old('department', $user->department) == 'ICTC' ? 'selected' : '' }}>ICTC</option>
                             <option value="School of Graduate Studies" {{ old('department', $user->department) == 'School of Graduate Studies' ? 'selected' : '' }}>School of Graduate Studies</option>
+                            <option value="ICTC" {{ old('department', $user->department) == 'ICTC' ? 'selected' : '' }}>ICTC</option>
                         </select>
                     </div>
 
