@@ -175,10 +175,10 @@
                     <span id="selectedLabText" class="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full">Selected: None</span>
                 </label>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="labCards">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-stretch" id="labCards">
                     @forelse($laboratories as $lab)
-                    <div class="lab-card cursor-pointer transform transition-all duration-300 hover:scale-105" data-value="{{ $lab->number }}" onclick="selectLab(this)">
-                        <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 shadow-md p-4 group transition-all duration-300">
+                    <div class="lab-card cursor-pointer transform transition-all duration-300 hover:scale-105 h-full" data-value="{{ $lab->number }}" onclick="selectLab(this)">
+                        <div class="relative bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 shadow-md p-4 group transition-all duration-300 h-full flex flex-col">
                             <!-- Active State Indicator -->
                             <div class="absolute inset-0 bg-red-50 opacity-0 transition-opacity duration-300 rounded-xl"></div>
 
@@ -210,6 +210,17 @@
                                         </svg>
                                     </span>
                                     <span class="status-text font-medium">Available</span>
+                                </div>
+                            </div>
+
+                            <!-- Current User Information -->
+                            <div class="current-user-info mt-3 pt-3 border-t" style="min-height: 60px; visibility: hidden; border-color: transparent;">
+                                <div class="text-xs text-gray-600 mb-1">
+                                    <span class="font-semibold">Currently in use by:</span>
+                                </div>
+                                <div class="text-sm font-semibold text-gray-800 current-user-name">-</div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span class="font-medium">Time In:</span> <span class="current-user-time-in">-</span>
                                 </div>
                             </div>
                         </div>
@@ -920,17 +931,46 @@
         }
     }
 
+    // Function to update lab card with current user info when lab is selected
+    async function updateLabCardWithUserInfo(labNumber) {
+        const availability = await getLabAvailabilityDetail(labNumber);
+        if (availability.status === 'ongoing' && availability.current_user) {
+            const labCard = document.querySelector(`[data-value="${labNumber}"]`);
+            if (labCard) {
+                const currentUserInfo = labCard.querySelector('.current-user-info');
+                const currentUserName = labCard.querySelector('.current-user-name');
+                const currentUserTimeIn = labCard.querySelector('.current-user-time-in');
+                
+                if (currentUserInfo && currentUserName && currentUserTimeIn) {
+                    currentUserInfo.style.visibility = 'visible';
+                    currentUserInfo.style.borderColor = '#e5e7eb'; // border-gray-200
+                    currentUserName.textContent = availability.current_user.name || '-';
+                    if (availability.current_user.time_in) {
+                        const timeInDate = new Date(availability.current_user.time_in);
+                        currentUserTimeIn.textContent = timeInDate.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     // Removed automatic lab availability checking on page load
     // Labs now show as "Available" by default in HTML template
     // Warning modals handle ongoing session logic
 
-    function updateLabStatus(labNumber, status, sessionDate = null) {
+    function updateLabStatus(labNumber, status, sessionDate = null, currentUser = null) {
         const labCard = document.querySelector(`[data-value="${labNumber}"]`);
         if (!labCard) return;
 
         const statusIconWrapper = labCard.querySelector('.status-icon');
         const statusText = labCard.querySelector('.status-text');
         const container = labCard.querySelector('.relative');
+        const currentUserInfo = labCard.querySelector('.current-user-info');
+        const currentUserName = labCard.querySelector('.current-user-name');
+        const currentUserTimeIn = labCard.querySelector('.current-user-time-in');
 
         if (!statusIconWrapper) return;
 
@@ -956,6 +996,18 @@
                 container.classList.add('bg-red-100', 'border-red-600', 'opacity-80');
                 container.classList.remove('bg-white', 'border-gray-200', 'bg-orange-50', 'border-orange-300');
             }
+        } else if (status === 'on-going' && !isFromToday) {
+            // Ongoing session from past day - still show as available but indicate past session
+            statusIconWrapper.innerHTML = `
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>`;
+            statusText.textContent = 'Available';
+            if (container) {
+                container.classList.add('bg-white', 'border-gray-200');
+                container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80', 'bg-orange-50', 'border-orange-300');
+            }
+            addPastSessionIndicator(labCard);
         } else {
             // Available (either no ongoing session or ongoing session from past days)
             statusIconWrapper.innerHTML = `
@@ -968,12 +1020,32 @@
                 container.classList.remove('bg-red-100', 'border-red-600', 'opacity-80', 'bg-orange-50', 'border-orange-300');
             }
 
-            // Add indicator for past ongoing sessions
-            if (status === 'on-going' && !isFromToday) {
-                addPastSessionIndicator(labCard);
-            } else {
-                removePastSessionIndicator(labCard);
+            // Hide current user information when available (but keep space reserved)
+            if (currentUserInfo) {
+                currentUserInfo.style.visibility = 'hidden';
+                currentUserInfo.style.borderColor = 'transparent';
             }
+            removePastSessionIndicator(labCard);
+        }
+
+        // Show current user information if there's an ongoing session (regardless of date)
+        if (status === 'on-going' && currentUserInfo && currentUser) {
+            currentUserInfo.style.visibility = 'visible';
+            currentUserInfo.style.borderColor = '#e5e7eb'; // border-gray-200
+            if (currentUserName) {
+                currentUserName.textContent = currentUser.name || '-';
+            }
+            if (currentUserTimeIn && currentUser.time_in) {
+                const timeInDate = new Date(currentUser.time_in);
+                currentUserTimeIn.textContent = timeInDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        } else if (currentUserInfo && status !== 'on-going') {
+            // Hide but keep space reserved for consistent card heights
+            currentUserInfo.style.visibility = 'hidden';
+            currentUserInfo.style.borderColor = 'transparent';
         }
     }
 
@@ -1008,8 +1080,8 @@
             const data = await response.json();
             console.log('Fetched lab status data:', data); // Debug logging
             data.forEach(lab => {
-                // Pass session date to determine if it's from today or past
-                updateLabStatus(lab.laboratory, lab.status, lab.session_date);
+                // Pass session date and current user info to determine if it's from today or past
+                updateLabStatus(lab.laboratory, lab.status, lab.session_date, lab.current_user || null);
             });
         } catch (error) {
             console.error('Error fetching lab status:', error);
