@@ -16,25 +16,6 @@
             <input type="hidden" name="completed_at" id="completedAt">
             <input type="hidden" name="serial_number" id="serialNumber" value="{{ $repairRequest->serial_number }}">
 
-            @if(!$repairRequest->serial_number)
-            <!-- Manual Serial Number Entry -->
-            <div class="space-y-2">
-                <label class="block text-gray-700 text-sm font-semibold" for="manualSerialInput">
-                    Enter Serial Number (Manual Input)
-                </label>
-                <div class="relative">
-                    <input type="text" id="manualSerialInput"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="Type the serial number if QR scanning is unavailable"
-                        value="{{ old('serial_number') }}">
-                    <div id="serialSuggestions" class="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto hidden z-10"></div>
-                </div>
-                <p class="text-sm text-gray-500">
-                    Start typing to search for existing serial numbers. Use this field when you cannot scan the QR code.
-                </p>
-            </div>
-            @endif
-
             <!-- Asset Information Display -->
             <div class="space-y-2">
                 <label class="block text-gray-700 text-sm font-semibold">
@@ -85,33 +66,33 @@
             </div>
             @endif
 
-            <!-- Photo Evidence Section (Optional) -->
+            <!-- Photo Evidence Section (Required) -->
             <div class="space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div class="flex items-center space-x-2 mb-2">
                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <label class="text-sm font-semibold text-blue-900">Photo Evidence (Optional)</label>
+                    <label class="text-sm font-semibold text-blue-900">Photo Evidence <span class="text-red-600">*</span></label>
                 </div>
-                <p class="text-xs text-blue-700 mb-3">Optionally upload before and after photos of the repair work</p>
+                <p class="text-xs text-blue-700 mb-3">Please upload before and after photos of the repair work</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-blue-900 mb-2">Before Photos</label>
-                        <input type="file" name="before_photos[]" id="beforePhotosInput" multiple accept="image/*"
+                        <input type="file" name="before_photos[]" id="beforePhotosInput" multiple accept="image/*" required
                             class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                             onchange="previewImages(this, 'beforePhotosPreview')">
-                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each) - Optional</p>
+                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each)</p>
                         <!-- Preview Container -->
                         <div id="beforePhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-blue-900 mb-2">After Photos</label>
-                        <input type="file" name="after_photos[]" id="afterPhotosInput" multiple accept="image/*"
+                        <input type="file" name="after_photos[]" id="afterPhotosInput" multiple accept="image/*" required
                             class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                             onchange="previewImages(this, 'afterPhotosPreview')">
-                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each) - Optional</p>
+                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each)</p>
                         <!-- Preview Container -->
                         <div id="afterPhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
                     </div>
@@ -278,126 +259,11 @@
 <script>
     let technicianPad, callerPad, delegatePad;
     let html5QrCode;
-    const STORAGE_KEY_PREFIX = 'repair_completion_form_';
-    const repairRequestId = {{ $repairRequest->id }};
-
-    // Function to save signature to localStorage
-    function saveSignatureToStorage(padName, pad) {
-        if (pad && !pad.isEmpty()) {
-            const key = STORAGE_KEY_PREFIX + repairRequestId + '_' + padName;
-            localStorage.setItem(key, pad.toDataURL());
-        }
-    }
-
-    // Function to restore signature from localStorage
-    function restoreSignatureFromStorage(padName, pad) {
-        if (!pad) return;
-        const key = STORAGE_KEY_PREFIX + repairRequestId + '_' + padName;
-        const savedSignature = localStorage.getItem(key);
-        if (savedSignature) {
-            pad.fromDataURL(savedSignature);
-        }
-    }
-
-    // Function to clear saved signatures
-    function clearSavedSignatures() {
-        const keys = [
-            STORAGE_KEY_PREFIX + repairRequestId + '_technician',
-            STORAGE_KEY_PREFIX + repairRequestId + '_caller',
-            STORAGE_KEY_PREFIX + repairRequestId + '_delegate'
-        ];
-        keys.forEach(key => localStorage.removeItem(key));
-    }
 
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize signature pads
         const technicianCanvas = document.getElementById('technicianSignature');
         const callerCanvas = document.getElementById('callerSignature');
-        const manualSerialInput = document.getElementById('manualSerialInput');
-        const hiddenSerialInput = document.getElementById('serialNumber');
-        const serialSuggestionsEl = document.getElementById('serialSuggestions');
-        let serialSuggestionTimeout = null;
-
-        // Sync manual serial input with hidden field
-        if (manualSerialInput && hiddenSerialInput) {
-            // Ensure hidden input picks up any pre-filled value
-            if (manualSerialInput.value) {
-                hiddenSerialInput.value = manualSerialInput.value.trim();
-            }
-
-            manualSerialInput.addEventListener('input', function(e) {
-                hiddenSerialInput.value = e.target.value.trim();
-                handleSerialSuggestionFetch(e.target.value.trim());
-            });
-
-            manualSerialInput.addEventListener('focus', function(e) {
-                if (e.target.value.trim()) {
-                    handleSerialSuggestionFetch(e.target.value.trim());
-                }
-            });
-        }
-
-        function handleSerialSuggestionFetch(query) {
-            if (!serialSuggestionsEl) return;
-            if (serialSuggestionTimeout) {
-                clearTimeout(serialSuggestionTimeout);
-            }
-
-            if (!query || query.length < 2) {
-                serialSuggestionsEl.classList.add('hidden');
-                return;
-            }
-
-            serialSuggestionTimeout = setTimeout(async () => {
-                try {
-                    const response = await fetch(`/assets/search-serials?q=${encodeURIComponent(query)}`);
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch serial numbers');
-                    }
-                    const data = await response.json();
-                    renderSerialSuggestions(data);
-                } catch (error) {
-                    console.error('Serial suggestion error:', error);
-                    serialSuggestionsEl.classList.add('hidden');
-                }
-            }, 250);
-        }
-
-        function renderSerialSuggestions(items) {
-            if (!serialSuggestionsEl) return;
-            if (!items || items.length === 0) {
-                serialSuggestionsEl.classList.add('hidden');
-                return;
-            }
-
-            serialSuggestionsEl.innerHTML = items.map(item => `
-                <button type="button"
-                        class="w-full text-left px-3 py-2 hover:bg-red-50 flex flex-col border-b border-gray-100 last:border-b-0"
-                        data-serial="${item.serial_number}">
-                    <span class="font-semibold text-gray-800">${item.serial_number}</span>
-                    <span class="text-xs text-gray-500">${item.name ?? 'Unnamed Asset'}${item.status ? ` • ${item.status}` : ''}</span>
-                </button>
-            `).join('');
-
-            serialSuggestionsEl.classList.remove('hidden');
-
-            serialSuggestionsEl.querySelectorAll('button').forEach(button => {
-                button.addEventListener('click', () => {
-                    const serial = button.dataset.serial || '';
-                    manualSerialInput.value = serial;
-                    hiddenSerialInput.value = serial;
-                    serialSuggestionsEl.classList.add('hidden');
-                });
-            });
-        }
-
-        document.addEventListener('click', function(event) {
-            if (!serialSuggestionsEl || !manualSerialInput) return;
-            const isClickInside = manualSerialInput.parentElement.contains(event.target) || serialSuggestionsEl.contains(event.target);
-            if (!isClickInside) {
-                serialSuggestionsEl.classList.add('hidden');
-            }
-        });
 
         // Set canvas dimensions
         technicianCanvas.width = technicianCanvas.offsetWidth;
@@ -413,14 +279,6 @@
             throttle: 16
         });
 
-        // Restore technician signature from localStorage
-        restoreSignatureFromStorage('technician', technicianPad);
-
-        // Save technician signature when it changes
-        technicianPad.addEventListener('endStroke', function() {
-            saveSignatureToStorage('technician', technicianPad);
-        });
-
         // Only initialize caller signature pad if the canvas exists
         if (callerCanvas) {
             callerCanvas.width = callerCanvas.offsetWidth;
@@ -433,14 +291,6 @@
                 minWidth: 0.5,
                 maxWidth: 2.5,
                 throttle: 16
-            });
-
-            // Restore caller signature from localStorage
-            restoreSignatureFromStorage('caller', callerPad);
-
-            // Save caller signature when it changes
-            callerPad.addEventListener('endStroke', function() {
-                saveSignatureToStorage('caller', callerPad);
             });
         }
 
@@ -533,9 +383,6 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Clear saved signatures on successful submission
-                    clearSavedSignatures();
-                    
                     // Show success message
                     showMessage('Repair has been successfully completed.', 'success');
                     
@@ -553,69 +400,18 @@
             });
         });
 
-        // Handle window resize - preserve signatures
+        // Handle window resize
         window.addEventListener('resize', function() {
-            // Save current signatures before resize
-            const techSig = technicianPad && !technicianPad.isEmpty() ? technicianPad.toDataURL() : null;
-            const callerSig = callerPad && !callerPad.isEmpty() ? callerPad.toDataURL() : null;
-            const delegateSig = delegatePad && !delegatePad.isEmpty() ? delegatePad.toDataURL() : null;
-            
-            // Resize technician canvas
+            // Resize canvases
             technicianCanvas.width = technicianCanvas.offsetWidth;
-            technicianPad.clear();
-            if (techSig) {
-                technicianPad.fromDataURL(techSig);
-            } else {
-                restoreSignatureFromStorage('technician', technicianPad);
-            }
-            
-            // Resize caller canvas if it exists
             if (callerCanvas && callerPad) {
                 callerCanvas.width = callerCanvas.offsetWidth;
                 callerPad.clear();
-                if (callerSig) {
-                    callerPad.fromDataURL(callerSig);
-                } else {
-                    restoreSignatureFromStorage('caller', callerPad);
-                }
             }
             
-            // Resize delegate canvas if it exists
-            if (delegatePad) {
-                const delegateCanvas = document.getElementById('delegateSignature');
-                if (delegateCanvas) {
-                    delegateCanvas.width = delegateCanvas.offsetWidth;
-                    delegatePad.clear();
-                    if (delegateSig) {
-                        delegatePad.fromDataURL(delegateSig);
-                    } else {
-                        restoreSignatureFromStorage('delegate', delegatePad);
-                    }
-                }
-            }
+            // Clear signatures
+            technicianPad.clear();
         });
-
-        // Save signatures before page unload
-        window.addEventListener('beforeunload', function() {
-            saveSignatureToStorage('technician', technicianPad);
-            if (callerPad) {
-                saveSignatureToStorage('caller', callerPad);
-            }
-            if (delegatePad) {
-                saveSignatureToStorage('delegate', delegatePad);
-            }
-        });
-
-        // Save signatures periodically (every 5 seconds) as backup
-        setInterval(function() {
-            saveSignatureToStorage('technician', technicianPad);
-            if (callerPad) {
-                saveSignatureToStorage('caller', callerPad);
-            }
-            if (delegatePad) {
-                saveSignatureToStorage('delegate', delegatePad);
-            }
-        }, 5000);
     });
 
 
@@ -623,18 +419,12 @@
     function clearTechnicianSignature() {
         if (technicianPad) {
             technicianPad.clear();
-            // Clear from localStorage
-            const key = STORAGE_KEY_PREFIX + repairRequestId + '_technician';
-            localStorage.removeItem(key);
         }
     }
 
     function clearCallerSignature() {
         if (callerPad) {
             callerPad.clear();
-            // Clear from localStorage
-            const key = STORAGE_KEY_PREFIX + repairRequestId + '_caller';
-            localStorage.removeItem(key);
         }
     }
 
@@ -699,9 +489,6 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Clear saved signatures on successful submission
-                clearSavedSignatures();
-                
                 // Close modal
                 closePullOutModal();
                 
@@ -777,14 +564,6 @@
                         throttle: 16
                     });
                     
-                    // Restore delegate signature from localStorage
-                    restoreSignatureFromStorage('delegate', delegatePad);
-                    
-                    // Save delegate signature when it changes
-                    delegatePad.addEventListener('endStroke', function() {
-                        saveSignatureToStorage('delegate', delegatePad);
-                    });
-                    
                     console.log('Delegate signature pad initialized');
                 }
             }, 100);
@@ -801,9 +580,6 @@
     function clearDelegateSignature() {
         if (delegatePad) {
             delegatePad.clear();
-            // Clear from localStorage
-            const key = STORAGE_KEY_PREFIX + repairRequestId + '_delegate';
-            localStorage.removeItem(key);
         }
     }
 

@@ -1131,26 +1131,6 @@ class AssetController extends Controller
         }
     }
 
-    /**
-     * Provide serial number suggestions for autocomplete inputs.
-     */
-    public function searchSerialNumbers(Request $request)
-    {
-        $query = trim($request->get('q', ''));
-        if (strlen($query) < 1) {
-            return response()->json([]);
-        }
-
-        $assets = Asset::select('serial_number', 'name', 'status')
-            ->where('serial_number', 'like', $query . '%')
-            ->whereNotIn('status', ['DISPOSED', 'LOST'])
-            ->orderBy('serial_number')
-            ->limit(10)
-            ->get();
-
-        return response()->json($assets);
-    }
-
     public function show(\App\Models\Asset $asset)
     {
         return view('assets.show', compact('asset'));

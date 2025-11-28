@@ -304,23 +304,13 @@ class LabScheduleController extends Controller
 
     public function checkAvailability($laboratory)
     {
-        $ongoingLog = LabLog::with('user')
-            ->where('laboratory', $laboratory)
+        $ongoingLog = LabLog::where('laboratory', $laboratory)
             ->where('status', 'on-going')
             ->first();
 
-        $response = [
+        return response()->json([
             'status' => $ongoingLog ? 'ongoing' : 'available'
-        ];
-
-        if ($ongoingLog && $ongoingLog->user) {
-            $response['current_user'] = [
-                'name' => $ongoingLog->user->name,
-                'time_in' => $ongoingLog->time_in->format('Y-m-d H:i:s')
-            ];
-        }
-
-        return response()->json($response);
+        ]);
     }
 
     public function getAllLabsStatus()
@@ -329,25 +319,15 @@ class LabScheduleController extends Controller
         $statuses = [];
 
         foreach ($labs as $lab) {
-            $ongoingLog = LabLog::with('user')
-                ->where('laboratory', $lab)
+            $ongoingLog = LabLog::where('laboratory', $lab)
                 ->where('status', 'on-going')
                 ->first();
 
-            $labStatus = [
+            $statuses[] = [
                 'laboratory' => $lab,
                 'status' => $ongoingLog ? 'on-going' : 'available',
                 'session_date' => $ongoingLog ? $ongoingLog->time_in->format('Y-m-d') : null
             ];
-
-            if ($ongoingLog && $ongoingLog->user) {
-                $labStatus['current_user'] = [
-                    'name' => $ongoingLog->user->name,
-                    'time_in' => $ongoingLog->time_in->format('Y-m-d H:i:s')
-                ];
-            }
-
-            $statuses[] = $labStatus;
         }
 
         return response()->json($statuses);
