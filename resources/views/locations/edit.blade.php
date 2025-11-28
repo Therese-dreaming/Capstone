@@ -66,7 +66,7 @@
                             </div>
                             <select name="building" id="building" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" required>
                                 <option value="">Select Building</option>
-                                <option value="Fr. Smits Building" {{ old('building', $location->building) == 'Fr. Smits Building' ? 'selected' : '' }}>Fr. Smits Building</option>
+                                <option value="FR. Smits Building" {{ old('building', $location->building) == 'FR. Smits Building' ? 'selected' : '' }}>FR. Smits Building</option>
                                 <option value="Msgr. Gabriel Building" {{ old('building', $location->building) == 'Msgr. Gabriel Building' ? 'selected' : '' }}>Msgr. Gabriel Building</option>
                                 <option value="Msgr. Sunga Building" {{ old('building', $location->building) == 'Msgr. Sunga Building' ? 'selected' : '' }}>Msgr. Sunga Building</option>
                                 <option value="Bishop San Diego Building" {{ old('building', $location->building) == 'Bishop San Diego Building' ? 'selected' : '' }}>Bishop San Diego Building</option>
