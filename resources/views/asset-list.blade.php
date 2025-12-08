@@ -90,6 +90,9 @@
                     @if(request('location'))
                         <input type="hidden" name="location" value="{{ request('location') }}">
                     @endif
+                    @if(request('parent'))
+                        <input type="hidden" name="parent" value="{{ request('parent') }}">
+                    @endif
                     
                     <div class="flex-1">
                         <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
@@ -119,7 +122,18 @@
                         </button>
                         
                         @if(request('date_from') || request('date_to'))
-                            <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('status') ? (request('search') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('search') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('search') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}" 
+                            @php
+                                $dateParams = [];
+                                if (request('search')) $dateParams['search'] = request('search');
+                                if (request('status')) $dateParams['status'] = request('status');
+                                if (request('category')) $dateParams['category'] = request('category');
+                                if (request('location')) $dateParams['location'] = request('location');
+                                if (request('parent')) $dateParams['parent'] = request('parent');
+                                if (request('warranty')) $dateParams['warranty'] = request('warranty');
+                                if (request('technician')) $dateParams['technician'] = request('technician');
+                                $dateUrl = request()->url() . (!empty($dateParams) ? '?' . http_build_query($dateParams) : '');
+                            @endphp
+                            <a href="{{ $dateUrl }}" 
                                class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -170,9 +184,12 @@
                     @if(request('technician'))
                         <input type="hidden" name="technician" value="{{ request('technician') }}">
                     @endif
+                    @if(request('parent'))
+                        <input type="hidden" name="parent" value="{{ request('parent') }}">
+                    @endif
                     
-                    <!-- First Row: 3 filters -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- First Row: 4 filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                             <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
@@ -206,6 +223,25 @@
                                         {{ $location->full_location }}
                                     </option>
                                 @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="parent" class="block text-sm font-medium text-gray-700 mb-1">Parent</label>
+                            <select name="parent" id="parent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                                <option value="">All Assets</option>
+                                <option value="has_parent" {{ request('parent') == 'has_parent' ? 'selected' : '' }}>Has Parent (Components)</option>
+                                <option value="no_parent" {{ request('parent') == 'no_parent' ? 'selected' : '' }}>No Parent (Standalone)</option>
+                                <option value="is_parent" {{ request('parent') == 'is_parent' ? 'selected' : '' }}>Is Parent (Has Components)</option>
+                                @if(isset($parentAssets))
+                                    <optgroup label="Specific Parent Assets">
+                                        @foreach($parentAssets as $parentAsset)
+                                            <option value="{{ $parentAsset->id }}" {{ request('parent') == $parentAsset->id || request('parent') == (string)$parentAsset->id || (string)request('parent') == (string)$parentAsset->id ? 'selected' : '' }}>
+                                                {{ $parentAsset->name }} ({{ $parentAsset->serial_number }}) - {{ $parentAsset->location->full_location ?? 'N/A' }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
                             </select>
                         </div>
                     </div>
@@ -244,8 +280,15 @@
                                 Apply Filters
                             </button>
                             
-                            @if(request('status') || request('category') || request('location') || request('warranty') || request('technician'))
-                                <a href="{{ request()->url() }}{{ request('search') ? '?search=' . request('search') : '' }}{{ request('date_from') ? (request('search') ? '&' : '?') . 'date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('search') || request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}" 
+                            @if(request('status') || request('category') || request('location') || request('warranty') || request('technician') || request('parent'))
+                                @php
+                                    $clearParams = [];
+                                    if (request('search')) $clearParams['search'] = request('search');
+                                    if (request('date_from')) $clearParams['date_from'] = request('date_from');
+                                    if (request('date_to')) $clearParams['date_to'] = request('date_to');
+                                    $clearUrl = request()->url() . (!empty($clearParams) ? '?' . http_build_query($clearParams) : '');
+                                @endphp
+                                <a href="{{ $clearUrl }}" 
                                    class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -257,7 +300,7 @@
                     </div>
                 </form>
                 
-                @if(request('status') || request('category') || request('location') || request('warranty') || request('technician'))
+                @if(request('status') || request('category') || request('location') || request('warranty') || request('technician') || request('parent'))
                     <div class="mt-3 p-3 bg-red-50 rounded-md">
                         <p class="text-sm text-red-800">
                             <strong>Filtered by:</strong> 
@@ -282,8 +325,29 @@
                                     Location: {{ $selectedLocation->full_location }}
                                 @endif
                             @endif
-                            @if(request('warranty'))
+                            @if(request('parent'))
+                                @php
+                                    $parentFilterLabel = '';
+                                    if (request('parent') == 'has_parent') {
+                                        $parentFilterLabel = 'Has Parent (Components)';
+                                    } elseif (request('parent') == 'no_parent') {
+                                        $parentFilterLabel = 'No Parent (Standalone)';
+                                    } elseif (request('parent') == 'is_parent') {
+                                        $parentFilterLabel = 'Is Parent (Has Components)';
+                                    } else {
+                                        $selectedParent = isset($parentAssets) ? $parentAssets->firstWhere('id', request('parent')) : null;
+                                        if ($selectedParent) {
+                                            $parentFilterLabel = 'Parent: ' . $selectedParent->name . ' (' . $selectedParent->serial_number . ')';
+                                        } else {
+                                            $parentFilterLabel = 'Parent: ' . request('parent');
+                                        }
+                                    }
+                                @endphp
                                 @if(request('status') || request('category') || request('location')) | @endif
+                                {{ $parentFilterLabel }}
+                            @endif
+                            @if(request('warranty'))
+                                @if(request('status') || request('category') || request('location') || request('parent')) | @endif
                                 Warranty: {{ ucfirst(str_replace('_', ' ', request('warranty'))) }}
                             @endif
                             @if(request('technician'))
@@ -291,7 +355,7 @@
                                     $selectedTechnician = isset($technicians) ? $technicians->firstWhere('id', request('technician')) : null;
                                 @endphp
                                 @if($selectedTechnician)
-                                    @if(request('status') || request('category') || request('location') || request('warranty')) | @endif
+                                    @if(request('status') || request('category') || request('location') || request('warranty') || request('parent')) | @endif
                                     Technician: {{ $selectedTechnician->name }}
                                 @endif
                             @endif
@@ -316,7 +380,19 @@
                         </button>
                     </div>
                     @if(request('search'))
-                        <a href="{{ request()->url() }}{{ request('date_from') ? '?date_from=' . request('date_from') : '' }}{{ request('date_to') ? (request('date_from') ? '&' : '?') . 'date_to=' . request('date_to') : '' }}{{ request('status') ? (request('date_from') || request('date_to') ? '&' : '?') . 'status=' . request('status') : '' }}{{ request('category') ? (request('date_from') || request('date_to') || request('status') ? '&' : '?') . 'category=' . request('category') : '' }}{{ request('location') ? (request('date_from') || request('date_to') || request('status') || request('category') ? '&' : '?') . 'location=' . request('location') : '' }}{{ request('warranty') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') ? '&' : '?') . 'warranty=' . request('warranty') : '' }}{{ request('technician') ? (request('date_from') || request('date_to') || request('status') || request('category') || request('location') || request('warranty') ? '&' : '?') . 'technician=' . request('technician') : '' }}" 
+                        @php
+                            $searchParams = [];
+                            if (request('date_from')) $searchParams['date_from'] = request('date_from');
+                            if (request('date_to')) $searchParams['date_to'] = request('date_to');
+                            if (request('status')) $searchParams['status'] = request('status');
+                            if (request('category')) $searchParams['category'] = request('category');
+                            if (request('location')) $searchParams['location'] = request('location');
+                            if (request('parent')) $searchParams['parent'] = request('parent');
+                            if (request('warranty')) $searchParams['warranty'] = request('warranty');
+                            if (request('technician')) $searchParams['technician'] = request('technician');
+                            $searchUrl = request()->url() . (!empty($searchParams) ? '?' . http_build_query($searchParams) : '');
+                        @endphp
+                        <a href="{{ $searchUrl }}" 
                            class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -344,7 +420,10 @@
                 <div class="border rounded-lg p-4 bg-white shadow-sm">
                     <div class="mb-3">
                         <h3 class="font-bold text-gray-900">{{ $asset->name ?? '' }}</h3>
-                        <p class="text-sm text-gray-600">{{ $asset->serial_number ?? 'N/A' }}</p>
+                        <p class="text-sm text-gray-600">System SN: {{ $asset->serial_number ?? 'N/A' }}</p>
+                        @if($asset->manufacturer_serial_number)
+                            <p class="text-sm text-gray-600">Manufacturer SN: <span class="font-medium">{{ $asset->manufacturer_serial_number }}</span></p>
+                        @endif
                     </div>
                     
                     <div class="flex gap-3 mb-3">
@@ -397,6 +476,18 @@
                                 <p class="text-gray-500">Location:</p>
                                 <p class="font-medium">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</p>
                             </div>
+                            @if($asset->parent_id && $asset->parent)
+                            <div>
+                                <p class="text-gray-500">Parent Asset:</p>
+                                <p class="font-medium text-purple-700">{{ $asset->parent->name }}</p>
+                                <p class="text-xs text-gray-500">{{ $asset->parent->serial_number }}</p>
+                            </div>
+                            @elseif($asset->components && $asset->components->count() > 0)
+                            <div>
+                                <p class="text-gray-500">Components:</p>
+                                <p class="font-medium text-blue-700">{{ $asset->components->count() }} component(s)</p>
+                            </div>
+                            @endif
                             <div>
                                 <p class="text-gray-500">Created By:</p>
                                 <p class="font-medium">{{ $asset->creator ? $asset->creator->name : 'N/A' }}</p>
@@ -467,7 +558,9 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">Photo</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">QR Code</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serial Number</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer SN</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parent/Components</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
@@ -496,7 +589,41 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->name ?? '' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $asset->name ?? '' }}
+                                @if($asset->parent_id)
+                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded-full" title="Component of: {{ $asset->parent->name ?? 'N/A' }}">
+                                        Component
+                                    </span>
+                                @elseif($asset->components && $asset->components->count() > 0)
+                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full" title="{{ $asset->components->count() }} component(s)">
+                                        Parent ({{ $asset->components->count() }})
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                @if($asset->parent_id && $asset->parent)
+                                    <div class="flex flex-col">
+                                        <span class="text-purple-700 font-medium">Parent:</span>
+                                        <span class="text-gray-700">{{ $asset->parent->name }}</span>
+                                        <span class="text-xs text-gray-500">({{ $asset->parent->serial_number }})</span>
+                                    </div>
+                                @elseif($asset->components && $asset->components->count() > 0)
+                                    <div class="flex flex-col">
+                                        <span class="text-blue-700 font-medium">Components ({{ $asset->components->count() }}):</span>
+                                        <div class="mt-1 space-y-1">
+                                            @foreach($asset->components->take(3) as $component)
+                                                <span class="block text-xs text-gray-600">{{ $component->name }}</span>
+                                            @endforeach
+                                            @if($asset->components->count() > 3)
+                                                <span class="text-xs text-gray-500">+{{ $asset->components->count() - 3 }} more</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-gray-400 text-xs">Standalone</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px]
                                             @switch($asset->status)
@@ -676,50 +803,54 @@
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="5" class="column-toggle">
-                            <span>Purchase Price</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="6" class="column-toggle">
-                            <span>Category</span>
+                            <span>Parent/Components</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="7" class="column-toggle">
-                            <span>Location</span>
+                            <span>Purchase Price</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="8" class="column-toggle">
-                            <span>Status</span>
+                            <span>Category</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="9" class="column-toggle">
-                            <span>Model</span>
+                            <span>Location</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="10" class="column-toggle">
-                            <span>Specification</span>
+                            <span>Status</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="11" class="column-toggle">
-                            <span>Vendor</span>
+                            <span>Model</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="12" class="column-toggle">
-                            <span>Purchase Date</span>
+                            <span>Specification</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="13" class="column-toggle">
-                            <span>Warranty Period</span>
+                            <span>Vendor</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="14" class="column-toggle">
-                            <span>Lifespan (Yrs)</span>
+                            <span>Purchase Date</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="15" class="column-toggle">
-                            <span>End of Lifespan Date</span>
+                            <span>Warranty Period</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="16" class="column-toggle">
+                            <span>Lifespan (Yrs)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="17" class="column-toggle">
+                            <span>End of Lifespan Date</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" checked data-column="18" class="column-toggle">
                             <span>Acquisition Doc</span>
                         </label>
                     </div>
@@ -738,6 +869,8 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">QR Code</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Asset Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Serial Number</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Manufacturer SN</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Parent/Components</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
@@ -778,8 +911,43 @@
                             </div>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->name ?? '' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{ $asset->name ?? '' }}
+                            @if($asset->parent_id)
+                                <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">Component</span>
+                            @elseif($asset->components && $asset->components->count() > 0)
+                                <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Parent ({{ $asset->components->count() }})</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap font-bold">{{ $asset->serial_number ?? '' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            @if($asset->manufacturer_serial_number)
+                                <span class="font-medium">{{ $asset->manufacturer_serial_number }}</span>
+                            @else
+                                <span class="text-gray-400 text-xs">N/A</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            @if($asset->parent_id && $asset->parent)
+                                <div class="flex flex-col">
+                                    <span class="text-purple-700 font-medium text-xs">Parent:</span>
+                                    <span class="text-gray-700 text-xs">{{ $asset->parent->name }}</span>
+                                    <span class="text-xs text-gray-500">{{ $asset->parent->serial_number }}</span>
+                                </div>
+                            @elseif($asset->components && $asset->components->count() > 0)
+                                <div class="flex flex-col">
+                                    <span class="text-blue-700 font-medium text-xs">Components ({{ $asset->components->count() }}):</span>
+                                    @foreach($asset->components->take(2) as $component)
+                                        <span class="text-xs text-gray-600">{{ $component->name }}</span>
+                                    @endforeach
+                                    @if($asset->components->count() > 2)
+                                        <span class="text-xs text-gray-500">+{{ $asset->components->count() - 2 }} more</span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-gray-400 text-xs">Standalone</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->category->name ?? '' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>

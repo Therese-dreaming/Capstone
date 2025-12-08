@@ -17,7 +17,7 @@ class AssetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Asset::with(['category', 'location', 'vendor', 'creator']);
+        $query = Asset::with(['category', 'location', 'vendor', 'creator', 'parent', 'components']);
 
         // Apply filters if they exist
         if ($request->has('search') && $request->search) {
@@ -73,6 +73,26 @@ class AssetController extends Controller
             $query->where('purchase_date', '<=', $request->date_to);
         }
 
+        // Add parent filter
+        if ($request->has('parent') && $request->parent !== null && $request->parent !== '') {
+            $parentFilter = trim($request->input('parent'));
+            
+            if ($parentFilter === 'has_parent') {
+                // Show only assets that have a parent (components)
+                $query->whereNotNull('parent_id');
+            } elseif ($parentFilter === 'no_parent') {
+                // Show only assets without a parent (standalone or parent assets)
+                $query->whereNull('parent_id');
+            } elseif ($parentFilter === 'is_parent') {
+                // Show only assets that are parents (have components)
+                $query->whereNull('parent_id')
+                      ->whereHas('components');
+            } elseif (is_numeric($parentFilter) && $parentFilter > 0) {
+                // Filter by specific parent ID (convert to integer for proper comparison)
+                $query->where('parent_id', (int)$parentFilter);
+            }
+        }
+
         // Order by created_at descending (recently added first)
         $query->orderBy('created_at', 'desc');
 
@@ -82,6 +102,14 @@ class AssetController extends Controller
         // Get filter data
         $categories = Category::all();
         $locations = Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
+        
+        // Get parent assets for filter (only assets that don't have a parent themselves)
+        $parentAssets = Asset::whereNull('parent_id')
+            ->where('status', '!=', 'DISPOSED')
+            ->where('status', '!=', 'LOST')
+            ->with(['category', 'location'])
+            ->orderBy('name')
+            ->get();
 
         // Calculate lifespan and other metrics for each asset
         $assets->getCollection()->transform(function ($asset) {
@@ -153,7 +181,7 @@ class AssetController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('asset-list', compact('assets', 'categories', 'locations', 'technicians'));
+        return view('asset-list', compact('assets', 'categories', 'locations', 'technicians', 'parentAssets'));
     }
 
     private function getLifeStatus($remainingLife, $totalLifespan)
@@ -203,7 +231,19 @@ class AssetController extends Controller
                 'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
                 'acquisition_document' => 'nullable|file|mimes:jpeg,png,jpg,gif,pdf|max:10240',
                 'quantity' => 'nullable|integer|min:1|max:100',
+                'parent_id' => 'nullable|exists:assets,id',
+                'manufacturer_serial_number' => 'nullable|string|max:255|unique:assets,manufacturer_serial_number',
             ]);
+
+            // Prevent deep nesting - assets can only be one level deep (parent components only)
+            if (!empty($validated['parent_id'])) {
+                $parentAsset = Asset::find($validated['parent_id']);
+                if ($parentAsset && $parentAsset->parent_id) {
+                    return redirect()->back()
+                        ->withErrors(['parent_id' => 'Cannot assign parent. Assets can only be one level deep (parent components only).'])
+                        ->withInput();
+                }
+            }
 
             // For non-registered assets, use the dynamic status passed from repair request
             // Don't override the status - it should already be set correctly based on repair status
@@ -319,12 +359,21 @@ class AssetController extends Controller
         $vendors = \App\Models\Vendor::orderBy('name')->get();
         $locations = \App\Models\Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
         
+        // Get all assets that can be parents (excluding disposed and lost assets, and assets that already have a parent)
+        // This allows components to be assigned to parent assets, but prevents nesting beyond one level
+        $parentAssets = \App\Models\Asset::where('status', '!=', 'DISPOSED')
+            ->where('status', '!=', 'LOST')
+            ->whereNull('parent_id')
+            ->with(['category', 'location'])
+            ->orderBy('name')
+            ->get();
+        
         // Check if this is coming from a non-registered asset context
         $fromNonRegistered = $request->has('from_non_registered') && $request->from_non_registered;
         $status = $request->get('status', '');
         $repairRequestId = $request->get('repair_request_id', '');
         
-        return view('add-asset', compact('categories', 'vendors', 'locations', 'fromNonRegistered', 'status', 'repairRequestId'));
+        return view('add-asset', compact('categories', 'vendors', 'locations', 'parentAssets', 'fromNonRegistered', 'status', 'repairRequestId'));
     }
 
     public function qrList(Request $request)
@@ -934,7 +983,23 @@ class AssetController extends Controller
         $categories = Category::all();
         $vendors = \App\Models\Vendor::orderBy('name')->get();
         $locations = \App\Models\Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
-        return view('assets.edit', compact('asset', 'categories', 'vendors', 'locations'));
+        
+        // Get all assets that can be parents (excluding disposed and lost assets, and assets that already have a parent)
+        // Also exclude the current asset itself to prevent self-referencing
+        $parentAssets = \App\Models\Asset::where('status', '!=', 'DISPOSED')
+            ->where('status', '!=', 'LOST')
+            ->whereNull('parent_id')
+            ->where('id', '!=', $asset->id) // Exclude current asset
+            ->with(['category', 'location'])
+            ->orderBy('name')
+            ->get();
+        
+        // If the current asset has a parent, add it to the list so it can be displayed
+        if ($asset->parent_id && $asset->parent) {
+            $parentAssets->push($asset->parent);
+        }
+        
+        return view('assets.edit', compact('asset', 'categories', 'vendors', 'locations', 'parentAssets'));
     }
 
     public function update(Request $request, Asset $asset)
@@ -951,6 +1016,8 @@ class AssetController extends Controller
             'vendor_id' => 'required|exists:vendors,id',
             'purchase_date' => 'required|date',
             'warranty_period' => 'required|date',
+            'manufacturer_serial_number' => 'nullable|string|max:255',
+            'parent_id' => 'nullable|exists:assets,id',
         ];
 
         // Only validate fields that are present and different from current values
@@ -958,6 +1025,10 @@ class AssetController extends Controller
         $fieldsToUpdate = [];
         foreach ($validationRules as $field => $rules) {
             if ($request->has($field) && $request->get($field) != $asset->$field) {
+                // Special handling for manufacturer_serial_number to ensure uniqueness
+                if ($field === 'manufacturer_serial_number') {
+                    $rules = 'nullable|string|max:255|unique:assets,manufacturer_serial_number,' . $asset->id;
+                }
                 $fieldsToValidate[$field] = $rules;
                 $fieldsToUpdate[] = $field;
             }

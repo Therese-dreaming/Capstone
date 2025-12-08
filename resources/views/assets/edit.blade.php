@@ -33,10 +33,6 @@
             @csrf
             @method('PUT')
 
-            <form action="{{ auth()->check() && auth()->user()->group_id === 4 ? route('custodian.assets.update', $asset->id) : route('assets.update', $asset->id) }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                @method('PUT')
-
             <!-- Error Messages -->
             @if ($errors->any())
                 <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
@@ -237,12 +233,60 @@
                             <!-- Serial Number field (Read-only) -->
                             <div class="mb-4">
                                 <label class="block text-gray-700 text-sm font-medium mb-2" for="serial_number">
-                                    Serial Number
+                                    System Serial Number
                                 </label>
                                 <div class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
                                     {{ $asset->serial_number }}
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">Serial numbers are automatically generated and cannot be modified</p>
+                                <p class="text-xs text-gray-500 mt-1">System serial numbers are automatically generated and cannot be modified</p>
+                            </div>
+
+                            <!-- Manufacturer Serial Number field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="manufacturer_serial_number">
+                                    Manufacturer Serial Number (Optional)
+                                </label>
+                                <input type="text" name="manufacturer_serial_number" id="manufacturer_serial_number" 
+                                       value="{{ old('manufacturer_serial_number', $asset->manufacturer_serial_number) }}" 
+                                       placeholder="Enter manufacturer's serial number if available"
+                                       class="w-full px-4 py-3 border @error('manufacturer_serial_number') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
+                                @error('manufacturer_serial_number')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                                <p class="text-xs text-gray-500 mt-1">Enter the serial number provided by the manufacturer (e.g., for RAM modules, hard drives, etc.)</p>
+                            </div>
+
+                            <!-- Parent Asset field -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-medium mb-2" for="parentAssetSearch">
+                                    Parent Asset (Optional)
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="parentAssetSearch"
+                                           class="w-full px-4 py-3 border @error('parent_id') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                                           placeholder="Type to search for a parent asset (e.g., PC-001, Server-A)"
+                                           autocomplete="off"
+                                           value="{{ old('parent_id', $asset->parent_id) ? ($asset->parent ? $asset->parent->name . ' (' . $asset->parent->serial_number . ')' : ($parentAssets->firstWhere('id', old('parent_id', $asset->parent_id))?->name . ' (' . $parentAssets->firstWhere('id', old('parent_id', $asset->parent_id))?->serial_number . ')' )) : '' }}">
+                                    <input type="hidden" name="parent_id" id="parentAssetId" value="{{ old('parent_id', $asset->parent_id) }}">
+                                    <div id="parentAssetAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
+                                        <!-- Suggestions will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <div>
+                                            <p class="text-xs text-blue-700 font-medium">Use this to link components (e.g., RAM, Hard Drive) to their parent asset (e.g., PC, Server)</p>
+                                            <p class="text-xs text-blue-600 mt-1">Example: Type to search and select a PC as the parent when adding RAM or Hard Drive components</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                @error('parent_id')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                                <p class="text-xs text-gray-500 mt-1">Leave blank if this is a standalone asset. Components cannot have components.</p>
                             </div>
 
                             <!-- Model field -->
@@ -519,8 +563,167 @@
         });
     }
 
+    // Initialize parent asset autocomplete functionality
+    function initializeParentAssetAutocomplete() {
+        const parentAssetInput = document.getElementById('parentAssetSearch');
+        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
+        const parentAssetIdInput = document.getElementById('parentAssetId');
+
+        if (!parentAssetInput || !parentAssetAutocomplete || !parentAssetIdInput) {
+            return;
+        }
+
+        // All parent assets data from server
+        const allParentAssets = @json($parentAssets->map(function($parent) {
+            return [
+                'id' => $parent->id, 
+                'name' => $parent->name,
+                'serial_number' => $parent->serial_number,
+                'location' => $parent->location->full_location ?? 'N/A'
+            ];
+        })->values());
+
+        let searchTimeout;
+
+        parentAssetInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length === 0) {
+                hideParentAssetAutocomplete();
+                parentAssetIdInput.value = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                filterParentAssets(query, allParentAssets);
+            }, 200);
+        });
+
+        // Handle keyboard navigation
+        parentAssetInput.addEventListener('keydown', function(e) {
+            const suggestions = parentAssetAutocomplete.querySelectorAll('.parent-asset-suggestion-item');
+            const activeSuggestion = parentAssetAutocomplete.querySelector('.parent-asset-suggestion-item.active');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!activeSuggestion) {
+                    suggestions[0]?.classList.add('active');
+                } else {
+                    const nextSuggestion = activeSuggestion.nextElementSibling;
+                    if (nextSuggestion) {
+                        activeSuggestion.classList.remove('active');
+                        nextSuggestion.classList.add('active');
+                        nextSuggestion.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (activeSuggestion) {
+                    const prevSuggestion = activeSuggestion.previousElementSibling;
+                    if (prevSuggestion) {
+                        activeSuggestion.classList.remove('active');
+                        prevSuggestion.classList.add('active');
+                        prevSuggestion.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        activeSuggestion.classList.remove('active');
+                    }
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (activeSuggestion) {
+                    activeSuggestion.click();
+                }
+            } else if (e.key === 'Escape') {
+                hideParentAssetAutocomplete();
+            }
+        });
+
+        // Hide autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!parentAssetInput.contains(e.target) && !parentAssetAutocomplete.contains(e.target)) {
+                hideParentAssetAutocomplete();
+            }
+        });
+    }
+
+    function filterParentAssets(query, allParentAssets) {
+        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
+        if (!parentAssetAutocomplete) return;
+
+        // Filter parent assets that match the query (search by name, serial number, or location)
+        const matches = allParentAssets.filter(parent => 
+            parent.name.toLowerCase().includes(query) ||
+            parent.serial_number.toLowerCase().includes(query) ||
+            parent.location.toLowerCase().includes(query)
+        );
+
+        displayParentAssetSuggestions(matches);
+    }
+
+    function displayParentAssetSuggestions(parentAssets) {
+        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
+        if (!parentAssetAutocomplete) return;
+
+        parentAssetAutocomplete.innerHTML = '';
+        
+        if (parentAssets.length === 0) {
+            parentAssetAutocomplete.innerHTML = `
+                <div class="px-3 py-2 text-sm text-gray-500">
+                    No parent assets found. Try a different search term.
+                </div>
+            `;
+        } else {
+            parentAssets.slice(0, 50).forEach(parent => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'parent-asset-suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0';
+                suggestionItem.innerHTML = `
+                    <div class="font-medium text-gray-900">${parent.name}</div>
+                    <div class="text-xs text-gray-500">${parent.serial_number} - ${parent.location}</div>
+                `;
+                suggestionItem.dataset.parentId = parent.id;
+                suggestionItem.dataset.parentName = `${parent.name} (${parent.serial_number})`;
+                suggestionItem.addEventListener('click', () => selectParentAsset(parent));
+                parentAssetAutocomplete.appendChild(suggestionItem);
+            });
+
+            if (parentAssets.length > 50) {
+                const moreItem = document.createElement('div');
+                moreItem.className = 'px-3 py-2 text-xs text-gray-400 italic';
+                moreItem.textContent = `+ ${parentAssets.length - 50} more results. Refine your search.`;
+                parentAssetAutocomplete.appendChild(moreItem);
+            }
+        }
+        
+        parentAssetAutocomplete.classList.remove('hidden');
+    }
+
+    function selectParentAsset(parent) {
+        const parentAssetInput = document.getElementById('parentAssetSearch');
+        const parentAssetIdInput = document.getElementById('parentAssetId');
+        
+        if (!parentAssetInput || !parentAssetIdInput) return;
+
+        parentAssetInput.value = `${parent.name} (${parent.serial_number})`;
+        parentAssetIdInput.value = parent.id;
+        
+        hideParentAssetAutocomplete();
+    }
+
+    function hideParentAssetAutocomplete() {
+        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
+        if (!parentAssetAutocomplete) return;
+
+        parentAssetAutocomplete.classList.add('hidden');
+        parentAssetAutocomplete.querySelectorAll('.parent-asset-suggestion-item').forEach(item => {
+            item.classList.remove('active');
+        });
+    }
+
     // Add JS for acquisition document preview and validation
     document.addEventListener('DOMContentLoaded', function() {
+        initializeParentAssetAutocomplete();
         const acquisitionInput = document.getElementById('acquisition_document');
         const acquisitionPreviewContainer = document.getElementById('acquisitionPreviewContainer');
         const acquisitionPreview = document.getElementById('acquisitionPreview');
@@ -597,4 +800,15 @@
         }
     }
 </script>
+
+<style>
+    .parent-asset-suggestion-item.active {
+        background-color: #dbeafe;
+        font-weight: 500;
+    }
+
+    .parent-asset-suggestion-item:hover {
+        background-color: #f3f4f6;
+    }
+</style>
 @endsection

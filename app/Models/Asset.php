@@ -24,6 +24,7 @@ class Asset extends Model
         'lifespan',
         'photo',
         'serial_number',
+        'manufacturer_serial_number',
         'qr_code',
         'created_by',
         'purchase_price',
@@ -36,6 +37,7 @@ class Asset extends Model
         'end_of_life_date',
         'life_status',
         'acquisition_document',
+        'parent_id',
     ];
 
     protected $casts = [
@@ -130,5 +132,21 @@ class Asset extends Model
     public function nonRegisteredAsset()
     {
         return $this->hasOne(NonRegisteredAsset::class, 'linked_asset_id');
+    }
+
+    /**
+     * Get the parent asset (if this is a component/part)
+     */
+    public function parent()
+    {
+        return $this->belongsTo(Asset::class, 'parent_id');
+    }
+
+    /**
+     * Get all child assets/components that belong to this asset
+     */
+    public function components()
+    {
+        return $this->hasMany(Asset::class, 'parent_id');
     }
 }
