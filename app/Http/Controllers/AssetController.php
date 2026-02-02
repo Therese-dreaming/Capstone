@@ -6,12 +6,23 @@ use App\Models\Asset;
 use App\Models\Category;
 use App\Models\Location;
 use App\Models\AssetHistory;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use Illuminate\Support\Facades\Validator;
 
 class AssetController extends Controller
 {
@@ -1253,6 +1264,606 @@ class AssetController extends Controller
                 'error' => $e->getMessage()
             ]);
             // Don't throw the exception - this is not critical for asset creation
+        }
+    }
+
+    /**
+     * Download Excel template for bulk import
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Add school logo
+        $logoPath = public_path('images/logo-small.png');
+        if (file_exists($logoPath)) {
+            $drawing = new Drawing();
+            $drawing->setName('Logo');
+            $drawing->setDescription('School Logo');
+            $drawing->setPath($logoPath);
+            $drawing->setHeight(100);
+            $drawing->setCoordinates('A1');
+            $drawing->setOffsetX(10);
+            $drawing->setOffsetY(10);
+            $drawing->setWorksheet($sheet);
+        }
+
+        // School Header
+        $sheet->mergeCells('B1:F1');
+        $sheet->setCellValue('B1', 'PASIG CATHOLIC COLLEGE');
+        $sheet->getStyle('B1')->getFont()->setBold(true)->setSize(18)->getColor()->setRGB('960106');
+        $sheet->getStyle('B1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+        $sheet->mergeCells('B2:F2');
+        $sheet->setCellValue('B2', 'Asset Import Template');
+        $sheet->getStyle('B2')->getFont()->setBold(true)->setSize(15)->getColor()->setRGB('960106');
+        $sheet->getStyle('B2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+        $sheet->mergeCells('B3:F3');
+        $sheet->setCellValue('B3', 'Fill in the required fields below. Do not modify the header row.');
+        $sheet->getStyle('B3')->getFont()->setItalic(true)->setSize(10)->getColor()->setRGB('666666');
+        $sheet->getStyle('B3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+        // Set row heights for header (increased heights)
+        $sheet->getRowDimension(1)->setRowHeight(40);
+        $sheet->getRowDimension(2)->setRowHeight(35);
+        $sheet->getRowDimension(3)->setRowHeight(25);
+        $sheet->getRowDimension(4)->setRowHeight(10); // Empty row
+
+        // Column headers (row 5) with red theme
+        $headers = [
+            'A5' => 'Asset Name *',
+            'B5' => 'Model *',
+            'C5' => 'Specification *',
+            'D5' => 'Location *',
+            'E5' => 'Status *',
+            'F5' => 'Vendor Name *',
+            'G5' => 'Purchase Date (YYYY-MM-DD)',
+            'H5' => 'Purchase Price *',
+            'I5' => 'Warranty Date (YYYY-MM-DD)',
+            'J5' => 'Category *',
+            'K5' => 'Parent Asset Serial',
+            'L5' => 'Manufacturer Serial'
+        ];
+
+        foreach ($headers as $cell => $header) {
+            $sheet->setCellValue($cell, $header);
+            $sheet->getStyle($cell)->getFont()->setBold(true)->setSize(11);
+            $sheet->getStyle($cell)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setRGB('960106'); // Red theme matching project color
+            $sheet->getStyle($cell)->getFont()->getColor()->setRGB('FFFFFF');
+            $sheet->getStyle($cell)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getStyle($cell)->getBorders()->getAllBorders()
+                ->setBorderStyle(Border::BORDER_THIN);
+        }
+        
+        // Set header row height (increased)
+        $sheet->getRowDimension(5)->setRowHeight(35);
+
+        // Set column widths
+        $sheet->getColumnDimension('A')->setWidth(25);
+        $sheet->getColumnDimension('B')->setWidth(20);
+        $sheet->getColumnDimension('C')->setWidth(25);
+        $sheet->getColumnDimension('D')->setWidth(30);
+        $sheet->getColumnDimension('E')->setWidth(15);
+        $sheet->getColumnDimension('F')->setWidth(20);
+        $sheet->getColumnDimension('G')->setWidth(28); // Wider for "Purchase Date (YYYY-MM-DD)"
+        $sheet->getColumnDimension('H')->setWidth(15);
+        $sheet->getColumnDimension('I')->setWidth(28); // Wider for "Warranty Date (YYYY-MM-DD)"
+        $sheet->getColumnDimension('J')->setWidth(20);
+        $sheet->getColumnDimension('K')->setWidth(20);
+        $sheet->getColumnDimension('L')->setWidth(20);
+        
+        // Add sample data rows with increased height and alternating colors
+        for ($i = 6; $i <= 10; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(30); // Increased data row height
+            
+            // Add alternating row colors (light red)
+            if ($i % 2 == 0) {
+                $sheet->getStyle('A' . $i . ':L' . $i)->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('FFF0F0'); // Very light red
+            }
+            
+            // Add borders to sample rows
+            $sheet->getStyle('A' . $i . ':L' . $i)->getBorders()->getAllBorders()
+                ->setBorderStyle(Border::BORDER_THIN)
+                ->getColor()->setRGB('CCCCCC');
+        }
+        
+        // Set default row height for all rows beyond sample
+        $sheet->getDefaultRowDimension()->setRowHeight(30);
+
+        // Format date columns as TEXT to prevent Excel auto-conversion
+        // Set Purchase Date column (G) as text
+        $sheet->getStyle('G6:G505')->getNumberFormat()->setFormatCode('@');
+        // Set Warranty Date column (I) as text
+        $sheet->getStyle('I6:I505')->getNumberFormat()->setFormatCode('@');
+        
+        // Add sample format hints in first data row
+        $sheet->setCellValueExplicit('G6', '2024-01-15', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('I6', '2026-12-31', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->getStyle('G6')->getFont()->setItalic(true)->getColor()->setRGB('999999');
+        $sheet->getStyle('I6')->getFont()->setItalic(true)->getColor()->setRGB('999999');
+
+        // Add data validations
+        // 1. Status dropdown (E column) - IN USE or PULLED OUT only
+        $statusValidation = $sheet->getCell('E6')->getDataValidation();
+        $statusValidation->setType(DataValidation::TYPE_LIST);
+        $statusValidation->setErrorStyle(DataValidation::STYLE_STOP);
+        $statusValidation->setAllowBlank(false);
+        $statusValidation->setShowInputMessage(true);
+        $statusValidation->setShowErrorMessage(true);
+        $statusValidation->setShowDropDown(true);
+        $statusValidation->setErrorTitle('Invalid Status');
+        $statusValidation->setError('Status must be either "IN USE" or "PULLED OUT"');
+        $statusValidation->setPromptTitle('Select Status');
+        $statusValidation->setPrompt('Choose from the dropdown');
+        $statusValidation->setFormula1('"IN USE,PULLED OUT"');
+        
+        // Apply status validation to all rows (E6:E505 for 500 rows)
+        for ($row = 6; $row <= 505; $row++) {
+            $sheet->getCell('E' . $row)->setDataValidation(clone $statusValidation);
+        }
+
+        // 2. Location dropdown (D column) - all locations from database
+        $locations = Location::orderBy('building')->orderBy('floor')->orderBy('room_number')->get();
+        $locationList = $locations->pluck('full_location')->implode(',');
+        
+        if (!empty($locationList)) {
+            // Create a hidden sheet for location data if list is too long
+            if (strlen($locationList) > 255) {
+                $hiddenSheet = $spreadsheet->createSheet(2);
+                $hiddenSheet->setTitle('Location_Data');
+                $hiddenSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+                
+                $locRow = 1;
+                foreach ($locations as $location) {
+                    $hiddenSheet->setCellValue('A' . $locRow, $location->full_location);
+                    $locRow++;
+                }
+                
+                $locationValidation = $sheet->getCell('D6')->getDataValidation();
+                $locationValidation->setType(DataValidation::TYPE_LIST);
+                $locationValidation->setErrorStyle(DataValidation::STYLE_STOP);
+                $locationValidation->setAllowBlank(false);
+                $locationValidation->setShowInputMessage(true);
+                $locationValidation->setShowErrorMessage(true);
+                $locationValidation->setShowDropDown(true);
+                $locationValidation->setErrorTitle('Invalid Location');
+                $locationValidation->setError('Please select a valid location from the dropdown');
+                $locationValidation->setPromptTitle('Select Location');
+                $locationValidation->setPrompt('Choose from the dropdown');
+                $locationValidation->setFormula1('Location_Data!$A$1:$A$' . ($locRow - 1));
+                
+                for ($row = 6; $row <= 505; $row++) {
+                    $sheet->getCell('D' . $row)->setDataValidation(clone $locationValidation);
+                }
+            } else {
+                $locationValidation = $sheet->getCell('D6')->getDataValidation();
+                $locationValidation->setType(DataValidation::TYPE_LIST);
+                $locationValidation->setErrorStyle(DataValidation::STYLE_STOP);
+                $locationValidation->setAllowBlank(false);
+                $locationValidation->setShowInputMessage(true);
+                $locationValidation->setShowErrorMessage(true);
+                $locationValidation->setShowDropDown(true);
+                $locationValidation->setErrorTitle('Invalid Location');
+                $locationValidation->setError('Please select a valid location from the dropdown');
+                $locationValidation->setPromptTitle('Select Location');
+                $locationValidation->setPrompt('Choose from the dropdown');
+                $locationValidation->setFormula1('"' . $locationList . '"');
+                
+                for ($row = 6; $row <= 505; $row++) {
+                    $sheet->getCell('D' . $row)->setDataValidation(clone $locationValidation);
+                }
+            }
+        }
+
+        // 3. Purchase Price number validation (H column) - decimals allowed
+        $priceValidation = $sheet->getCell('H6')->getDataValidation();
+        $priceValidation->setType(DataValidation::TYPE_DECIMAL);
+        $priceValidation->setErrorStyle(DataValidation::STYLE_STOP);
+        $priceValidation->setAllowBlank(false);
+        $priceValidation->setShowInputMessage(true);
+        $priceValidation->setShowErrorMessage(true);
+        $priceValidation->setOperator(DataValidation::OPERATOR_GREATERTHAN);
+        $priceValidation->setFormula1('0');
+        $priceValidation->setErrorTitle('Invalid Price');
+        $priceValidation->setError('Price must be a positive number (decimals allowed)');
+        $priceValidation->setPromptTitle('Enter Purchase Price');
+        $priceValidation->setPrompt('Enter a positive number with or without decimals (e.g., 15000 or 15000.50)');
+        
+        for ($row = 6; $row <= 505; $row++) {
+            $sheet->getCell('H' . $row)->setDataValidation(clone $priceValidation);
+        }
+
+        // 4. Category dropdown (J column) - all categories from database
+        $categories = Category::orderBy('name')->get();
+        $categoryList = $categories->pluck('name')->implode(',');
+        
+        if (!empty($categoryList)) {
+            // Create a hidden sheet for category data if list is too long
+            if (strlen($categoryList) > 255) {
+                // Check if hidden sheet already exists, if not create it
+                $hiddenSheetIndex = $spreadsheet->getSheetCount();
+                $categoryHiddenSheet = $spreadsheet->createSheet($hiddenSheetIndex);
+                $categoryHiddenSheet->setTitle('Category_Data');
+                $categoryHiddenSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+                
+                $catRow = 1;
+                foreach ($categories as $category) {
+                    $categoryHiddenSheet->setCellValue('A' . $catRow, $category->name);
+                    $catRow++;
+                }
+                
+                $categoryValidation = $sheet->getCell('J6')->getDataValidation();
+                $categoryValidation->setType(DataValidation::TYPE_LIST);
+                $categoryValidation->setErrorStyle(DataValidation::STYLE_STOP);
+                $categoryValidation->setAllowBlank(false);
+                $categoryValidation->setShowInputMessage(true);
+                $categoryValidation->setShowErrorMessage(true);
+                $categoryValidation->setShowDropDown(true);
+                $categoryValidation->setErrorTitle('Invalid Category');
+                $categoryValidation->setError('Please select a valid category from the dropdown');
+                $categoryValidation->setPromptTitle('Select Category');
+                $categoryValidation->setPrompt('Choose from the dropdown');
+                $categoryValidation->setFormula1('Category_Data!$A$1:$A$' . ($catRow - 1));
+                
+                for ($row = 6; $row <= 505; $row++) {
+                    $sheet->getCell('J' . $row)->setDataValidation(clone $categoryValidation);
+                }
+            } else {
+                $categoryValidation = $sheet->getCell('J6')->getDataValidation();
+                $categoryValidation->setType(DataValidation::TYPE_LIST);
+                $categoryValidation->setErrorStyle(DataValidation::STYLE_STOP);
+                $categoryValidation->setAllowBlank(false);
+                $categoryValidation->setShowInputMessage(true);
+                $categoryValidation->setShowErrorMessage(true);
+                $categoryValidation->setShowDropDown(true);
+                $categoryValidation->setErrorTitle('Invalid Category');
+                $categoryValidation->setError('Please select a valid category from the dropdown');
+                $categoryValidation->setPromptTitle('Select Category');
+                $categoryValidation->setPrompt('Choose from the dropdown');
+                $categoryValidation->setFormula1('"' . $categoryList . '"');
+                
+                for ($row = 6; $row <= 505; $row++) {
+                    $sheet->getCell('J' . $row)->setDataValidation(clone $categoryValidation);
+                }
+            }
+        }
+
+        // Instructions sheet
+        $instructionSheet = $spreadsheet->createSheet(1);
+        $instructionSheet->setTitle('Instructions');
+        
+        $instructionSheet->setCellValue('A1', 'Import Instructions');
+        $instructionSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        
+        $instructions = [
+            '',
+            'Field Descriptions:',
+            '• Asset Name * - The name of the asset (required)',
+            '• Model * - Model number or name (required)',
+            '• Specification * - Technical specifications (required)',
+            '• Location * - Select from dropdown (required) - All valid locations are pre-populated',
+            '• Status * - Select from dropdown: "IN USE" or "PULLED OUT" (required)',
+            '• Vendor Name * - Name of the vendor/supplier (required)',
+            '• Purchase Date - Date in YYYY-MM-DD format (e.g., 2004-10-15)',
+            '• Purchase Price * - Positive number with decimals allowed (required, validated)',
+            '• Warranty Date - Warranty expiration date in YYYY-MM-DD format (e.g., 2026-12-31)',
+            '• Category * - Select from dropdown (required) - All valid categories are pre-populated',
+            '• Parent Asset Serial - Serial number of parent asset (optional, for components)',
+            '• Manufacturer Serial - Serial number from manufacturer (optional)',
+            '',
+            'Important Notes:',
+            '• Fields marked with * are required',
+            '• System will auto-generate serial numbers',
+            '• Use dropdown menus for Status, Location, and Category - typing may cause errors',
+            '• Dates must be in YYYY-MM-DD format (e.g., 2004-10-15 or 2026-12-31)',
+            '• Purchase Price must be a positive number (decimals allowed)',
+            '• Maximum 500 assets per import',
+            '• Use the exact column headers - do not modify them',
+            '• Red cells in dropdowns indicate validation errors',
+        ];
+        
+        $row = 2;
+        foreach ($instructions as $instruction) {
+            $instructionSheet->setCellValue('A' . $row, $instruction);
+            if (strpos($instruction, '•') === 0 || strpos($instruction, 'Field') === 0 || strpos($instruction, 'Important') === 0) {
+                $instructionSheet->getStyle('A' . $row)->getFont()->setBold(strpos($instruction, ':') !== false);
+            }
+            $row++;
+        }
+        
+        $instructionSheet->getColumnDimension('A')->setWidth(80);
+
+        // Create the writer and download
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'Asset_Import_Template_' . date('Y-m-d') . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer->save('php://output');
+        exit;
+    }
+
+    /**
+     * Import assets from Excel file
+     */
+    public function importExcel(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'excel_file' => 'required|file|mimes:xlsx,xls|max:10240'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid file. Please upload a valid Excel file.',
+                    'errors' => $validator->errors()->all()
+                ], 422);
+            }
+
+            $file = $request->file('excel_file');
+            $spreadsheet = IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray();
+
+            // Remove header rows (first 5 rows)
+            $dataRows = array_slice($rows, 5);
+            
+            // Filter out empty rows
+            $dataRows = array_filter($dataRows, function($row) {
+                return !empty(array_filter($row));
+            });
+
+            if (empty($dataRows)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data found in the Excel file.'
+                ], 422);
+            }
+
+            if (count($dataRows) > 500) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Maximum 500 assets allowed per import. Your file contains ' . count($dataRows) . ' rows.'
+                ], 422);
+            }
+
+            $importedCount = 0;
+            $errors = [];
+
+            foreach ($dataRows as $index => $row) {
+                $rowNum = $index + 6; // Actual row number in Excel (accounting for header rows)
+                
+                try {
+                    // Parse row data
+                    $assetName = trim($row[0] ?? '');
+                    $model = trim($row[1] ?? '');
+                    $specification = trim($row[2] ?? '');
+                    $locationName = trim($row[3] ?? '');
+                    $status = trim($row[4] ?? '');
+                    $vendorName = trim($row[5] ?? '');
+                    $purchaseDate = trim($row[6] ?? '');
+                    $purchasePrice = trim($row[7] ?? '');
+                    $warrantyDate = trim($row[8] ?? '');
+                    $categoryName = trim($row[9] ?? '');
+                    $parentSerial = trim($row[10] ?? '');
+                    $manufacturerSerial = trim($row[11] ?? '');
+
+                    // Validate required fields
+                    $missingFields = [];
+                    if (empty($assetName)) $missingFields[] = 'Asset Name';
+                    if (empty($model)) $missingFields[] = 'Model';
+                    if (empty($specification)) $missingFields[] = 'Specification';
+                    if (empty($locationName)) $missingFields[] = 'Location';
+                    if (empty($status)) $missingFields[] = 'Status';
+                    if (empty($vendorName)) $missingFields[] = 'Vendor Name';
+                    if (empty($purchasePrice)) $missingFields[] = 'Purchase Price';
+                    if (empty($categoryName)) $missingFields[] = 'Category';
+                    
+                    if (!empty($missingFields)) {
+                        $errors[] = [
+                            'row' => $rowNum,
+                            'field' => implode(', ', $missingFields),
+                            'message' => 'Missing required field(s): ' . implode(', ', $missingFields)
+                        ];
+                        continue;
+                    }
+
+                    // Validate Purchase Price is numeric
+                    if (!is_numeric($purchasePrice) || $purchasePrice <= 0) {
+                        $errors[] = [
+                            'row' => $rowNum,
+                            'field' => 'Purchase Price',
+                            'message' => "Invalid Purchase Price '{$purchasePrice}'. Must be a positive number."
+                        ];
+                        continue;
+                    }
+
+                    // Validate Purchase Date format if provided
+                    if (!empty($purchaseDate)) {
+                        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $purchaseDate)) {
+                            $errors[] = [
+                                'row' => $rowNum,
+                                'field' => 'Purchase Date',
+                                'message' => "Invalid Purchase Date '{$purchaseDate}'. Must be in YYYY-MM-DD format (e.g., 2024-01-15)."
+                            ];
+                            continue;
+                        }
+                        // Validate it's a real date
+                        $dateParts = explode('-', $purchaseDate);
+                        if (!checkdate($dateParts[1], $dateParts[2], $dateParts[0])) {
+                            $errors[] = [
+                                'row' => $rowNum,
+                                'field' => 'Purchase Date',
+                                'message' => "Invalid Purchase Date '{$purchaseDate}'. Not a valid calendar date."
+                            ];
+                            continue;
+                        }
+                    }
+
+                    // Validate Warranty Date format if provided
+                    if (!empty($warrantyDate)) {
+                        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $warrantyDate)) {
+                            $errors[] = [
+                                'row' => $rowNum,
+                                'field' => 'Warranty Date',
+                                'message' => "Invalid Warranty Date '{$warrantyDate}'. Must be in YYYY-MM-DD format (e.g., 2026-12-31)."
+                            ];
+                            continue;
+                        }
+                        // Validate it's a real date
+                        $dateParts = explode('-', $warrantyDate);
+                        if (!checkdate($dateParts[1], $dateParts[2], $dateParts[0])) {
+                            $errors[] = [
+                                'row' => $rowNum,
+                                'field' => 'Warranty Date',
+                                'message' => "Invalid Warranty Date '{$warrantyDate}'. Not a valid calendar date."
+                            ];
+                            continue;
+                        }
+                    }
+
+                    // Validate status
+                    if (!in_array(strtoupper($status), ['IN USE', 'PULLED OUT'])) {
+                        $errors[] = [
+                            'row' => $rowNum,
+                            'field' => 'Status',
+                            'message' => "Invalid Status '{$status}'. Must be 'IN USE' or 'PULLED OUT'."
+                        ];
+                        continue;
+                    }
+
+                    // Find or create vendor
+                    $vendor = Vendor::firstOrCreate(['name' => $vendorName]);
+
+                    // Find location - search by matching the full location string
+                    $location = Location::get()->first(function($loc) use ($locationName) {
+                        return $loc->full_location === $locationName;
+                    });
+                    
+                    if (!$location) {
+                        $errors[] = [
+                            'row' => $rowNum,
+                            'field' => 'Location',
+                            'message' => "Location '{$locationName}' not found. Please select from dropdown."
+                        ];
+                        continue;
+                    }
+
+                    // Find category
+                    $category = Category::where('name', $categoryName)->first();
+                    if (!$category) {
+                        $errors[] = [
+                            'row' => $rowNum,
+                            'field' => 'Category',
+                            'message' => "Category '{$categoryName}' not found. Please select from dropdown."
+                        ];
+                        continue;
+                    }
+
+                    // Find parent asset if specified
+                    $parentId = null;
+                    if (!empty($parentSerial)) {
+                        $parent = Asset::where('serial_number', $parentSerial)->first();
+                        if (!$parent) {
+                            $errors[] = [
+                                'row' => $rowNum,
+                                'field' => 'Parent Asset Serial',
+                                'message' => "Parent asset with serial '{$parentSerial}' not found."
+                            ];
+                            continue;
+                        }
+                        $parentId = $parent->id;
+                    }
+
+                    // Create asset
+                    $asset = new Asset();
+                    $asset->name = $assetName;
+                    $asset->model = $model;
+                    $asset->specification = $specification;
+                    $asset->location_id = $location->id;
+                    $asset->status = strtoupper($status);
+                    $asset->vendor_id = $vendor->id;
+                    $asset->purchase_date = !empty($purchaseDate) ? $purchaseDate : null;
+                    $asset->purchase_price = $purchasePrice;
+                    $asset->warranty_period = !empty($warrantyDate) ? $warrantyDate : null;
+                    $asset->category_id = $category->id;
+                    $asset->parent_id = $parentId;
+                    $asset->manufacturer_serial_number = !empty($manufacturerSerial) ? $manufacturerSerial : null;
+                    $asset->created_by = auth()->id();
+                    $asset->save();
+
+                    // Generate QR code
+                    Storage::disk('public')->makeDirectory('qrcodes');
+
+                    $qrCode = new QrCode(json_encode([
+                        'id' => $asset->id,
+                        'serial_number' => $asset->serial_number
+                    ]));
+
+                    $writer = new PngWriter();
+                    $result = $writer->write($qrCode);
+
+                    $qrPath = 'qrcodes/asset-' . $asset->id . '.png';
+
+                    if (Storage::disk('public')->put($qrPath, $result->getString())) {
+                        $asset->update(['qr_code' => $qrPath]);
+                    }
+
+                    $importedCount++;
+
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'row' => $rowNum,
+                        'field' => 'System Error',
+                        'message' => $e->getMessage()
+                    ];
+                    \Log::error("Excel import error on row $rowNum: " . $e->getMessage());
+                }
+            }
+
+            // Format errors for display
+            $formattedErrors = array_map(function($error) {
+                if (is_array($error)) {
+                    return "Row {$error['row']} - {$error['field']}: {$error['message']}";
+                }
+                return $error;
+            }, $errors);
+
+            if ($importedCount === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No assets were imported due to validation errors.',
+                    'errors' => $formattedErrors
+                ], 422);
+            }
+
+            $message = "Successfully imported $importedCount asset(s)";
+            if (!empty($errors)) {
+                $message .= ". " . count($errors) . " row(s) failed validation.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'count' => $importedCount,
+                'errors' => $formattedErrors
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Excel import error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while importing: ' . $e->getMessage()
+            ], 500);
         }
     }
 

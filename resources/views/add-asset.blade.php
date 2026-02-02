@@ -79,20 +79,101 @@
                 <span class="text-sm md:text-base text-yellow-700">Maximum file size allowed is 10MB</span>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                <!-- Left Column -->
-                <div class="space-y-6">
-                    <div class="pb-3 mb-6 border-b border-gray-200">
-                        <h4 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
-                            <svg class="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            Basic Asset Information
-                        </h4>
-                        <p class="text-sm text-gray-500 mt-1">Essential details about the asset</p>
+    <!-- Excel Import Section -->
+    <div class="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <div class="bg-green-600 p-3 rounded-lg mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800">Bulk Import Assets</h3>
+                    <p class="text-sm text-gray-600">Import multiple assets at once using an Excel file</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Step 1: Download Template -->
+            <div class="bg-white rounded-lg p-4 border border-green-200">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 bg-green-100 rounded-full p-2 mr-3">
+                        <span class="text-green-700 font-bold text-sm">1</span>
                     </div>
-                        <div class="space-y-5">
-                            <div>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 mb-2">Download Template</h4>
+                        <p class="text-xs text-gray-600 mb-3">Download our Excel template with pre-formatted columns</p>
+                        <a href="{{ route('assets.download-template') }}" 
+                           class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Download Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Upload Filled Template -->
+            <div class="bg-white rounded-lg p-4 border border-green-200">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 bg-green-100 rounded-full p-2 mr-3">
+                        <span class="text-green-700 font-bold text-sm">2</span>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 mb-2">Upload Filled Template</h4>
+                        <p class="text-xs text-gray-600 mb-3">Fill the template and upload it here to import assets</p>
+                        <button type="button" onclick="document.getElementById('excelImportInput').click()"
+                                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Upload Excel File
+                        </button>
+                        <input type="file" id="excelImportInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelImport(this)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Instructions -->
+        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div class="text-xs text-blue-800">
+                    <p class="font-semibold mb-1">Important Notes:</p>
+                    <ul class="list-disc list-inside space-y-1 ml-2">
+                        <li>Download the template first to ensure correct formatting</li>
+                        <li>Do not modify the header row or column order</li>
+                        <li>Fill in all required fields marked with asterisk (*)</li>
+                        <li>System will auto-generate serial numbers for imported assets</li>
+                        <li>Maximum 500 assets per import</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Layout for Asset Information -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        <!-- Left Column -->
+        <div class="space-y-6">
+            <div class="pb-3 mb-6 border-b border-gray-200">
+                <h4 class="text-lg md:text-xl font-semibold text-gray-800 flex items-center">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Basic Asset Information
+                </h4>
+                <p class="text-sm text-gray-500 mt-1">Essential details about the asset</p>
+            </div>
+            
+            <div class="space-y-5">
+                        <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
                                 <input type="text" name="name" required value="{{ request('equipment') ?? old('name') }}" 
                                        class="w-full px-4 py-3 border @error('name') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200">
@@ -427,6 +508,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
             <!-- Action Buttons -->
             <div class="mt-10 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-4 justify-end">
@@ -1423,6 +1505,163 @@
                 submitButton.disabled = false;
             }
         }
+    }
+
+    // Handle Excel Import
+    function handleExcelImport(input) {
+        if (!input.files || input.files.length === 0) {
+            return;
+        }
+
+        const file = input.files[0];
+        const fileName = file.name;
+        const fileExt = fileName.split('.').pop().toLowerCase();
+
+        // Validate file extension
+        if (!['xlsx', 'xls'].includes(fileExt)) {
+            showNotification('Please upload a valid Excel file (.xlsx or .xls)', 'error');
+            input.value = '';
+            return;
+        }
+
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            showNotification('File size exceeds 10MB. Please upload a smaller file.', 'error');
+            input.value = '';
+            return;
+        }
+
+        // Show loading notification
+        const loadingNotification = showNotification('Processing Excel file...', 'info');
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('excel_file', file);
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+        // Upload file
+        fetch('{{ route("assets.import-excel") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let message = `Successfully imported ${data.count} asset(s)!`;
+                if (data.errors && data.errors.length > 0) {
+                    message += ` However, ${data.errors.length} row(s) had errors.`;
+                }
+                showNotification(message, 'success');
+                
+                // Show errors in a better formatted modal if there are any
+                if (data.errors && data.errors.length > 0) {
+                    setTimeout(() => {
+                        showImportErrors(data.errors, data.count);
+                    }, 500);
+                } else {
+                    // Redirect to assets page after 2 seconds if no errors
+                    setTimeout(() => {
+                        window.location.href = '{{ auth()->check() && auth()->user()->group_id === 4 ? route("custodian.assets.index") : route("assets.index") }}';
+                    }, 2000);
+                }
+            } else {
+                showNotification(data.message || 'Failed to import assets', 'error');
+                if (data.errors && data.errors.length > 0) {
+                    setTimeout(() => {
+                        showImportErrors(data.errors, 0);
+                    }, 500);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Import error:', error);
+            showNotification('An error occurred while importing the file', 'error');
+        })
+        .finally(() => {
+            input.value = ''; // Reset input
+        });
+    }
+
+    // Show import errors in a formatted modal
+    function showImportErrors(errors, successCount) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+        modal.innerHTML = `
+            <div class="relative top-20 mx-auto p-6 border w-11/12 max-w-4xl shadow-lg rounded-lg bg-white">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b">
+                    <h3 class="text-xl font-bold text-gray-800">Import Results</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    ${successCount > 0 ? `
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-green-700 font-medium">Successfully imported ${successCount} asset(s)</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-red-700 font-medium mb-2">${errors.length} row(s) failed validation:</p>
+                                <div class="max-h-96 overflow-y-auto bg-white rounded border border-red-200 p-3">
+                                    <table class="min-w-full text-sm">
+                                        <thead class="bg-red-50 sticky top-0">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-semibold text-red-900 uppercase tracking-wider">Error</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-red-100">
+                                            ${errors.map((error, index) => `
+                                                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-red-50'}">
+                                                    <td class="px-3 py-2 text-gray-800">${error}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">
+                        Close
+                    </button>
+                    ${successCount > 0 ? `
+                        <button onclick="window.location.href='{{ auth()->check() && auth()->user()->group_id === 4 ? route("custodian.assets.index") : route("assets.index") }}'" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                            View Imported Assets
+                        </button>
+                    ` : `
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                            Fix and Try Again
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
 </script>
 

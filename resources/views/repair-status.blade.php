@@ -497,30 +497,64 @@
     </div>
 
     <!-- Start Repair Confirmation Modal -->
-    <div id="startRepairModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4"
+    <div id="startRepairModal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300"
     style="z-index: 60;">
-        <div class="p-4 sm:p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
-            <div class="mt-2 sm:mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100">
-                    <svg class="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 hover:scale-100">
+            <!-- Header with gradient background -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-white shadow-lg mb-4">
+                    <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 mt-3 sm:mt-4">Start Repair</h3>
-                <div class="mt-2 px-2 sm:px-7 py-3">
-                    <p class="text-xs sm:text-sm text-gray-500">Are you sure you want to start this repair?</p>
-                </div>
-                <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-4">
-                    <button onclick="closeStartRepairModal()" class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 text-sm sm:text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        No
-                    </button>
-                    <button type="button" id="confirmStartRepairBtn" onclick="confirmStartRepair()" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm sm:text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center justify-center">
-                        <span class="mr-2">Yes</span>
-                        <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white hidden" id="startRepairSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <h3 class="text-2xl font-bold text-white">Start Repair</h3>
+                <p class="text-blue-100 mt-2 text-sm">Record when you began working on this repair</p>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6">
+                <!-- Time Input Section -->
+                <div class="bg-gray-50 rounded-xl p-4 border-2 border-blue-100 hover:border-blue-300 transition-colors duration-200">
+                    <label for="repair_start_time" class="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                        <svg class="h-5 w-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
+                        Repair Start Time
+                    </label>
+                    <input type="datetime-local" id="repair_start_time" 
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium text-gray-700 transition-all duration-200 hover:border-blue-300"
+                           required>
+                    <p class="text-xs text-gray-500 mt-2 flex items-center">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        This will be recorded as the official start time
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col-reverse sm:flex-row gap-3 mt-6">
+                    <button onclick="closeStartRepairModal()" 
+                            class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5">
+                        <span class="flex items-center justify-center">
+                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Cancel
+                        </span>
+                    </button>
+                    <button type="button" id="confirmStartRepairBtn" onclick="confirmStartRepair()" 
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-md hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5">
+                        <span class="flex items-center justify-center">
+                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span id="startRepairBtnText">Start Repair</span>
+                            <svg class="animate-spin h-5 w-5 ml-2 text-white hidden" id="startRepairSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
                     </button>
                 </div>
             </div>
@@ -860,6 +894,17 @@
                 // Add these new functions for start repair modal
                 function startRepair(requestId) {
                     const modal = document.getElementById('startRepairModal');
+                    const timeInput = document.getElementById('repair_start_time');
+                    
+                    // Set default value to current time
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    timeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
                     // Store the requestId in a data attribute on the modal
@@ -883,6 +928,13 @@
                 function confirmStartRepair() {
                     const confirmBtn = document.getElementById('confirmStartRepairBtn');
                     const spinner = document.getElementById('startRepairSpinner');
+                    const timeInput = document.getElementById('repair_start_time');
+                    
+                    // Validate time input
+                    if (!timeInput.value) {
+                        alert('Please select a start time');
+                        return;
+                    }
                     
                     // Disable button and show spinner
                     confirmBtn.disabled = true;
@@ -895,15 +947,9 @@
                     const formData = new FormData();
                     formData.append('_method', 'PUT');
                     
-                    // Format current date and time
-                    const now = new Date();
-                    const dateStr = now.getFullYear() + '-' +
-                        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                        String(now.getDate()).padStart(2, '0');
-                    const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
-                        String(now.getMinutes()).padStart(2, '0');
-                    
-                    const timeStarted = `${dateStr} ${timeStr}`;
+                    // Get time from input and format it for the database
+                    const selectedTime = timeInput.value; // Format: YYYY-MM-DDTHH:MM
+                    const timeStarted = selectedTime.replace('T', ' '); // Convert to YYYY-MM-DD HH:MM
                     
                     formData.append('time_started', timeStarted);
                     formData.append('status', 'in_progress');

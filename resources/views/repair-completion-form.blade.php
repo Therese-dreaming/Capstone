@@ -13,8 +13,26 @@
             @csrf
             @method('PUT')
             <input type="hidden" name="status" value="completed">
-            <input type="hidden" name="completed_at" id="completedAt">
             <input type="hidden" name="serial_number" id="serialNumber" value="{{ $repairRequest->serial_number }}">
+
+            <!-- Completion Date/Time -->
+            <div class="space-y-2 bg-gradient-to-r from-green-50 to-emerald-50 p-5 rounded-xl border-2 border-green-200">
+                <label for="completed_at" class="flex items-center text-sm font-bold text-gray-800">
+                    <svg class="h-6 w-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Repair Completion Date & Time <span class="text-red-600 ml-1">*</span>
+                </label>
+                <input type="datetime-local" id="completedAt" name="completed_at" 
+                    class="w-full px-4 py-3 border-2 border-green-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base font-medium text-gray-700 bg-white transition-all duration-200 hover:border-green-400"
+                    required>
+                <p class="text-sm text-green-700 flex items-center mt-2">
+                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Specify when the repair was successfully completed
+                </p>
+            </div>
 
             <!-- Asset Information Display -->
             <div class="space-y-2">
@@ -73,26 +91,26 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <label class="text-sm font-semibold text-blue-900">Photo Evidence <span class="text-red-600">*</span></label>
+                    <label class="text-sm font-semibold text-blue-900">Photo Evidence <span class="text-gray-500">(Optional)</span></label>
                 </div>
-                <p class="text-xs text-blue-700 mb-3">Please upload before and after photos of the repair work</p>
+                <p class="text-xs text-blue-700 mb-3">Upload before and after photos of the repair work if available</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-blue-900 mb-2">Before Photos</label>
-                        <input type="file" name="before_photos[]" id="beforePhotosInput" multiple accept="image/*" required
+                        <input type="file" name="before_photos[]" id="beforePhotosInput" multiple accept="image/*"
                             class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                             onchange="previewImages(this, 'beforePhotosPreview')">
-                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each)</p>
+                        <p class="text-xs text-blue-600 mt-1">Optional - Upload 1 or more photos (Max 10MB each)</p>
                         <!-- Preview Container -->
                         <div id="beforePhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-blue-900 mb-2">After Photos</label>
-                        <input type="file" name="after_photos[]" id="afterPhotosInput" multiple accept="image/*" required
+                        <input type="file" name="after_photos[]" id="afterPhotosInput" multiple accept="image/*"
                             class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                             onchange="previewImages(this, 'afterPhotosPreview')">
-                        <p class="text-xs text-blue-600 mt-1">Upload 1 or more photos (Max 10MB each)</p>
+                        <p class="text-xs text-blue-600 mt-1">Optional - Upload 1 or more photos (Max 10MB each)</p>
                         <!-- Preview Container -->
                         <div id="afterPhotosPreview" class="grid grid-cols-2 gap-2 mt-3"></div>
                     </div>
@@ -296,22 +314,32 @@
 
         // Note: Delegate signature pad is initialized on-demand when delegate name is entered
 
-
-
-        // Set current timestamp
-        document.getElementById('completedAt').value = new Date().toISOString();
+        // Set current timestamp as default for completion time
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('completedAt').value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
         // Handle form submission
         document.getElementById('completionForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             // Validate required fields
+            const completedAt = document.getElementById('completedAt').value;
             const findings = document.getElementById('findings').value.trim();
             const remarks = document.getElementById('remarks').value.trim();
             const technicianSignature = technicianPad.toDataURL();
             const callerSignature = callerPad ? callerPad.toDataURL() : '';
             const callerPresent = (document.querySelector('input[name="caller_present"]:checked')?.value === 'yes');
             const delegateName = (document.getElementById('delegateNameInput')?.value || '').trim();
+
+            if (!completedAt) {
+                showMessage('Please select the completion date and time', 'error');
+                return;
+            }
 
             if (!findings) {
                 showMessage('Please enter the findings', 'error');
@@ -456,8 +484,20 @@
 
         @endif
 
-        // Validate required fields
-        const findings = document.getElementById('findings').value.trim();
+        // Use the completion time from the input field
+        const completedAtInput = document.getElementById('completedAt').value;
+        if (completedAtInput) {
+            formData.set('completed_at', completedAtInput.replace('T', ' '));
+        } else {
+            // Fallback to current time if not set
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            formData.set('completed_at', `${year}-${month}-${day} ${hours}:${minutes}`);
+        }lue.trim();
         const remarks = document.getElementById('remarks').value.trim();
 
         if (!findings) {

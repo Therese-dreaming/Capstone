@@ -49,6 +49,12 @@ Route::get('/api/search-faculty', [LabScheduleController::class, 'searchFaculty'
 Route::get('/assets/fetch/{serialNumber}', [AssetController::class, 'fetch'])
 	->name('assets.fetch');
 
+// Excel template download and import routes
+Route::get('/assets/download-template', [AssetController::class, 'downloadTemplate'])
+	->name('assets.download-template');
+Route::post('/assets/import-excel', [AssetController::class, 'importExcel'])
+	->name('assets.import-excel')->middleware('auth');
+
 // Redirect /asset-list to appropriate route based on user role
 Route::get('/asset-list', function () {
 	if (auth()->check()) {
