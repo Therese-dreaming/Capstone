@@ -66,6 +66,13 @@
         @auth
         <!-- Right side - User Profile and Notifications -->
         <div class="flex items-center space-x-3 sm:space-x-6">
+            <!-- User Manual Button -->
+            <button id="userManualBtn" class="text-white hover:text-gray-200 focus:outline-none" title="User Manual">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+            </button>
+
             <!-- User Profile Dropdown -->
             <div class="relative">
                 <button id="profileDropdown" class="flex items-center space-x-1 sm:space-x-3 hover:text-gray-200">
@@ -498,9 +505,344 @@
         </main>
     </div>
 
+    <!-- User Manual Modal -->
+    @auth
+    <div id="userManualModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">User Manual</h2>
+                <button id="closeManualBtn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Slider Container -->
+            <div class="flex-1 overflow-hidden relative">
+                <div id="sliderContainer" class="h-full transition-transform duration-500 ease-in-out flex">
+                    <!-- Slide 1: Asset List -->
+                    <div class="min-w-full h-full p-6 overflow-y-auto">
+                        <div class="max-w-5xl mx-auto">
+                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Asset List Module</h3>
+                            
+                            <!-- Screenshot Section -->
+                            <div class="mb-6">
+                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <img src="{{ asset('images/screenshots/asset-list.png') }}" 
+                                         alt="Asset List Screenshot" 
+                                         class="w-full rounded-lg shadow-lg"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div style="display:none;">
+                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="text-gray-500 text-sm">Screenshot: Add asset-list.png to public/images/screenshots/</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flow Description -->
+                            <div class="bg-white rounded-lg p-6 shadow-sm">
+                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
+                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li><strong>View Assets:</strong> Navigate to Asset List to view all registered assets in the system</li>
+                                    <li><strong>Add Asset:</strong> Click "Add Asset" button to manually register a new asset with details like name, category, location, and purchase information</li>
+                                    <li><strong>Import Assets:</strong> Use the "Import" feature to bulk upload assets from CSV/Excel file</li>
+                                    <li><strong>Edit/Update:</strong> Click on any asset to view details or edit information</li>
+                                    <li><strong>Track Status:</strong> Monitor asset status (Active, Under Repair, Disposed), warranty information, and location</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2: Repair Request -->
+                    <div class="min-w-full h-full p-6 overflow-y-auto">
+                        <div class="max-w-5xl mx-auto">
+                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Repair Request Module</h3>
+                            
+                            <!-- Screenshot Section -->
+                            <div class="mb-6">
+                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <img src="{{ asset('images/screenshots/repair-request.png') }}" 
+                                         alt="Repair Request Screenshot" 
+                                         class="w-full rounded-lg shadow-lg"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div style="display:none;">
+                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="text-gray-500 text-sm">Screenshot: Add repair-request.png to public/images/screenshots/</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flow Description -->
+                            <div class="bg-white rounded-lg p-6 shadow-sm">
+                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
+                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li><strong>Create Request:</strong> Fill out repair request form with asset details and issue description</li>
+                                    <li><strong>Set Priority:</strong> Assign urgency level (Low, Medium, High, Critical) based on impact</li>
+                                    <li><strong>Submit:</strong> System assigns request to available technician and notifies them</li>
+                                    <li><strong>Track Status:</strong> Monitor progress (Pending → In Progress → In Review → Completed)</li>
+                                    <li><strong>Signature:</strong> Provide digital signature upon completion to confirm repair quality</li>
+                                    <li><strong>Pull Out Option:</strong> If unrepairable, asset can be marked for pull-out/disposal</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3: Maintenance Scheduling -->
+                    <div class="min-w-full h-full p-6 overflow-y-auto">
+                        <div class="max-w-5xl mx-auto">
+                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Maintenance Scheduling Module</h3>
+                            
+                            <!-- Screenshot Section -->
+                            <div class="mb-6">
+                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <img src="{{ asset('images/screenshots/maintenance-scheduling.png') }}" 
+                                         alt="Maintenance Scheduling Screenshot" 
+                                         class="w-full rounded-lg shadow-lg"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div style="display:none;">
+                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="text-gray-500 text-sm">Screenshot: Add maintenance-scheduling.png to public/images/screenshots/</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flow Description -->
+                            <div class="bg-white rounded-lg p-6 shadow-sm">
+                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
+                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li><strong>Schedule Maintenance:</strong> Select laboratory and set maintenance date/time</li>
+                                    <li><strong>Define Scope:</strong> Specify maintenance type (Preventive, Corrective, Inspection)</li>
+                                    <li><strong>Assign Technician:</strong> System assigns based on availability and expertise</li>
+                                    <li><strong>View Upcoming:</strong> Calendar view shows all scheduled maintenance tasks</li>
+                                    <li><strong>Execute & Complete:</strong> Technician performs maintenance and updates status</li>
+                                    <li><strong>History Tracking:</strong> View all past maintenance activities for compliance and reporting</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4: Asset Scanner -->
+                    <div class="min-w-full h-full p-6 overflow-y-auto">
+                        <div class="max-w-5xl mx-auto">
+                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Asset Scanner Module</h3>
+                            
+                            <!-- Screenshot Section -->
+                            <div class="mb-6">
+                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <img src="{{ asset('images/screenshots/asset-scanner.png') }}" 
+                                         alt="Asset Scanner Screenshot" 
+                                         class="w-full rounded-lg shadow-lg"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div style="display:none;">
+                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="text-gray-500 text-sm">Screenshot: Add asset-scanner.png to public/images/screenshots/</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flow Description -->
+                            <div class="bg-white rounded-lg p-6 shadow-sm">
+                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
+                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li><strong>Access Scanner:</strong> Navigate to Asset Scanner from the sidebar menu</li>
+                                    <li><strong>Enable Camera:</strong> Grant camera permission when prompted by browser</li>
+                                    <li><strong>Scan QR Code:</strong> Point camera at asset's QR code to scan</li>
+                                    <li><strong>View Asset Details:</strong> System instantly displays complete asset information</li>
+                                    <li><strong>Quick Actions:</strong> Access repair request, maintenance scheduling, or edit options directly</li>
+                                    <li><strong>Bulk Scanning:</strong> Quickly verify multiple assets during inventory audits</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 5: Laboratory Login -->
+                    <div class="min-w-full h-full p-6 overflow-y-auto">
+                        <div class="max-w-5xl mx-auto">
+                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Laboratory Login Module</h3>
+                            
+                            <!-- Screenshot Section -->
+                            <div class="mb-6">
+                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <img src="{{ asset('images/screenshots/laboratory-login.png') }}" 
+                                         alt="Laboratory Login Screenshot" 
+                                         class="w-full rounded-lg shadow-lg"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div style="display:none;">
+                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="text-gray-500 text-sm">Screenshot: Add laboratory-login.png to public/images/screenshots/</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flow Description -->
+                            <div class="bg-white rounded-lg p-6 shadow-sm">
+                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
+                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li><strong>Select Laboratory:</strong> Choose the laboratory you want to log into</li>
+                                    <li><strong>Log In:</strong> Enter your credentials or scan your ID to check in</li>
+                                    <li><strong>Active Session:</strong> System tracks your login time and usage duration</li>
+                                    <li><strong>Monitor Capacity:</strong> View real-time laboratory occupancy and available seats</li>
+                                    <li><strong>Log Out:</strong> Check out when leaving to update availability</li>
+                                    <li><strong>Usage Reports:</strong> Administrators can generate lab utilization reports for analysis</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="p-6 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <!-- Previous Button -->
+                    <button id="prevSlideBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Slide Indicators -->
+                    <div class="flex space-x-2">
+                        <button class="slide-indicator w-3 h-3 rounded-full bg-red-800" data-slide="0"></button>
+                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="1"></button>
+                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="2"></button>
+                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="3"></button>
+                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="4"></button>
+                    </div>
+
+                    <!-- Next Button -->
+                    <button id="nextSlideBtn" class="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endauth
+
     @yield('scripts')
 
     <script>
+        // User Manual Modal and Slider functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userManualBtn = document.getElementById('userManualBtn');
+            const userManualModal = document.getElementById('userManualModal');
+            const closeManualBtn = document.getElementById('closeManualBtn');
+            const sliderContainer = document.getElementById('sliderContainer');
+            const prevSlideBtn = document.getElementById('prevSlideBtn');
+            const nextSlideBtn = document.getElementById('nextSlideBtn');
+            const slideIndicators = document.querySelectorAll('.slide-indicator');
+
+            let currentSlide = 0;
+            const totalSlides = 5;
+
+            function updateSlider() {
+                sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+                
+                // Update indicators
+                slideIndicators.forEach((indicator, index) => {
+                    if (index === currentSlide) {
+                        indicator.classList.remove('bg-gray-300');
+                        indicator.classList.add('bg-red-800');
+                    } else {
+                        indicator.classList.remove('bg-red-800');
+                        indicator.classList.add('bg-gray-300');
+                    }
+                });
+
+                // Update button states
+                prevSlideBtn.disabled = currentSlide === 0;
+                nextSlideBtn.disabled = currentSlide === totalSlides - 1;
+            }
+
+            // Open modal
+            if (userManualBtn) {
+                userManualBtn.addEventListener('click', function() {
+                    userManualModal.classList.remove('hidden');
+                    currentSlide = 0;
+                    updateSlider();
+                });
+            }
+
+            // Close modal
+            if (closeManualBtn) {
+                closeManualBtn.addEventListener('click', function() {
+                    userManualModal.classList.add('hidden');
+                });
+            }
+
+            // Close on backdrop click
+            if (userManualModal) {
+                userManualModal.addEventListener('click', function(e) {
+                    if (e.target === userManualModal) {
+                        userManualModal.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !userManualModal.classList.contains('hidden')) {
+                    userManualModal.classList.add('hidden');
+                }
+            });
+
+            // Previous slide
+            if (prevSlideBtn) {
+                prevSlideBtn.addEventListener('click', function() {
+                    if (currentSlide > 0) {
+                        currentSlide--;
+                        updateSlider();
+                    }
+                });
+            }
+
+            // Next slide
+            if (nextSlideBtn) {
+                nextSlideBtn.addEventListener('click', function() {
+                    if (currentSlide < totalSlides - 1) {
+                        currentSlide++;
+                        updateSlider();
+                    }
+                });
+            }
+
+            // Slide indicators
+            slideIndicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', function() {
+                    currentSlide = index;
+                    updateSlider();
+                });
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (!userManualModal.classList.contains('hidden')) {
+                    if (e.key === 'ArrowLeft' && currentSlide > 0) {
+                        currentSlide--;
+                        updateSlider();
+                    } else if (e.key === 'ArrowRight' && currentSlide < totalSlides - 1) {
+                        currentSlide++;
+                        updateSlider();
+                    }
+                }
+            });
+        });
+
         // Combined sidebar and navigation functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Sidebar functionality
