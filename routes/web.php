@@ -16,6 +16,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\LabScheduleController;
 use App\Http\Controllers\NonRegisteredAssetController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\BorrowingController;
 use Illuminate\Support\Facades\Route;
 
 // Root route and public routes should be OUTSIDE any middleware
@@ -263,6 +264,27 @@ Route::middleware(['auth'])->group(function () {
 		Route::get('/scanner', function () {
 			return view('scanner');
 		})->name('scanner');
+
+		// Asset Borrowing System Routes
+		Route::prefix('borrowing')->name('borrowing.')->group(function () {
+			Route::get('/dashboard', [BorrowingController::class, 'dashboard'])->name('dashboard');
+			Route::get('/create', [BorrowingController::class, 'create'])->name('create');
+			Route::post('/rfid-borrow', [BorrowingController::class, 'handleRfidBorrowing'])->name('rfid-borrow');
+			Route::post('/register-and-borrow', [BorrowingController::class, 'registerAndBorrow'])->name('register-and-borrow');
+			Route::post('/return', [BorrowingController::class, 'returnAsset'])->name('return');
+			Route::post('/mark-missing', [BorrowingController::class, 'markAsMissing'])->name('mark-missing');
+			Route::get('/history', [BorrowingController::class, 'history'])->name('history');
+			Route::get('/assets/category/{categoryId}', [BorrowingController::class, 'getAssetsByCategory'])->name('assets.by-category');
+			Route::get('/assets/all', [BorrowingController::class, 'allAssets'])->name('assets.all');
+			Route::get('/assets/available', [BorrowingController::class, 'availableAssets'])->name('assets.available');
+			Route::get('/assets/borrowed', [BorrowingController::class, 'borrowedAssets'])->name('assets.borrowed');
+			Route::get('/assets/add', [BorrowingController::class, 'createAsset'])->name('assets.create');
+			Route::post('/assets/add', [BorrowingController::class, 'storeAsset'])->name('assets.store');
+			
+			// Reports
+			Route::get('/reports/by-user', [BorrowingController::class, 'reportsByUser'])->name('reports.by-user');
+			Route::get('/reports/by-asset', [BorrowingController::class, 'reportsByAsset'])->name('reports.by-asset');
+		});
 	});
 
 	// Secretary Dashboard route (group_id = 2)

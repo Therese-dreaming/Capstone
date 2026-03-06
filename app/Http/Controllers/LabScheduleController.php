@@ -141,9 +141,9 @@ class LabScheduleController extends Controller
                 'message' => 'Time In recorded successfully'
             ];
 
-            // Add ongoing session warning if user has ANY ongoing session (from previous days)
-            if ($anyOngoingLog) {
-                // Check if the ongoing session is from a previous day
+            // Add ongoing session warning if user has ANY ongoing session in another laboratory
+            if ($anyOngoingLog && $anyOngoingLog->laboratory != $request->laboratory) {
+                // Check if the ongoing session is from a previous day or same day
                 $sessionDate = $anyOngoingLog->time_in->format('Y-m-d');
                 $today = now()->format('Y-m-d');
                 
@@ -154,6 +154,15 @@ class LabScheduleController extends Controller
                         'ongoing_time_in' => $anyOngoingLog->time_in,
                         'ongoing_purpose' => $anyOngoingLog->purpose,
                         'message' => "⚠️ You have an ongoing session in Laboratory {$anyOngoingLog->laboratory} since {$anyOngoingLog->time_in->format('M d, Y h:i A')}. Please notify the admin about your actual logout time for that session."
+                    ];
+                } else {
+                    // Same day warning
+                    $response['warning'] = [
+                        'has_ongoing_session' => true,
+                        'ongoing_laboratory' => $anyOngoingLog->laboratory,
+                        'ongoing_time_in' => $anyOngoingLog->time_in,
+                        'ongoing_purpose' => $anyOngoingLog->purpose,
+                        'message' => "⚠️ You are currently logged into Laboratory {$anyOngoingLog->laboratory} since {$anyOngoingLog->time_in->format('h:i A')}. You are now also logged into Laboratory {$request->laboratory}."
                     ];
                 }
             }
@@ -356,8 +365,26 @@ class LabScheduleController extends Controller
     {
         $laboratories = \App\Models\Laboratory::orderBy('number')->get();
         
-        return view('lab-schedule.logging', [
-            'laboratories' => $laboratories
+        // Get laboratories with ongoing sessions (time_out is null) with user info
+        $labsWithSessions = LabLog::with('user')
+            ->whereNull('time_out')
+            ->get()
+            ->groupBy('laboratory')
+            ->map(function ($logs) {
+                return $logs->map(function ($log) {
+                    return [
+                        'user_name' => $log->user->name ?? 'Unknown',
+                        'purpose' => $log->purpose,
+                        'time_in' => $log->time_in,
+                        'duration' => $log->time_in ? now()->diffForHumans($log->time_in, true) : 'N/A'
+                    ];
+                });
+            });
+        
+        return view('lab-schedule.login', [
+            'laboratories' => $laboratories,
+            'labsWithSessions' => $labsWithSessions->keys()->toArray(),
+            'labSessionDetails' => $labsWithSessions
         ]);
     }
 

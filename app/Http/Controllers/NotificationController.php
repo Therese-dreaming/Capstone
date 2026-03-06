@@ -9,14 +9,20 @@ use App\Models\RepairRequest;
 
 class NotificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         $notifications = auth()->user()->notifications()
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get();
 
-        return response()->json($notifications);
+        // Force JSON response even if Accept header is not set
+        return response()->json($notifications)->header('Content-Type', 'application/json');
     }
 
     public function all(Request $request)
@@ -157,31 +163,46 @@ class NotificationController extends Controller
 
     public function markAsRead($id)
     {
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         $notification = Notification::findOrFail($id);
         
         if ($notification->user_id === auth()->id()) {
             $notification->update(['is_read' => true]);
-            return response()->json(['success' => true]);
+            return response()->json(['success' => true])->header('Content-Type', 'application/json');
         }
 
-        return response()->json(['success' => false], 403);
+        return response()->json(['success' => false], 403)->header('Content-Type', 'application/json');
     }
 
     public function markAllAsRead()
     {
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         auth()->user()->notifications()
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true])->header('Content-Type', 'application/json');
     }
 
     public function getUnreadCount()
     {
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated', 'count' => 0], 401);
+        }
+
         $count = auth()->user()->notifications()
             ->where('is_read', false)
             ->count();
 
-        return response()->json(['count' => $count]);
+        return response()->json(['count' => $count])->header('Content-Type', 'application/json');
     }
 }

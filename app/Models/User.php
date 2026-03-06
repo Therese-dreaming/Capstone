@@ -87,6 +87,17 @@ class User extends Authenticatable
         return $this->hasMany(TechnicianEvaluation::class, 'evaluator_id');
     }
 
+    // Borrowing relationships
+    public function borrowings()
+    {
+        return $this->hasMany(Borrowing::class, 'borrower_id');
+    }
+
+    public function processedBorrowings()
+    {
+        return $this->hasMany(Borrowing::class, 'processed_by');
+    }
+
     /**
      * Get the appropriate default profile picture based on gender
      */

@@ -492,6 +492,14 @@
 
                         </div>
                     </div>
+
+                    <!-- Asset Borrowing System -->
+                    <a href="{{ route('borrowing.dashboard') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('borrowing.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        <span>Asset Borrowing</span>
+                    </a>
                     @endif
                     @endauth
                 </nav>

@@ -6,7 +6,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Blade;
 use App\Models\Notification;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +38,16 @@ class AppServiceProvider extends ServiceProvider
                     ->count();
             }
             $view->with('unreadCount', $unreadCount);
+        });
+
+        // QR Code Blade Directive
+        Blade::directive('qrcode', function ($expression) {
+            return "<?php
+                \$qrCode = new \Endroid\QrCode\QrCode($expression);
+                \$writer = new \Endroid\QrCode\Writer\PngWriter();
+                \$result = \$writer->write(\$qrCode);
+                echo \$result->getDataUri();
+            ?>";
         });
     }
 }
