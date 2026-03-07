@@ -59,103 +59,69 @@
 
         <!-- Users List -->
         @if($users->count() > 0)
-            <div class="space-y-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-6">
                 @foreach($users as $user)
-                    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
-                        <!-- User Header -->
-                        <div class="bg-gradient-to-r from-red-50 to-red-100 p-5 border-b border-gray-200">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-md">
-                                        <span class="text-white font-bold text-lg">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-lg font-bold text-gray-900">{{ $user->name }}</h3>
-                                        <div class="flex items-center gap-3 text-sm text-gray-600 mt-1">
-                                            @if($user->department)
-                                                <span class="flex items-center gap-1">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                    </svg>
-                                                    {{ $user->department }}
-                                                </span>
-                                            @endif
-                                            @if($user->rfid_number)
-                                                <span class="flex items-center gap-1 font-mono">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                                                    </svg>
-                                                    {{ $user->rfid_number }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex gap-3">
-                                    <div class="text-center px-4 py-2 bg-white rounded-lg shadow-sm">
-                                        <div class="text-2xl font-bold text-red-600">{{ $user->borrowings_count }}</div>
-                                        <div class="text-xs text-gray-600 font-semibold uppercase">Total</div>
-                                    </div>
-                                    <div class="text-center px-4 py-2 bg-white rounded-lg shadow-sm">
-                                        <div class="text-2xl font-bold text-orange-600">{{ $user->active_borrowings_count }}</div>
-                                        <div class="text-xs text-gray-600 font-semibold uppercase">Active</div>
-                                    </div>
-                                    <div class="text-center px-4 py-2 bg-white rounded-lg shadow-sm">
-                                        <div class="text-2xl font-bold text-green-600">{{ $user->returned_borrowings_count }}</div>
-                                        <div class="text-xs text-gray-600 font-semibold uppercase">Returned</div>
-                                    </div>
-                                </div>
+                    <a href="{{ route('borrowing.reports.user-detail', $user->id) }}" 
+                       class="group bg-white rounded-xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-300 transition-all duration-300 overflow-hidden hover:-translate-y-1 cursor-pointer">
+                        <!-- User Avatar Header -->
+                        <div class="bg-gradient-to-br from-red-500 to-red-600 p-6 flex items-center justify-center">
+                            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                <span class="text-red-600 font-bold text-3xl">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                             </div>
                         </div>
 
-                        <!-- Borrowing History -->
-                        <div class="p-5">
-                            <h4 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Recent Borrowing History</h4>
-                            @php
-                                $recentBorrowings = $user->borrowings()->with('items.borrowableAsset')->latest()->take(5)->get();
-                            @endphp
+                        <!-- User Info -->
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-900 text-base mb-2 text-center truncate" title="{{ $user->name }}">
+                                {{ $user->name }}
+                            </h3>
                             
-                            @if($recentBorrowings->count() > 0)
-                                <div class="space-y-2">
-                                    @foreach($recentBorrowings as $borrowing)
-                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <div class="flex-1">
-                                                <div class="flex items-center gap-2 mb-1">
-                                                    <div class="text-sm font-semibold text-gray-800">
-                                                        {{ $borrowing->items->count() }} item(s)
-                                                    </div>
-                                                    @if($borrowing->status === 'active')
-                                                        <span class="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">Active</span>
-                                                    @elseif($borrowing->status === 'returned')
-                                                        <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">Returned</span>
-                                                    @elseif($borrowing->status === 'missing')
-                                                        <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">Missing</span>
-                                                    @endif
-                                                </div>
-                                                <div class="text-xs text-gray-600">
-                                                    <span class="font-medium">Borrowed:</span> {{ $borrowing->borrow_date->format('M d, Y') }}
-                                                    @if($borrowing->actual_return_date)
-                                                        <span class="mx-1">•</span>
-                                                        <span class="font-medium">Returned:</span> {{ $borrowing->actual_return_date->format('M d, Y') }}
-                                                    @endif
-                                                </div>
-                                                <div class="text-xs text-gray-500 mt-1 truncate">
-                                                    <span class="font-medium">Purpose:</span> {{ $borrowing->purpose }}
-                                                </div>
-                                            </div>
-                                            <div class="ml-4 text-xs text-gray-500">
-                                                @foreach($borrowing->items as $item)
-                                                    <div class="truncate max-w-xs">• {{ $item->borrowableAsset->name }}</div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endforeach
+                            <!-- Details Grid -->
+                            <div class="space-y-2 mb-4">
+                                @if($user->department)
+                                    <div class="flex items-center gap-2 text-xs text-gray-600">
+                                        <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                        <span class="truncate">{{ $user->department }}</span>
+                                    </div>
+                                @endif
+                                
+                                @if($user->rfid_number)
+                                    <div class="flex items-center gap-2 text-xs text-gray-600 font-mono">
+                                        <svg class="w-4 h-4 text-purple-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                                        </svg>
+                                        <span class="truncate">{{ $user->rfid_number }}</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- Statistics -->
+                            <div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-200">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-red-600">{{ $user->borrowings_count }}</div>
+                                    <div class="text-xs text-gray-500 font-semibold">Total</div>
                                 </div>
-                            @else
-                                <p class="text-sm text-gray-500 italic">No borrowing history</p>
-                            @endif
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-orange-600">{{ $user->active_borrowings_count }}</div>
+                                    <div class="text-xs text-gray-500 font-semibold">Active</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-green-600">{{ $user->returned_borrowings_count }}</div>
+                                    <div class="text-xs text-gray-500 font-semibold">Returned</div>
+                                </div>
+                            </div>
+
+                            <!-- View Details Arrow -->
+                            <div class="mt-3 pt-3 border-t border-gray-200 flex items-center justify-center text-xs text-red-600 font-semibold group-hover:text-red-700">
+                                <span>View Details</span>
+                                <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
 

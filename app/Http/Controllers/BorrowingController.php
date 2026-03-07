@@ -647,4 +647,50 @@ class BorrowingController extends Controller
 
         return view('borrowing.reports.by-asset', compact('assets', 'categories'));
     }
+
+    /**
+     * Show detailed borrowing history for a specific user
+     */
+    public function userBorrowingDetail(User $user)
+    {
+        $borrowings = $user->borrowings()
+            ->with(['items.borrowableAsset.category', 'processedBy'])
+            ->orderBy('borrow_date', 'desc')
+            ->paginate(15);
+
+        $stats = [
+            'total' => $user->borrowings()->count(),
+            'active' => $user->borrowings()->where('status', 'active')->count(),
+            'returned' => $user->borrowings()->where('status', 'returned')->count(),
+            'missing' => $user->borrowings()->where('status', 'missing')->count(),
+        ];
+
+        return view('borrowing.reports.user-detail', compact('user', 'borrowings', 'stats'));
+    }
+
+    /**
+     * Show detailed borrowing history for a specific asset
+     */
+    public function assetBorrowingDetail(BorrowableAsset $asset)
+    {
+        $borrowingItems = $asset->borrowingItems()
+            ->with(['borrowing.borrower', 'borrowing.processedBy'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        $stats = [
+            'total' => $asset->borrowingItems()->count(),
+            'active' => $asset->borrowingItems()->whereHas('borrowing', function($q) {
+                $q->where('status', 'active');
+            })->count(),
+            'returned' => $asset->borrowingItems()->whereHas('borrowing', function($q) {
+                $q->where('status', 'returned');
+            })->count(),
+            'missing' => $asset->borrowingItems()->whereHas('borrowing', function($q) {
+                $q->where('status', 'missing');
+            })->count(),
+        ];
+
+        return view('borrowing.reports.asset-detail', compact('asset', 'borrowingItems', 'stats'));
+    }
 }

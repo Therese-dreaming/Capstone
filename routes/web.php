@@ -284,6 +284,8 @@ Route::middleware(['auth'])->group(function () {
 			// Reports
 			Route::get('/reports/by-user', [BorrowingController::class, 'reportsByUser'])->name('reports.by-user');
 			Route::get('/reports/by-asset', [BorrowingController::class, 'reportsByAsset'])->name('reports.by-asset');
+			Route::get('/reports/user/{user}', [BorrowingController::class, 'userBorrowingDetail'])->name('reports.user-detail');
+			Route::get('/reports/asset/{asset}', [BorrowingController::class, 'assetBorrowingDetail'])->name('reports.asset-detail');
 		});
 	});
 
