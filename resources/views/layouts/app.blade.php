@@ -4,95 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>IT Asset and Repair Management System</title>
-    <!-- Add Poppins font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>IT-ARMS - Asset Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
-            font-family: 'Poppins', sans-serif !important;
+            font-family: 'Inter', sans-serif !important;
         }
-
-        .menu-open {
-            display: block !important;
-        }
-
-        /* Desktop content shift when sidebar is open */
+        
         @media (min-width: 768px) {
             .content-shifted {
-                margin-left: 18rem !important; /* matches w-72 */
+                margin-left: 15rem !important;
             }
         }
-
-        /* Mobile sidebar */
+        
         @media (max-width: 768px) {
-            .sidebar-open {
-                transform: translateX(0) !important;
-            }
-
-            .sidebar-overlay {
-                display: block !important;
-                opacity: 0.5 !important;
-            }
-
             .content-shifted {
                 margin-left: 0 !important;
             }
         }
-
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        
+        .sidebar-link {
+            position: relative;
+        }
+        
+        .sidebar-link.active::before {
+            content: '';
+            position: absolute;
+            left: -16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: linear-gradient(to bottom, #dc2626, #ef4444);
+            border-radius: 0 2px 2px 0;
+        }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50">
     <!-- Header -->
-    <header class="bg-red-800 text-white py-4 px-6 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-lg">
-        <!-- Left side - Logo and Title -->
-        <div class="flex items-center space-x-4">
+    <header class="bg-white border-b border-gray-200 py-2.5 px-4 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
+        <div class="flex items-center space-x-3">
             @auth
-            @if(auth()->user()->group_id !== 4)
-            <button id="sidebarToggle" class="text-white focus:outline-none">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button id="sidebarToggle" class="text-gray-600 hover:text-gray-900 focus:outline-none p-1 rounded hover:bg-gray-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-            @endif
             @endauth
-            <a href="{{ auth()->check() ? (auth()->user()->group_id === 4 ? route('custodian.assets.index') : route('my.tasks')) : route('login') }}" class="flex items-center space-x-4">
-                <img src="{{ asset('images/logo-small.png') }}" alt="Logo" class="h-10 w-10">
-                <h1 class="text-xl font-bold uppercase hidden sm:block">IT Asset and Repair Management System</h1>
-                <h1 class="text-xl font-bold uppercase sm:hidden">IT-ARMS</h1>
+            <a href="{{ route('dashboard') }}" class="flex items-center space-x-2.5">
+                <img src="{{ asset('images/logo-small.png') }}" alt="Logo" class="h-8 w-8">
+                <div class="flex flex-col">
+                    <h1 class="text-sm font-semibold text-gray-800 hidden sm:block leading-tight">IT-ARMS</h1>
+                    <span class="text-xs text-gray-500 hidden sm:block leading-tight">Asset Management</span>
+                </div>
             </a>
         </div>
 
         @auth
-        <!-- Right side - User Profile and Notifications -->
-        <div class="flex items-center space-x-3 sm:space-x-6">
-            <!-- User Manual Button -->
-            <button id="userManualBtn" class="text-white hover:text-gray-200 focus:outline-none" title="User Manual">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-            </button>
-
+        <div class="flex items-center space-x-2 sm:space-x-4">
             <!-- User Profile Dropdown -->
             <div class="relative">
-                <button id="profileDropdown" class="flex items-center space-x-1 sm:space-x-3 hover:text-gray-200">
+                <button id="profileDropdown" class="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors">
                     @if(Auth::user()->getProfilePictureUrl())
-                    <img src="{{ Auth::user()->getProfilePictureUrl() }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
+                    <img src="{{ Auth::user()->getProfilePictureUrl() }}" alt="Profile" class="h-7 w-7 rounded-full object-cover border border-gray-200">
                     @else
-                    <img src="{{ asset('images/default-profile.png') }}" alt="Profile" class="h-8 w-8 rounded-full object-cover">
+                    <img src="{{ asset('images/default-profile.png') }}" alt="Profile" class="h-7 w-7 rounded-full object-cover border border-gray-200">
                     @endif
-                    <span class="hidden sm:inline">{{ Auth::user()->name ?? 'User Name' }}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span class="hidden sm:inline text-sm font-medium text-gray-700">{{ Auth::user()->name ?? 'User Name' }}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
 
-                <!-- Dropdown Menu -->
-                <div id="profileMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 text-gray-700 hidden z-50">
-                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-100">Edit Profile</a>
+                <div id="profileMenu" class="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 text-gray-700 hidden z-50">
+                    <a href="{{ route('profile.edit') }}" class="block px-3 py-2 text-sm hover:bg-gray-50 transition-colors">Edit Profile</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="block w-full text-left px-4 py-2 hover:bg-gray-100">
+                        <button type="submit" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors">
                             Logout
                         </button>
                     </form>
@@ -105,753 +109,334 @@
     </header>
 
     <!-- Sidebar overlay for mobile -->
-    @if(auth()->check() && auth()->user()->group_id !== 4)
     <div id="sidebarOverlay" class="fixed inset-0 bg-black opacity-0 pointer-events-none z-40 transition-opacity duration-300 ease-in-out md:hidden"></div>
-    @endif
 
-    <div class="flex pt-16">
+    <div class="flex pt-14">
         <!-- Sidebar -->
-        @if(auth()->check() && auth()->user()->group_id !== 4)
-        <aside id="sidebar" class="w-72 bg-red-800 text-white min-h-screen fixed left-0 top-16 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
-            <div class="p-4 pl-8">
-                <nav class="space-y-3 overflow-y-auto max-h-[calc(100vh-120px)]">
-                    @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
-                    <a href="{{ route('my.tasks') }}" class="font-bold flex items-center px-6 py-2.5 rounded-lg transition-colors duration-200 {{ request()->routeIs('my.tasks') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-white-500 hover:bg-red-50 hover:text-red-700' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        My Tasks
-                    </a>
-                    @endif
-
-                    @if(auth()->check() && auth()->user()->group_id === 3)
-                    <a href="{{ route('repair.request') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.request') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>Repair Request</span>
-                    </a>
-                    <a href="{{ route('repair.calls') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.calls') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>Repair Calls</span>
-                    </a>
-                    @php
-                        $pendingSignatureCount = \App\Models\RepairRequest::where('created_by', auth()->id())
-                            ->where(function($query) {
-                                $query->where('status', 'in_review')
-                                      ->orWhere(function($q) {
-                                          $q->whereIn('status', ['completed', 'pulled_out'])
-                                            ->whereNull('caller_signature')
-                                            ->whereNotNull('completed_at');
-                                      });
-                            })
-                            ->whereNull('caller_signature')
-                            ->whereNotNull('completed_at')
-                            ->count();
-                    @endphp
-                    <a href="{{ route('repair.pending-signature') }}" class="flex items-center justify-between px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.pending-signature') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        @auth
+        <aside id="sidebar" class="w-60 bg-white border-r border-gray-200 min-h-screen fixed left-0 top-14 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-sm">
+            <div class="p-4 h-[calc(100vh-3.5rem)] overflow-y-auto">
+                <nav class="space-y-6">
+                    <!-- Main Section -->
+                    <div class="space-y-1">
+                        <!-- My Tasks -->
+                        <a href="{{ route('my.tasks') }}" class="sidebar-link {{ request()->routeIs('my.tasks') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('my.tasks') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                             </svg>
-                            <span>Pending Signatures</span>
-                        </div>
-                        @if($pendingSignatureCount > 0)
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full {{ request()->routeIs('repair.pending-signature') ? 'bg-white text-red-600' : 'bg-red-600 text-white' }}">
-                                {{ $pendingSignatureCount }}
-                            </span>
-                        @endif
-                    </a>
-                    <a href="{{ route('lab.logging') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab.logging') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>Lab Logging</span>
-                    </a>
-                    @endif
+                            <span>My Tasks</span>
+                        </a>
 
-                    <!-- Admin and Staff Menu Items -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
-                    <!-- Dashboard - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3]))
-                    <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('dashboard') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        <span>Dashboard</span>
-                    </a>
-                    @endif
+                        <!-- Dashboard -->
+                        <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('dashboard') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            <span>Dashboard</span>
+                        </a>
 
-                    <!-- Secretary Dashboard - Show only to secretary -->
-                    @if(auth()->check() && auth()->user()->group_id === 2)
-                    <a href="{{ url('/secretary-dashboard') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('secretary-dashboard') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        <span>Secretary Dashboard</span>
-                    </a>
-                    @endif
+                        <!-- Notifications -->
+                        <a href="{{ route('notifications.all') }}" class="sidebar-link {{ request()->routeIs('notifications.*') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('notifications.*') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span>Notifications</span>
+                        </a>
+                    </div>
 
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
-                    <!-- Notifications - Accessible to all authenticated users -->
-                    <a href="{{ route('notifications.all') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('notifications.all') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span>Notifications</span>
-                    </a>
-
-                    <!-- My Performance Report - Show only to secretary -->
-                    @if(false)
-                    <a href="{{ route('secretary-performance') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('secretary-performance') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        <span>My Performance</span>
-                    </a>
-                    @endif
-                    @endif
-
-                    <!-- User Management - Hide from secretary -->
+                    <!-- System Section -->
                     @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
-                    <div class="space-y-1.5">
-                        <button onclick="toggleUserMenu()" class="w-full flex items-center px-4 py-1.5 text-[#D5999B] hover:bg-red-700 rounded-md text-sm">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    <div class="space-y-1">
+                        <div class="px-3 mt-6 mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">System</h3>
+                        </div>
+
+                        <!-- User Management -->
+                        <div class="space-y-1">
+                            <button onclick="toggleUserMenu()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all {{ request()->routeIs('users.*') || request()->routeIs('groups.*') ? 'bg-red-50 text-red-600' : '' }}">
+                                <div class="flex items-center space-x-2.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    <span>User Management</span>
+                                </div>
+                                <svg class="w-4 h-4 transition-transform" id="userMenuIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="userMenu" class="hidden ml-7 space-y-1 mt-1">
+                                <a href="{{ route('users.index') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('users.*') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('users.*') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                    <span>Users</span>
+                                </a>
+                                <a href="{{ route('groups.index') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('groups.*') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('groups.*') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                    <span>Groups</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Categories -->
+                        <a href="{{ route('categories.index') }}" class="sidebar-link {{ request()->routeIs('categories.*') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('categories.*') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
-                            <span>User Management</span>
-                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span>Categories</span>
+                        </a>
+
+                        <!-- Locations -->
+                        <a href="{{ route('locations.index') }}" class="sidebar-link {{ request()->routeIs('locations.*') || request()->routeIs('buildings.*') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('locations.*') || request()->routeIs('buildings.*') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Locations</span>
+                        </a>
+
+                        <!-- Vendors -->
+                        <a href="{{ route('vendors.index') }}" class="sidebar-link {{ request()->routeIs('vendors.*') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('vendors.*') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <span>Vendors</span>
+                        </a>
+                    </div>
+
+                    <!-- Assets Section -->
+                    <div class="space-y-1">
+                        <div class="px-3 mt-6 mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Assets</h3>
+                        </div>
+
+                        <!-- Asset Management -->
+                        <div class="space-y-1">
+                            <button onclick="toggleAssetMenu()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all {{ request()->routeIs('assets.*') || request()->routeIs('scanner') || request()->routeIs('qr.*') ? 'bg-red-50 text-red-600' : '' }}">
+                                <div class="flex items-center space-x-2.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    <span>Asset Management</span>
+                                    @if(Auth::user()->getTotalWarrantyIssues() > 0)
+                                        <span class="ml-1 bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-sm">
+                                            {{ Auth::user()->getTotalWarrantyIssues() }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <svg class="w-4 h-4 transition-transform" id="assetMenuIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="assetMenu" class="hidden ml-7 space-y-1 mt-1">
+                                <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('assets.*') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('assets.*') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                    <span>Asset List</span>
+                                    @if(Auth::user()->getTotalWarrantyIssues() > 0)
+                                        <span class="ml-auto bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-sm">
+                                            {{ Auth::user()->getTotalWarrantyIssues() }}
+                                        </span>
+                                    @endif
+                                </a>
+                                <a href="{{ route('scanner') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('scanner') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('scanner') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                    <span>Asset Scanner</span>
+                                </a>
+                                <a href="{{ route('qr.list') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('qr.*') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('qr.*') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                    <span>QR Code List</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Maintenance Section -->
+                    <div class="space-y-1">
+                        <div class="px-3 mt-6 mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Maintenance</h3>
+                        </div>
+
+                        <!-- Lab Maintenance -->
+                    <div class="space-y-1">
+                        <button onclick="toggleMaintenanceMenu()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all {{ request()->routeIs('maintenance.*') ? 'bg-red-50 text-red-600' : '' }}">
+                            <div class="flex items-center space-x-2.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>Lab Maintenance</span>
+                            </div>
+                            <svg class="w-4 h-4 transition-transform" id="maintenanceMenuIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
-                        <div id="userMenu" class="hidden ml-8 space-y-1.5">
-                            <a href="{{ route('users.index') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                View Users
+                        <div id="maintenanceMenu" class="hidden ml-7 space-y-1 mt-1">
+                            <a href="{{ route('maintenance.schedule') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('maintenance.schedule') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('maintenance.schedule') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Schedule Maintenance</span>
                             </a>
-                            <a href="{{ route('groups.index') }}" class="block py-1.5 px-4 text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1] rounded-md text-sm">
-                                View Groups
+                            <a href="{{ route('maintenance.upcoming') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('maintenance.upcoming') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('maintenance.upcoming') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Upcoming Maintenance</span>
+                            </a>
+                            <a href="{{ route('maintenance.pending-approval') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('maintenance.pending-approval') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('maintenance.pending-approval') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Pending Approval</span>
+                            </a>
+                            <a href="{{ route('maintenance.history') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('maintenance.history') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('maintenance.history') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Maintenance History</span>
                             </a>
                         </div>
                     </div>
-                    @endif
 
-                    <!-- Categories - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
-                    <a href="{{ route('categories.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('categories.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        <span>Categories</span>
-                    </a>
-                    @endif
+                    <!-- Services Section -->
+                    <div class="space-y-1">
+                        <div class="px-3 mt-6 mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Services</h3>
+                        </div>
 
-                    <!-- Locations - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
-                    <a href="{{ route('locations.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('locations.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span>Locations</span>
-                    </a>
-                    @endif
-
-
-                    <!-- Vendors - Hide from secretary -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
-                    <a href="{{ route('vendors.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('vendors.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <span>Vendors</span>
-                    </a>
-                    @endif
-
-                    <!-- Assets -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3]))
-                    <!-- Asset List -->
-                    @if(auth()->user()->group_id === 4)
-                        <a href="{{ route('custodian.assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('custodian.assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
-                            </svg>
-                            <span>Asset List</span>
-                            <div class="ml-auto flex space-x-1">
-                                @if(auth()->user()->getNavigationCount('warranty_expired') > 0)
-                                    <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expired Warranties">
-                                        {{ auth()->user()->getNavigationCount('warranty_expired') }}
-                                    </span>
-                                @endif
-                                @if(auth()->user()->getNavigationCount('warranty_expiring') > 0)
-                                    <span class="bg-orange-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expiring Warranties (30 days)">
-                                        {{ auth()->user()->getNavigationCount('warranty_expiring') }}
-                                    </span>
-                                @endif
-                            </div>
-                        </a>
-                    @else
-                        <a href="{{ route('assets.index') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
-                            </svg>
-                            <span>Asset List</span>
-                            <div class="ml-auto flex space-x-1">
-                                @if(auth()->user()->getNavigationCount('warranty_expired') > 0)
-                                    <span class="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expired Warranties">
-                                        {{ auth()->user()->getNavigationCount('warranty_expired') }}
-                                    </span>
-                                @endif
-                                @if(auth()->user()->getNavigationCount('warranty_expiring') > 0)
-                                    <span class="bg-orange-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Expiring Warranties (30 days)">
-                                        {{ auth()->user()->getNavigationCount('warranty_expiring') }}
-                                    </span>
-                                @endif
-                            </div>
-                        </a>
-                    @endif
-
-                    <!-- Asset Scanner -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [4]))
-                    <a href="{{ route('scanner') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('scanner') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                        </svg>
-                        <span>Asset Scanner</span>
-                    </a>
-                    @endif
-                    @endif
-
-                    <!-- Lab Maintenance -->
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
-                    <div class="space-y-1.5">
-                        <button onclick="toggleMaintenanceMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('maintenance.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            <span>Lab Maintenance</span>
-                            @if(auth()->user()->getNavigationCount('maintenance_scheduled') > 0)
-                                <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                                    {{ auth()->user()->getNavigationCount('maintenance_scheduled') }}
-                                </span>
-                            @else
-                                <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            @endif
-                        </button>
-                        <div id="maintenanceMenu" class="hidden ml-8 space-y-1.5">
-                            @if(auth()->check() && auth()->user()->group_id !== 2)
-                            <a href="{{ route('maintenance.schedule') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.schedule') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Schedule Maintenance
-                            </a>
-                            @endif
-                            <a href="{{ route('maintenance.upcoming') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.upcoming') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Upcoming Maintenance
-                            </a>
-                            @if(auth()->check() && auth()->user()->group_id !== 2)
-                            <a href="{{ route('maintenance.pending-approval') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.pending-approval') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                <div class="flex items-center justify-between w-full">
-                                    <span>Pending Approval</span>
-                                    @if(auth()->user()->getNavigationCount('maintenance_pending_approval') > 0)
-                                        <span class="bg-orange-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Tasks Pending Approval">
-                                            {{ auth()->user()->getNavigationCount('maintenance_pending_approval') }}
-                                        </span>
-                                    @endif
+                        <!-- Asset Repair -->
+                        <div class="space-y-1">
+                            <button onclick="toggleRepairMenu()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all {{ request()->routeIs('repair.*') || request()->routeIs('non-registered-assets.*') ? 'bg-red-50 text-red-600' : '' }}">
+                                <div class="flex items-center space-x-2.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                                    </svg>
+                                    <span>Asset Repair</span>
                                 </div>
-                            </a>
-                            @endif
-                            <a href="{{ route('maintenance.history') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('maintenance.history') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Maintenance History
-                            </a>
-                        </div>
-                    </div>
-                    @endif
-                    @endif
-                    @endauth
-
-                    @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [3, 4]))
-                    <!-- Asset Repair -->
-                    <div class="space-y-1.5">
-                        <button onclick="toggleRepairMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('repair.*') || request()->routeIs('non-registered-assets.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                                <svg class="w-4 h-4 transition-transform" id="repairMenuIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
-                            <span>Asset Repair</span>
-                            @if(auth()->user()->getNavigationCount('repair_pending') > 0)
-                                <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                                    {{ auth()->user()->getNavigationCount('repair_pending') }}
-                                </span>
-                            @else
-                                <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            @endif
                         </button>
-                        <div id="repairMenu" class="hidden ml-8 space-y-1.5">
-                            @if(auth()->check() && auth()->user()->group_id !== 2)
-                            <a href="{{ route('repair.request') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('repair.request') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Repair Request
+                        <div id="repairMenu" class="hidden ml-7 space-y-1 mt-1">
+                            <a href="{{ route('repair.request') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('repair.request') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('repair.request') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Repair Request</span>
                             </a>
-                            @endif
-                            <a href="{{ route('repair.status') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('repair.status') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Repair Status
+                            <a href="{{ route('repair.status') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('repair.status') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('repair.status') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Repair Status</span>
                             </a>
-                            <a href="{{ route('non-registered-assets.index') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('non-registered-assets.index') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                <div class="flex items-center justify-between w-full">
-                                    <span>Non-Registered Assets</span>
-                                    @if(auth()->user()->getNavigationCount('non_registered_pulled_out') > 0)
-                                        <span class="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center" title="Pulled Out Assets Not Yet Registered">
-                                            {{ auth()->user()->getNavigationCount('non_registered_pulled_out') }}
-                                        </span>
-                                    @endif
-                                </div>
+                            <a href="{{ route('non-registered-assets.index') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('non-registered-assets.*') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('non-registered-assets.*') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Non-Registered Assets</span>
                             </a>
-                            @if(auth()->check() && auth()->user()->group_id !== 2)
-                            <a href="{{ route('repair.completed') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('repair.completed') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Repair History
+                            <a href="{{ route('repair.completed') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('repair.completed') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('repair.completed') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Repair History</span>
                             </a>
-                            @endif
                         </div>
                     </div>
-                    @endif
-                    @endauth
 
-                    @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
                     <!-- Lab Schedule -->
-                    <div class="space-y-1.5">
-                        <button onclick="toggleLabScheduleMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('lab-schedule.*') || request()->routeIs('lab-history') || request()->routeIs('lab-logging') || request()->routeIs('lab.manualLogout') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span>Lab Schedule</span>
-                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="space-y-1">
+                        <button onclick="toggleLabScheduleMenu()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all {{ request()->routeIs('lab.*') || request()->routeIs('laboratories.*') ? 'bg-red-50 text-red-600' : '' }}">
+                            <div class="flex items-center space-x-2.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Lab Schedule</span>
+                            </div>
+                            <svg class="w-4 h-4 transition-transform" id="labScheduleMenuIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
-                        <div id="labScheduleMenu" class="hidden ml-8 space-y-1.5">
-                            <a href="{{ route('lab.logging') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('lab.logging') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Lab Logging
+                        <div id="labScheduleMenu" class="hidden ml-7 space-y-1 mt-1">
+                            <a href="{{ route('lab.logging') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('lab.logging') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('lab.logging') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Lab Logging</span>
                             </a>
-                            @if(auth()->check() && auth()->user()->group_id !== 3)
-                            <a href="{{ route('lab-schedule.history') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('lab-schedule.history') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Lab History
+                            <a href="{{ route('lab-schedule.history') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('lab-schedule.history') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('lab-schedule.history') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Lab History</span>
                             </a>
-                            @endif
-                            <a href="{{ route('lab.manualLogout') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('lab.manualLogout') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Manual Logout
+                            <a href="{{ route('lab.manualLogout') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('lab.manualLogout') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('lab.manualLogout') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Manual Logout</span>
                             </a>
-                            @if(auth()->check() && !in_array(auth()->user()->group_id, [2,3,4]))
-                            <a href="{{ route('laboratories.index') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('laboratories.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Laboratories
+                            <a href="{{ route('laboratories.index') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('laboratories.*') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('laboratories.*') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Laboratories</span>
                             </a>
-                            @endif
                         </div>
                     </div>
+                    </div>
                     @endif
-                    @endauth
 
-                    @auth
-                    @if(auth()->check() && !in_array(auth()->user()->group_id, [2, 3, 4]))
-                    <!-- View Reports -->
-                    <div class="space-y-1.5">
-                        <button onclick="toggleReportMenu()" class="w-full flex items-center px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('reports.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>View Reports</span>
-                            <svg class="w-3.5 h-3.5 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Analytics Section -->
+                    <div class="space-y-1">
+                        <div class="px-3 mt-6 mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Analytics</h3>
+                        </div>
+
+                        <!-- Reports -->
+                        <div class="space-y-1">
+                            <button onclick="toggleReportMenu()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all {{ request()->routeIs('reports.*') ? 'bg-red-50 text-red-600' : '' }}">
+                                <div class="flex items-center space-x-2.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span>Reports</span>
+                                </div>
+                                <svg class="w-4 h-4 transition-transform" id="reportMenuIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
-                        <div id="reportMenu" class="hidden ml-8 space-y-1.5">
-                            <a href="{{ route('reports.category') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.category') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Category-Based Report
+                        <div id="reportMenu" class="hidden ml-7 space-y-1 mt-1">
+                            <a href="{{ route('reports.category') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('reports.category') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('reports.category') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Category Report</span>
                             </a>
-                            <a href="{{ route('reports.location') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.location') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Location-Based Report
+                            <a href="{{ route('reports.location') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('reports.location') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('reports.location') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Location Report</span>
                             </a>
-                            <a href="{{ route('reports.vendor-analysis') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.vendor-analysis') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Vendor Analysis
+                            <a href="{{ route('reports.vendor-analysis') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('reports.vendor-analysis') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('reports.vendor-analysis') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Vendor Analysis</span>
                             </a>
-                            <a href="{{ route('reports.disposal-history') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.disposal-history') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Disposal History
+                            <a href="{{ route('reports.disposal-history') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('reports.disposal-history') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('reports.disposal-history') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Disposal History</span>
                             </a>
-                            <a href="{{ route('reports.procurement-history') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.procurement-history') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Procurement History
+                            <a href="{{ route('reports.procurement-history') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('reports.procurement-history') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('reports.procurement-history') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Procurement History</span>
                             </a>
-                            <a href="{{ route('reports.lab-usage') }}" class="block py-1.5 px-4 rounded-md text-sm {{ request()->routeIs('reports.lab-usage') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#676161] bg-[#E6E8EC] hover:bg-[#d0d2d6] active:bg-[#bbbdc1]' }}">
-                                Lab Usage
+                            <a href="{{ route('reports.lab-usage') }}" class="flex items-center space-x-2 py-2 px-3 rounded-md text-sm transition-all {{ request()->routeIs('reports.lab-usage') ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700' }}">
+                                <div class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('reports.lab-usage') ? 'bg-red-600' : 'bg-gray-400' }}"></div>
+                                <span>Lab Usage</span>
                             </a>
-
                         </div>
                     </div>
 
-                    <!-- Asset Borrowing System -->
-                    <a href="{{ route('borrowing.dashboard') }}" class="flex items-center space-x-2 px-4 py-1.5 rounded-md text-sm {{ request()->routeIs('borrowing.*') ? 'bg-red-600 text-white hover:bg-red-500' : 'text-[#D5999B] hover:bg-red-700' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                        <span>Asset Borrowing</span>
-                    </a>
-                    @endif
-                    @endauth
+                    <!-- Borrowing Section -->
+                    <div class="space-y-1">
+                        <div class="px-3 mt-6 mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Borrowing</h3>
+                        </div>
+
+                        <!-- Asset Borrowing -->
+                        <a href="{{ route('borrowing.dashboard') }}" class="sidebar-link {{ request()->routeIs('borrowing.*') ? 'active' : '' }} flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all {{ request()->routeIs('borrowing.*') ? 'bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            <span>Asset Borrowing</span>
+                        </a>
+                    </div>
                 </nav>
             </div>
         </aside>
         @endif
 
         <!-- Main Content -->
-        <main id="mainContent" class="w-full flex-1 transition-all duration-300 ease-in-out">
+        <main id="mainContent" class="w-full flex-1 transition-all duration-300 ease-in-out p-4 sm:p-5">
             @yield('content')
         </main>
     </div>
 
-    <!-- User Manual Modal -->
-    @auth
-    <div id="userManualModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">User Manual</h2>
-                <button id="closeManualBtn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Slider Container -->
-            <div class="flex-1 overflow-hidden relative">
-                <div id="sliderContainer" class="h-full transition-transform duration-500 ease-in-out flex">
-                    <!-- Slide 1: Asset List -->
-                    <div class="min-w-full h-full p-6 overflow-y-auto">
-                        <div class="max-w-5xl mx-auto">
-                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Asset List Module</h3>
-                            
-                            <!-- Screenshot Section -->
-                            <div class="mb-6">
-                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                    <img src="{{ asset('images/screenshots/asset-list.png') }}" 
-                                         alt="Asset List Screenshot" 
-                                         class="w-full rounded-lg shadow-lg"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;">
-                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <p class="text-gray-500 text-sm">Screenshot: Add asset-list.png to public/images/screenshots/</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Flow Description -->
-                            <div class="bg-white rounded-lg p-6 shadow-sm">
-                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
-                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li><strong>View Assets:</strong> Navigate to Asset List to view all registered assets in the system</li>
-                                    <li><strong>Add Asset:</strong> Click "Add Asset" button to manually register a new asset with details like name, category, location, and purchase information</li>
-                                    <li><strong>Import Assets:</strong> Use the "Import" feature to bulk upload assets from CSV/Excel file</li>
-                                    <li><strong>Edit/Update:</strong> Click on any asset to view details or edit information</li>
-                                    <li><strong>Track Status:</strong> Monitor asset status (Active, Under Repair, Disposed), warranty information, and location</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Slide 2: Repair Request -->
-                    <div class="min-w-full h-full p-6 overflow-y-auto">
-                        <div class="max-w-5xl mx-auto">
-                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Repair Request Module</h3>
-                            
-                            <!-- Screenshot Section -->
-                            <div class="mb-6">
-                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                    <img src="{{ asset('images/screenshots/repair-request.png') }}" 
-                                         alt="Repair Request Screenshot" 
-                                         class="w-full rounded-lg shadow-lg"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;">
-                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <p class="text-gray-500 text-sm">Screenshot: Add repair-request.png to public/images/screenshots/</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Flow Description -->
-                            <div class="bg-white rounded-lg p-6 shadow-sm">
-                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
-                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li><strong>Create Request:</strong> Fill out repair request form with asset details and issue description</li>
-                                    <li><strong>Set Priority:</strong> Assign urgency level (Low, Medium, High, Critical) based on impact</li>
-                                    <li><strong>Submit:</strong> System assigns request to available technician and notifies them</li>
-                                    <li><strong>Track Status:</strong> Monitor progress (Pending → In Progress → In Review → Completed)</li>
-                                    <li><strong>Signature:</strong> Provide digital signature upon completion to confirm repair quality</li>
-                                    <li><strong>Pull Out Option:</strong> If unrepairable, asset can be marked for pull-out/disposal</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Slide 3: Maintenance Scheduling -->
-                    <div class="min-w-full h-full p-6 overflow-y-auto">
-                        <div class="max-w-5xl mx-auto">
-                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Maintenance Scheduling Module</h3>
-                            
-                            <!-- Screenshot Section -->
-                            <div class="mb-6">
-                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                    <img src="{{ asset('images/screenshots/maintenance-scheduling.png') }}" 
-                                         alt="Maintenance Scheduling Screenshot" 
-                                         class="w-full rounded-lg shadow-lg"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;">
-                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <p class="text-gray-500 text-sm">Screenshot: Add maintenance-scheduling.png to public/images/screenshots/</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Flow Description -->
-                            <div class="bg-white rounded-lg p-6 shadow-sm">
-                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
-                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li><strong>Schedule Maintenance:</strong> Select laboratory and set maintenance date/time</li>
-                                    <li><strong>Define Scope:</strong> Specify maintenance type (Preventive, Corrective, Inspection)</li>
-                                    <li><strong>Assign Technician:</strong> System assigns based on availability and expertise</li>
-                                    <li><strong>View Upcoming:</strong> Calendar view shows all scheduled maintenance tasks</li>
-                                    <li><strong>Execute & Complete:</strong> Technician performs maintenance and updates status</li>
-                                    <li><strong>History Tracking:</strong> View all past maintenance activities for compliance and reporting</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Slide 4: Asset Scanner -->
-                    <div class="min-w-full h-full p-6 overflow-y-auto">
-                        <div class="max-w-5xl mx-auto">
-                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Asset Scanner Module</h3>
-                            
-                            <!-- Screenshot Section -->
-                            <div class="mb-6">
-                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                    <img src="{{ asset('images/screenshots/asset-scanner.png') }}" 
-                                         alt="Asset Scanner Screenshot" 
-                                         class="w-full rounded-lg shadow-lg"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;">
-                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <p class="text-gray-500 text-sm">Screenshot: Add asset-scanner.png to public/images/screenshots/</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Flow Description -->
-                            <div class="bg-white rounded-lg p-6 shadow-sm">
-                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
-                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li><strong>Access Scanner:</strong> Navigate to Asset Scanner from the sidebar menu</li>
-                                    <li><strong>Enable Camera:</strong> Grant camera permission when prompted by browser</li>
-                                    <li><strong>Scan QR Code:</strong> Point camera at asset's QR code to scan</li>
-                                    <li><strong>View Asset Details:</strong> System instantly displays complete asset information</li>
-                                    <li><strong>Quick Actions:</strong> Access repair request, maintenance scheduling, or edit options directly</li>
-                                    <li><strong>Bulk Scanning:</strong> Quickly verify multiple assets during inventory audits</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Slide 5: Laboratory Login -->
-                    <div class="min-w-full h-full p-6 overflow-y-auto">
-                        <div class="max-w-5xl mx-auto">
-                            <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">Laboratory Login Module</h3>
-                            
-                            <!-- Screenshot Section -->
-                            <div class="mb-6">
-                                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                    <img src="{{ asset('images/screenshots/laboratory-login.png') }}" 
-                                         alt="Laboratory Login Screenshot" 
-                                         class="w-full rounded-lg shadow-lg"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;">
-                                        <svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <p class="text-gray-500 text-sm">Screenshot: Add laboratory-login.png to public/images/screenshots/</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Flow Description -->
-                            <div class="bg-white rounded-lg p-6 shadow-sm">
-                                <p class="text-lg font-semibold text-red-800 mb-3">Module Flow:</p>
-                                <ol class="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li><strong>Select Laboratory:</strong> Choose the laboratory you want to log into</li>
-                                    <li><strong>Log In:</strong> Enter your credentials or scan your ID to check in</li>
-                                    <li><strong>Active Session:</strong> System tracks your login time and usage duration</li>
-                                    <li><strong>Monitor Capacity:</strong> View real-time laboratory occupancy and available seats</li>
-                                    <li><strong>Log Out:</strong> Check out when leaving to update availability</li>
-                                    <li><strong>Usage Reports:</strong> Administrators can generate lab utilization reports for analysis</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Navigation Controls -->
-            <div class="p-6 border-t border-gray-200">
-                <div class="flex items-center justify-between">
-                    <!-- Previous Button -->
-                    <button id="prevSlideBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <!-- Slide Indicators -->
-                    <div class="flex space-x-2">
-                        <button class="slide-indicator w-3 h-3 rounded-full bg-red-800" data-slide="0"></button>
-                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="1"></button>
-                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="2"></button>
-                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="3"></button>
-                        <button class="slide-indicator w-3 h-3 rounded-full bg-gray-300" data-slide="4"></button>
-                    </div>
-
-                    <!-- Next Button -->
-                    <button id="nextSlideBtn" class="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endauth
-
     @yield('scripts')
 
     <script>
-        // User Manual Modal and Slider functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const userManualBtn = document.getElementById('userManualBtn');
-            const userManualModal = document.getElementById('userManualModal');
-            const closeManualBtn = document.getElementById('closeManualBtn');
-            const sliderContainer = document.getElementById('sliderContainer');
-            const prevSlideBtn = document.getElementById('prevSlideBtn');
-            const nextSlideBtn = document.getElementById('nextSlideBtn');
-            const slideIndicators = document.querySelectorAll('.slide-indicator');
-
-            let currentSlide = 0;
-            const totalSlides = 5;
-
-            function updateSlider() {
-                sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
-                
-                // Update indicators
-                slideIndicators.forEach((indicator, index) => {
-                    if (index === currentSlide) {
-                        indicator.classList.remove('bg-gray-300');
-                        indicator.classList.add('bg-red-800');
-                    } else {
-                        indicator.classList.remove('bg-red-800');
-                        indicator.classList.add('bg-gray-300');
-                    }
-                });
-
-                // Update button states
-                prevSlideBtn.disabled = currentSlide === 0;
-                nextSlideBtn.disabled = currentSlide === totalSlides - 1;
-            }
-
-            // Open modal
-            if (userManualBtn) {
-                userManualBtn.addEventListener('click', function() {
-                    userManualModal.classList.remove('hidden');
-                    currentSlide = 0;
-                    updateSlider();
-                });
-            }
-
-            // Close modal
-            if (closeManualBtn) {
-                closeManualBtn.addEventListener('click', function() {
-                    userManualModal.classList.add('hidden');
-                });
-            }
-
-            // Close on backdrop click
-            if (userManualModal) {
-                userManualModal.addEventListener('click', function(e) {
-                    if (e.target === userManualModal) {
-                        userManualModal.classList.add('hidden');
-                    }
-                });
-            }
-
-            // Close on Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !userManualModal.classList.contains('hidden')) {
-                    userManualModal.classList.add('hidden');
-                }
-            });
-
-            // Previous slide
-            if (prevSlideBtn) {
-                prevSlideBtn.addEventListener('click', function() {
-                    if (currentSlide > 0) {
-                        currentSlide--;
-                        updateSlider();
-                    }
-                });
-            }
-
-            // Next slide
-            if (nextSlideBtn) {
-                nextSlideBtn.addEventListener('click', function() {
-                    if (currentSlide < totalSlides - 1) {
-                        currentSlide++;
-                        updateSlider();
-                    }
-                });
-            }
-
-            // Slide indicators
-            slideIndicators.forEach((indicator, index) => {
-                indicator.addEventListener('click', function() {
-                    currentSlide = index;
-                    updateSlider();
-                });
-            });
-
-            // Keyboard navigation
-            document.addEventListener('keydown', function(e) {
-                if (!userManualModal.classList.contains('hidden')) {
-                    if (e.key === 'ArrowLeft' && currentSlide > 0) {
-                        currentSlide--;
-                        updateSlider();
-                    } else if (e.key === 'ArrowRight' && currentSlide < totalSlides - 1) {
-                        currentSlide++;
-                        updateSlider();
-                    }
-                }
-            });
-        });
-
-        // Combined sidebar and navigation functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Sidebar functionality
             const sidebarToggle = document.getElementById('sidebarToggle');
@@ -868,15 +453,7 @@
                     if (window.innerWidth < 768) {
                         sidebarOverlay.classList.remove('opacity-0');
                         sidebarOverlay.classList.remove('pointer-events-none');
-                    } else {
-                        sidebarOverlay.classList.add('opacity-0');
-                        sidebarOverlay.classList.add('pointer-events-none');
                     }
-                } else {
-                    sidebar.classList.add('-translate-x-full');
-                    mainContent.classList.remove('content-shifted');
-                    sidebarOverlay.classList.add('opacity-0');
-                    sidebarOverlay.classList.add('pointer-events-none');
                 }
 
                 sidebarToggle.addEventListener('click', function() {
@@ -896,11 +473,10 @@
                     sidebarOverlay.classList.add('opacity-0');
                     sidebarOverlay.classList.add('pointer-events-none');
                     mainContent.classList.remove('content-shifted');
-
                     localStorage.setItem('sidebarOpen', 'false');
                 });
 
-                // Handle window resize (preserve sidebar state)
+                // Handle window resize
                 window.addEventListener('resize', function() {
                     const isOpen = localStorage.getItem('sidebarOpen') === 'true';
                     if (isOpen) {
@@ -921,206 +497,161 @@
                         if (isOpen) {
                             sidebarOverlay.classList.remove('opacity-0');
                             sidebarOverlay.classList.remove('pointer-events-none');
-                        } else {
-                            sidebarOverlay.classList.add('opacity-0');
-                            sidebarOverlay.classList.add('pointer-events-none');
                         }
-                        // On mobile, content should not be shifted visually
                         mainContent.classList.remove('content-shifted');
                     }
                 });
             }
 
-            // Navigation functionality
-            // Update selector to include all navigation items
-            const navItems = document.querySelectorAll('a[href], button[onclick]');
-            const currentPath = window.location.pathname;
+            // Profile dropdown functionality
+            const profileDropdown = document.getElementById('profileDropdown');
+            const profileMenu = document.getElementById('profileMenu');
 
-            function setActiveState(element) {
-                // Remove active state from all items
-                navItems.forEach(item => {
-                    if (!item.closest('#profileMenu') && !item.closest('.filter-buttons')) { // Exclude profile menu items and filter buttons
-                        item.classList.remove('nav-active');
-                        item.classList.remove('bg-red-700');
-                    }
+            if (profileDropdown && profileMenu) {
+                profileDropdown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    profileMenu.classList.toggle('hidden');
                 });
 
-                if (element && !element.closest('#profileMenu') && !element.closest('.filter-buttons')) {
-                    // Add active state to clicked element
-                    element.classList.add('nav-active');
-                    element.classList.add('bg-red-700');
-
-                    // Handle dropdown menus
-                    const parentDropdown = element.closest('.space-y-1.5');
-                    if (parentDropdown) {
-                        const dropdownButton = parentDropdown.querySelector('button');
-                        const dropdownMenu = parentDropdown.querySelector('[id$="Menu"]');
-
-                        if (dropdownButton) {
-                            dropdownButton.classList.add('nav-active');
-                            dropdownButton.classList.add('bg-red-700');
-                        }
-
-                        if (dropdownMenu) {
-                            dropdownMenu.classList.remove('hidden');
-                            localStorage.setItem(dropdownMenu.id, 'open');
-                        }
+                document.addEventListener('click', (e) => {
+                    if (!profileDropdown.contains(e.target)) {
+                        profileMenu.classList.add('hidden');
                     }
+                });
+            }
 
-                    // Special handling for repair menu items
-                    if (element.closest('#repairMenu')) {
-                        const repairMenu = document.getElementById('repairMenu');
-                        const repairButton = document.querySelector('[onclick="toggleRepairMenu()"]');
-                        if (repairMenu && repairButton) {
-                            repairMenu.classList.remove('hidden');
-                            repairButton.classList.add('nav-active');
-                            repairButton.classList.add('bg-red-700');
-                            localStorage.setItem('repairMenu', 'open');
-                        }
-                    }
-
-                    // Store active path
-                    localStorage.setItem('activePath', currentPath);
+            // Menu toggle functions
+            function toggleUserMenu() {
+                const menu = document.getElementById('userMenu');
+                const icon = document.getElementById('userMenuIcon');
+                menu.classList.toggle('hidden');
+                if (menu.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
                 }
             }
 
-            // Check if current path is within a dropdown and open it
+            function toggleAssetMenu() {
+                const menu = document.getElementById('assetMenu');
+                const icon = document.getElementById('assetMenuIcon');
+                menu.classList.toggle('hidden');
+                if (menu.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            }
+
+            function toggleMaintenanceMenu() {
+                const menu = document.getElementById('maintenanceMenu');
+                const icon = document.getElementById('maintenanceMenuIcon');
+                menu.classList.toggle('hidden');
+                if (menu.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            }
+
+            function toggleRepairMenu() {
+                const menu = document.getElementById('repairMenu');
+                const icon = document.getElementById('repairMenuIcon');
+                menu.classList.toggle('hidden');
+                if (menu.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            }
+
+            function toggleLabScheduleMenu() {
+                const menu = document.getElementById('labScheduleMenu');
+                const icon = document.getElementById('labScheduleMenuIcon');
+                menu.classList.toggle('hidden');
+                if (menu.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            }
+
             function toggleReportMenu() {
                 const menu = document.getElementById('reportMenu');
+                const icon = document.getElementById('reportMenuIcon');
                 menu.classList.toggle('hidden');
-                localStorage.setItem('reportMenu', menu.classList.contains('hidden') ? 'closed' : 'open');
-            }
-
-            // Update the dropdowns object in checkAndOpenDropdown function
-            function checkAndOpenDropdown() {
-                const dropdowns = {
-                    'userMenu': ['/users', '/groups'],
-                    'maintenanceMenu': ['/maintenance'],
-                    'repairMenu': ['/repair', '/non-registered-assets'],
-                    'reportMenu': ['/reports']
-                };
-
-                for (const [menuId, paths] of Object.entries(dropdowns)) {
-                    if (paths.some(path => currentPath.includes(path))) {
-                        const menu = document.getElementById(menuId);
-                        const button = menu.previousElementSibling;
-                        if (menu && button) {
-                            menu.classList.remove('hidden');
-                            button.classList.add('nav-active');
-                            button.classList.add('bg-red-700');
-                            localStorage.setItem(menuId, 'open');
-                        }
-                    }
+                if (menu.classList.contains('hidden')) {
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    icon.style.transform = 'rotate(180deg)';
                 }
             }
 
-            // Set initial active state and open appropriate dropdown
-            navItems.forEach(item => {
-                const href = item.getAttribute('href');
-                if (href && href !== '#' && !item.closest('#profileMenu')) {
-                    try {
-                        const url = new URL(href, window.location.origin);
-                        if (url.pathname === currentPath) {
-                            setActiveState(item);
-                        }
-                    } catch (e) {
-                        console.log('Invalid URL:', href);
-                    }
+            // Auto-open dropdowns based on current path
+            const currentPath = window.location.pathname;
+            
+            if (currentPath.includes('/users') || currentPath.includes('/groups')) {
+                const userMenu = document.getElementById('userMenu');
+                const userMenuIcon = document.getElementById('userMenuIcon');
+                if (userMenu && userMenuIcon) {
+                    userMenu.classList.remove('hidden');
+                    userMenuIcon.style.transform = 'rotate(180deg)';
                 }
-            });
+            }
 
-            // Check and open dropdown for current path
-            checkAndOpenDropdown();
-
-            // Handle clicks on navigation items
-            navItems.forEach(item => {
-                if (!item.closest('#profileMenu')) { // Exclude profile menu items
-                    item.addEventListener('click', function(e) {
-                        // Handle only our toggleXMenu buttons; ignore others
-                        if (this.tagName === 'BUTTON') {
-                            if (this.id !== 'profileDropdown') {
-                                const onclickAttr = this.getAttribute('onclick') || '';
-                                const match = onclickAttr.match(/toggle(\w+)Menu/);
-                                if (match && match[1]) {
-                                    e.preventDefault();
-                                    const menuId = match[1].toLowerCase() + 'Menu';
-                                    const menu = document.getElementById(menuId);
-                                    if (menu) {
-                                        const isHidden = menu.classList.contains('hidden');
-                                        menu.classList.toggle('hidden');
-                                        this.classList.toggle('nav-active');
-                                        this.classList.toggle('bg-red-700');
-                                        localStorage.setItem(menuId, isHidden ? 'open' : 'closed');
-                                    }
-                                }
-                            }
-                        } else if (this.getAttribute('href') !== '#') {
-                            setActiveState(this);
-                        }
-                    });
+            if (currentPath.includes('/assets') || currentPath.includes('/scanner') || currentPath.includes('/qr')) {
+                const assetMenu = document.getElementById('assetMenu');
+                const assetMenuIcon = document.getElementById('assetMenuIcon');
+                if (assetMenu && assetMenuIcon) {
+                    assetMenu.classList.remove('hidden');
+                    assetMenuIcon.style.transform = 'rotate(180deg)';
                 }
-            });
+            }
 
-            // Set initial active state for current page
-            navItems.forEach(item => {
-                const href = item.getAttribute('href');
-                if (href && href !== '#' && !item.closest('#profileMenu')) {
-                    try {
-                        const url = new URL(href, window.location.origin);
-                        if (url.pathname === currentPath) {
-                            setActiveState(item);
-                        }
-                    } catch (e) {
-                        console.log('Invalid URL:', href);
-                    }
+            if (currentPath.includes('/maintenance')) {
+                const maintenanceMenu = document.getElementById('maintenanceMenu');
+                const maintenanceMenuIcon = document.getElementById('maintenanceMenuIcon');
+                if (maintenanceMenu && maintenanceMenuIcon) {
+                    maintenanceMenu.classList.remove('hidden');
+                    maintenanceMenuIcon.style.transform = 'rotate(180deg)';
                 }
-            });
+            }
 
-            // Check and open dropdown for current path
-            checkAndOpenDropdown();
+            if (currentPath.includes('/repair') || currentPath.includes('/non-registered-assets')) {
+                const repairMenu = document.getElementById('repairMenu');
+                const repairMenuIcon = document.getElementById('repairMenuIcon');
+                if (repairMenu && repairMenuIcon) {
+                    repairMenu.classList.remove('hidden');
+                    repairMenuIcon.style.transform = 'rotate(180deg)';
+                }
+            }
 
-            // Lab Schedule menu functionality
-            const labScheduleButton = document.querySelector('[onclick="toggleLabScheduleMenu()"]');
-            const labScheduleMenu = document.getElementById('labScheduleMenu');
-
-            // Check if current path is lab schedule related
-            if (currentPath.includes('/lab-schedule') || currentPath.includes('/lab-history') || currentPath.includes('/lab-logging')) {
-                if (labScheduleButton && labScheduleMenu) {
-                    labScheduleButton.classList.add('nav-active');
+            if (currentPath.includes('/lab') || currentPath.includes('/laboratories')) {
+                const labScheduleMenu = document.getElementById('labScheduleMenu');
+                const labScheduleMenuIcon = document.getElementById('labScheduleMenuIcon');
+                if (labScheduleMenu && labScheduleMenuIcon) {
                     labScheduleMenu.classList.remove('hidden');
+                    labScheduleMenuIcon.style.transform = 'rotate(180deg)';
                 }
             }
+
+            if (currentPath.includes('/reports')) {
+                const reportMenu = document.getElementById('reportMenu');
+                const reportMenuIcon = document.getElementById('reportMenuIcon');
+                if (reportMenu && reportMenuIcon) {
+                    reportMenu.classList.remove('hidden');
+                    reportMenuIcon.style.transform = 'rotate(180deg)';
+                }
+            }
+
+            // Make toggle functions globally available
+            window.toggleUserMenu = toggleUserMenu;
+            window.toggleAssetMenu = toggleAssetMenu;
+            window.toggleMaintenanceMenu = toggleMaintenanceMenu;
+            window.toggleRepairMenu = toggleRepairMenu;
+            window.toggleLabScheduleMenu = toggleLabScheduleMenu;
+            window.toggleReportMenu = toggleReportMenu;
         });
-
-        // Profile dropdown functionality (guard for unauthenticated pages)
-        const profileDropdown = document.getElementById('profileDropdown');
-        const profileMenu = document.getElementById('profileMenu');
-
-        if (profileDropdown && profileMenu) {
-            // Toggle dropdown when clicking the profile button
-            profileDropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-                profileMenu.classList.toggle('hidden');
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!profileDropdown.contains(e.target)) {
-                    profileMenu.classList.add('hidden');
-                }
-            });
-        }
-
-        function toggleLabScheduleMenu() {
-            const menu = document.getElementById('labScheduleMenu');
-            const button = document.querySelector('[onclick="toggleLabScheduleMenu()"]');
-            if (menu && button) {
-                menu.classList.toggle('hidden');
-                button.classList.toggle('nav-active');
-            }
-        }
-
-
     </script>
 </body>
 </html>

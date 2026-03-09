@@ -4,7 +4,7 @@
 <div class="flex-1 p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen" id="mainContent">
     <div class="max-w-6xl mx-auto">
         <!-- Header -->
-        <div class="mb-8 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl shadow-xl p-8 md:p-10 text-white">
+        <div class="mb-8 bg-red-600 rounded-2xl shadow-xl p-8 md:p-10 text-white">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 p-4 rounded-xl backdrop-blur-sm shadow-lg">
                     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,11 +66,11 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             <!-- Lecture Card -->
                             <label class="purpose-card group cursor-pointer">
                                 <input type="checkbox" name="purpose" value="lecture" class="purpose-checkbox sr-only">
-                                <div class="relative h-full border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                <div class="relative h-full bg-white border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                     <div class="flex flex-col items-center text-center gap-2">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-sm">
                                             <svg class="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +90,7 @@
                             <!-- Examination Card -->
                             <label class="purpose-card group cursor-pointer">
                                 <input type="checkbox" name="purpose" value="examination" class="purpose-checkbox sr-only">
-                                <div class="relative h-full border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                <div class="relative h-full bg-white border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                     <div class="flex flex-col items-center text-center gap-2">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-sm">
                                             <svg class="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@
                             <!-- Practical Card -->
                             <label class="purpose-card group cursor-pointer">
                                 <input type="checkbox" name="purpose" value="practical" class="purpose-checkbox sr-only">
-                                <div class="relative h-full border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                <div class="relative h-full bg-white border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                     <div class="flex flex-col items-center text-center gap-2">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-sm">
                                             <svg class="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@
                             <!-- Research Card -->
                             <label class="purpose-card group cursor-pointer">
                                 <input type="checkbox" name="purpose" value="research" class="purpose-checkbox sr-only">
-                                <div class="relative h-full border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                <div class="relative h-full bg-white border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                     <div class="flex flex-col items-center text-center gap-2">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-sm">
                                             <svg class="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +151,7 @@
                             <!-- Training Card -->
                             <label class="purpose-card group cursor-pointer">
                                 <input type="checkbox" name="purpose" value="training" class="purpose-checkbox sr-only">
-                                <div class="relative h-full border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                <div class="relative h-full bg-white border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                     <div class="flex flex-col items-center text-center gap-2">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-sm">
                                             <svg class="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +171,7 @@
                             <!-- Other Card -->
                             <label class="purpose-card group cursor-pointer">
                                 <input type="checkbox" name="purpose" value="other" class="purpose-checkbox sr-only">
-                                <div class="relative h-full border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                <div class="relative h-full bg-white border-2 border-gray-300 rounded-lg p-4 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                     <div class="flex flex-col items-center text-center gap-2">
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-sm">
                                             <svg class="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +220,7 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                             @foreach($laboratories as $lab)
                             @php
                                 $hasSession = in_array($lab->number, $labsWithSessions ?? []);
@@ -228,7 +228,7 @@
                             <div class="lab-card-wrapper" @if($hasSession) data-lab-number="{{ $lab->number }}" @endif>
                                 <label class="lab-card group cursor-pointer {{ $hasSession ? 'has-session' : '' }}">
                                     <input type="radio" name="laboratory" value="{{ $lab->number }}" class="lab-radio sr-only">
-                                    <div class="relative h-full border-2 {{ $hasSession ? 'border-red-400 bg-gradient-to-br from-red-50 to-red-100' : 'border-gray-300' }} rounded-xl p-7 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
+                                    <div class="relative h-full border-2 {{ $hasSession ? 'border-red-400 bg-gradient-to-br from-red-50 to-red-100' : 'bg-white border-gray-300' }} rounded-xl p-7 transition-all duration-200 hover:border-red-400 hover:shadow-lg hover:-translate-y-1">
                                         <div class="flex flex-col items-center text-center gap-4">
                                             <div class="w-20 h-20 rounded-xl {{ $hasSession ? 'bg-gradient-to-br from-red-200 to-red-300 ring-2 ring-red-400' : 'bg-gradient-to-br from-gray-100 to-gray-200' }} flex items-center justify-center group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 shadow-md">
                                                 <span class="text-3xl font-bold {{ $hasSession ? 'text-red-800' : 'text-gray-700' }} group-hover:text-red-600 transition-colors">{{ $lab->number }}</span>
@@ -269,7 +269,7 @@
         <!-- Lab Users Modal -->
         <div id="labUsersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden">
-                <div class="bg-gradient-to-r from-red-600 to-red-700 p-6">
+                <div class="bg-red-600 p-6">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

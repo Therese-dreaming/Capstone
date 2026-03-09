@@ -24,7 +24,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        if (Auth::user()->group->name !== 'Admin') {
+        if (!Auth::user()->group || Auth::user()->group->name !== 'Admin') {
             abort(403, 'Unauthorized action.');
         }
 
@@ -62,7 +62,7 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        if (Auth::user()->group->name !== 'Admin') {
+        if (!Auth::user()->group || Auth::user()->group->name !== 'Admin') {
             abort(403, 'Unauthorized action.');
         }
         $groups = Group::all();
@@ -71,7 +71,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        if (Auth::user()->group->name !== 'Admin') {
+        if (!Auth::user()->group || Auth::user()->group->name !== 'Admin') {
             abort(403, 'Unauthorized action.');
         }
 
@@ -115,7 +115,7 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if (Auth::user()->group->name !== 'Admin') {
+        if (!Auth::user()->group || Auth::user()->group->name !== 'Admin') {
             abort(403, 'Unauthorized action.');
         }
 

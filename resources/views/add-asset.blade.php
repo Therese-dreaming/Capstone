@@ -393,36 +393,6 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Parent Asset (Optional)</label>
-                                    <div class="relative">
-                                        <input type="text" id="parentAssetSearch"
-                                               class="w-full px-4 py-3 border @error('parent_id') border-red-500 @enderror border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
-                                               placeholder="Type to search for a parent asset (e.g., PC-001, Server-A)"
-                                               autocomplete="off"
-                                               value="{{ old('parent_id') ? $parentAssets->firstWhere('id', old('parent_id'))?->name . ' (' . $parentAssets->firstWhere('id', old('parent_id'))?->serial_number . ')' : '' }}">
-                                        <input type="hidden" name="parent_id" id="parentAssetId" value="{{ old('parent_id') }}">
-                                        <div id="parentAssetAutocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden mt-1">
-                                            <!-- Suggestions will be populated here -->
-                                        </div>
-                                    </div>
-                                    <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <div class="flex items-start">
-                                            <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <div>
-                                                <p class="text-xs text-blue-700 font-medium">Use this to link components (e.g., RAM, Hard Drive) to their parent asset (e.g., PC, Server)</p>
-                                                <p class="text-xs text-blue-600 mt-1">Example: Type to search and select a PC as the parent when adding RAM or Hard Drive components</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @error('parent_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                    <p class="mt-1 text-xs text-gray-500">Leave blank if this is a standalone asset. Components cannot have components.</p>
-                                </div>
-
-                                <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Asset Photo</label>
                                     <input id="photo" name="photo" type="file" class="sr-only" accept="image/*">
                                     <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-gray-400 transition-colors duration-200" id="dropzone">
@@ -673,11 +643,6 @@
         initializeAcquisitionDocument();
         initializeVendorAutocomplete();
         initializeLocationAutocomplete();
-        
-        // Initialize parent asset autocomplete after a small delay to ensure DOM is ready
-        setTimeout(function() {
-            initializeParentAssetAutocomplete();
-        }, 100);
     });
 
     // Initialize image preview functionality
@@ -1160,188 +1125,6 @@
         });
     }
 
-    // Initialize parent asset autocomplete functionality
-    function initializeParentAssetAutocomplete() {
-        const parentAssetInput = document.getElementById('parentAssetSearch');
-        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
-        const parentAssetIdInput = document.getElementById('parentAssetId');
-
-        if (!parentAssetInput || !parentAssetAutocomplete || !parentAssetIdInput) {
-            console.error('Parent asset autocomplete elements not found');
-            return;
-        }
-
-        // All parent assets data from server
-        @php
-            $parentAssetsData = isset($parentAssets) && $parentAssets ? $parentAssets->map(function($parent) {
-                return [
-                    'id' => $parent->id, 
-                    'name' => $parent->name ?? '',
-                    'serial_number' => $parent->serial_number ?? '',
-                    'location' => $parent->location->full_location ?? 'N/A'
-                ];
-            })->values()->toArray() : [];
-        @endphp
-        const allParentAssets = @json($parentAssetsData);
-        
-        // Debug: log the data
-        console.log('Parent assets loaded:', allParentAssets);
-        
-        // Debug: log the data
-        console.log('Parent assets loaded:', allParentAssets);
-
-        let searchTimeout;
-
-        parentAssetInput.addEventListener('input', function() {
-            const query = this.value.trim().toLowerCase();
-            
-            clearTimeout(searchTimeout);
-            
-            if (query.length === 0) {
-                hideParentAssetAutocomplete();
-                parentAssetIdInput.value = '';
-                return;
-            }
-
-            searchTimeout = setTimeout(() => {
-                if (allParentAssets && allParentAssets.length > 0) {
-                    filterParentAssets(query, allParentAssets);
-                } else {
-                    hideParentAssetAutocomplete();
-                }
-            }, 200);
-        });
-
-        // Handle keyboard navigation
-        parentAssetInput.addEventListener('keydown', function(e) {
-            const suggestions = parentAssetAutocomplete.querySelectorAll('.parent-asset-suggestion-item');
-            const activeSuggestion = parentAssetAutocomplete.querySelector('.parent-asset-suggestion-item.active');
-            
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (!activeSuggestion) {
-                    suggestions[0]?.classList.add('active');
-                } else {
-                    const nextSuggestion = activeSuggestion.nextElementSibling;
-                    if (nextSuggestion) {
-                        activeSuggestion.classList.remove('active');
-                        nextSuggestion.classList.add('active');
-                        nextSuggestion.scrollIntoView({ block: 'nearest' });
-                    }
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (activeSuggestion) {
-                    const prevSuggestion = activeSuggestion.previousElementSibling;
-                    if (prevSuggestion) {
-                        activeSuggestion.classList.remove('active');
-                        prevSuggestion.classList.add('active');
-                        prevSuggestion.scrollIntoView({ block: 'nearest' });
-                    } else {
-                        activeSuggestion.classList.remove('active');
-                    }
-                }
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (activeSuggestion) {
-                    activeSuggestion.click();
-                }
-            } else if (e.key === 'Escape') {
-                hideParentAssetAutocomplete();
-            }
-        });
-
-        // Hide autocomplete when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!parentAssetInput.contains(e.target) && !parentAssetAutocomplete.contains(e.target)) {
-                hideParentAssetAutocomplete();
-            }
-        });
-    }
-
-    function filterParentAssets(query, allParentAssets) {
-        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
-        if (!parentAssetAutocomplete) return;
-
-        // Ensure allParentAssets is an array
-        if (!Array.isArray(allParentAssets)) {
-            console.error('allParentAssets is not an array:', allParentAssets);
-            return;
-        }
-
-        // Filter parent assets that match the query (search by name, serial number, or location)
-        const matches = allParentAssets.filter(parent => {
-            const name = (parent.name || '').toLowerCase();
-            const serial = (parent.serial_number || '').toLowerCase();
-            const location = (parent.location || '').toLowerCase();
-            return name.includes(query) || serial.includes(query) || location.includes(query);
-        });
-
-        displayParentAssetSuggestions(matches);
-    }
-
-    function displayParentAssetSuggestions(parentAssets) {
-        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
-        if (!parentAssetAutocomplete) {
-            console.error('Parent asset autocomplete element not found');
-            return;
-        }
-
-        parentAssetAutocomplete.innerHTML = '';
-        
-        if (!parentAssets || parentAssets.length === 0) {
-            parentAssetAutocomplete.innerHTML = `
-                <div class="px-3 py-2 text-sm text-gray-500">
-                    No parent assets found. Try a different search term.
-                </div>
-            `;
-        } else {
-            parentAssets.slice(0, 50).forEach(parent => {
-                const suggestionItem = document.createElement('div');
-                suggestionItem.className = 'parent-asset-suggestion-item px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0';
-                suggestionItem.innerHTML = `
-                    <div class="font-medium text-gray-900">${parent.name || 'N/A'}</div>
-                    <div class="text-xs text-gray-500">${parent.serial_number || 'N/A'} - ${parent.location || 'N/A'}</div>
-                `;
-                suggestionItem.dataset.parentId = parent.id;
-                suggestionItem.dataset.parentName = `${parent.name || ''} (${parent.serial_number || ''})`;
-                suggestionItem.addEventListener('click', () => selectParentAsset(parent));
-                parentAssetAutocomplete.appendChild(suggestionItem);
-            });
-
-            if (parentAssets.length > 50) {
-                const moreItem = document.createElement('div');
-                moreItem.className = 'px-3 py-2 text-xs text-gray-400 italic';
-                moreItem.textContent = `+ ${parentAssets.length - 50} more results. Refine your search.`;
-                parentAssetAutocomplete.appendChild(moreItem);
-            }
-        }
-        
-        parentAssetAutocomplete.classList.remove('hidden');
-    }
-
-    function selectParentAsset(parent) {
-        const parentAssetInput = document.getElementById('parentAssetSearch');
-        const parentAssetIdInput = document.getElementById('parentAssetId');
-        
-        if (!parentAssetInput || !parentAssetIdInput) return;
-
-        parentAssetInput.value = `${parent.name} (${parent.serial_number})`;
-        parentAssetIdInput.value = parent.id;
-        
-        hideParentAssetAutocomplete();
-    }
-
-    function hideParentAssetAutocomplete() {
-        const parentAssetAutocomplete = document.getElementById('parentAssetAutocomplete');
-        if (!parentAssetAutocomplete) return;
-
-        parentAssetAutocomplete.classList.add('hidden');
-        parentAssetAutocomplete.querySelectorAll('.parent-asset-suggestion-item').forEach(item => {
-            item.classList.remove('active');
-        });
-    }
-
     // Add notification function
     function showNotification(message, type) {
         // Create notification element if it doesn't exist
@@ -1706,15 +1489,6 @@
     }
 
     .location-suggestion-item:hover {
-        background-color: #f3f4f6;
-    }
-
-    .parent-asset-suggestion-item.active {
-        background-color: #dbeafe;
-        font-weight: 500;
-    }
-
-    .parent-asset-suggestion-item:hover {
         background-color: #f3f4f6;
     }
 

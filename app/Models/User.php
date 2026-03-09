@@ -26,6 +26,9 @@ class User extends Authenticatable
         'last_login' => 'datetime'
     ];
 
+    // Eager load relationships by default
+    protected $with = ['group'];
+
     public function group()
     {
         return $this->belongsTo(Group::class);

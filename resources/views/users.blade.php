@@ -46,7 +46,7 @@
                         <p class="text-red-100 text-sm md:text-lg">Manage system users and their permissions</p>
                     </div>
                 </div>
-                @if(Auth::user()->group->name === 'Admin')
+                @if(Auth::user()->group && Auth::user()->group->name === 'Admin')
                 <a href="{{ route('users.create') }}" class="bg-white/20 backdrop-blur-sm text-white px-4 md:px-6 py-2 md:py-3 rounded-xl hover:bg-white/30 transition-all duration-200 font-medium flex items-center justify-center">
                     <svg class="w-4 h-4 md:w-5 md:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -157,9 +157,9 @@
                         <h3 class="font-bold text-lg md:text-xl text-gray-900 mb-1 truncate">{{ $user->name }}</h3>
                         <p class="text-sm text-gray-600 mb-2 truncate">{{ $user->username }}</p>
                         <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium 
-                            @if($user->group->name === 'Admin') bg-purple-100 text-purple-800
-                            @elseif($user->group->name === 'Secretary') bg-blue-100 text-blue-800
-                            @elseif($user->group->name === 'Technician') bg-green-100 text-green-800
+                            @if($user->group && $user->group->name === 'Admin') bg-purple-100 text-purple-800
+                            @elseif($user->group && $user->group->name === 'Secretary') bg-blue-100 text-blue-800
+                            @elseif($user->group && $user->group->name === 'Technician') bg-green-100 text-green-800
                             @else bg-gray-100 text-gray-800 @endif">
                             {{ $user->group->name ?? 'No Group' }}
                         </span>
@@ -194,7 +194,7 @@
             </div>
             
             <!-- Action Buttons -->
-            @if(Auth::user()->group->name === 'Admin')
+            @if(Auth::user()->group && Auth::user()->group->name === 'Admin')
             <div class="p-3 md:p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-2 md:space-x-3">
                 <a href="{{ route('users.edit', $user->id) }}" 
                    class="p-2 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded-lg transition-colors duration-200" 
@@ -262,7 +262,7 @@
         </div>
         <h3 class="text-base md:text-lg font-medium text-gray-900 mb-2">No users found</h3>
         <p class="text-sm text-gray-500 mb-4">Get started by adding your first user to the system.</p>
-        @if(Auth::user()->group->name === 'Admin')
+        @if(Auth::user()->group && Auth::user()->group->name === 'Admin')
         <a href="{{ route('users.create') }}" class="inline-flex items-center px-3 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm md:text-base">
             <svg class="w-3 h-3 md:w-4 md:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

@@ -74,9 +74,14 @@
             </div>
 
             <!-- Date Range Filter Section -->
-            <div class="mt-6 mb-6 p-4 bg-gray-50 rounded-lg border">
-                <h3 class="text-lg font-semibold text-gray-800 mb-3">Date Range Filter</h3>
-                <form method="GET" action="{{ request()->url() }}" class="flex flex-col sm:flex-row gap-4 items-end">
+            <div class="mt-4 mb-4 p-2 bg-gray-50 rounded-lg border">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleFilter('dateFilter')">
+                    <h3 class="text-sm font-semibold text-gray-700">Date Range Filter</h3>
+                    <svg id="dateFilterIcon" class="w-4 h-4 text-gray-600 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+                <form id="dateFilter" method="GET" action="{{ request()->url() }}" class="hidden flex-col sm:flex-row gap-2 items-end mt-2">
                     <!-- Preserve existing search parameters -->
                     @if(request('search'))
                         <input type="hidden" name="search" value="{{ request('search') }}">
@@ -90,32 +95,29 @@
                     @if(request('location'))
                         <input type="hidden" name="location" value="{{ request('location') }}">
                     @endif
-                    @if(request('parent'))
-                        <input type="hidden" name="parent" value="{{ request('parent') }}">
-                    @endif
                     
                     <div class="flex-1">
-                        <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <label for="date_from" class="block text-xs font-medium text-gray-600 mb-0.5">From Date</label>
                         <input type="date" 
                                id="date_from" 
                                name="date_from" 
                                value="{{ request('date_from') }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                               class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                     </div>
                     
                     <div class="flex-1">
-                        <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <label for="date_to" class="block text-xs font-medium text-gray-600 mb-0.5">To Date</label>
                         <input type="date" 
                                id="date_to" 
                                name="date_to" 
                                value="{{ request('date_to') }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                               class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                     </div>
                     
                     <div class="flex gap-2">
                         <button type="submit" 
-                                class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="bg-red-800 text-white px-3 py-1.5 text-sm rounded hover:bg-red-700 flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                             </svg>
                             Filter
@@ -128,14 +130,14 @@
                                 if (request('status')) $dateParams['status'] = request('status');
                                 if (request('category')) $dateParams['category'] = request('category');
                                 if (request('location')) $dateParams['location'] = request('location');
-                                if (request('parent')) $dateParams['parent'] = request('parent');
+
                                 if (request('warranty')) $dateParams['warranty'] = request('warranty');
                                 if (request('technician')) $dateParams['technician'] = request('technician');
                                 $dateUrl = request()->url() . (!empty($dateParams) ? '?' . http_build_query($dateParams) : '');
                             @endphp
                             <a href="{{ $dateUrl }}" 
-                               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               class="bg-gray-500 text-white px-3 py-1.5 text-sm rounded hover:bg-gray-600 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                                 Clear Date
@@ -145,8 +147,8 @@
                 </form>
                 
                 @if(request('date_from') || request('date_to'))
-                    <div class="mt-3 p-3 bg-red-50 rounded-md">
-                        <p class="text-sm text-red-800">
+                    <div class="mt-2 p-2 bg-red-50 rounded">
+                        <p class="text-xs text-red-800">
                             <strong>Filtered by:</strong> 
                             @if(request('date_from'))
                                 From {{ \Carbon\Carbon::parse(request('date_from'))->format('M d, Y') }}
@@ -164,10 +166,15 @@
             </div>
 
             <!-- Additional Filters Section -->
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
-                <h3 class="text-lg font-semibold text-gray-800 mb-3">Additional Filters</h3>
-                <div class="space-y-4">
-                    <form method="GET" action="{{ request()->url() }}" class="space-y-4">
+            <div class="mb-4 p-2 bg-gray-50 rounded-lg border">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleFilter('additionalFilters')">
+                    <h3 class="text-sm font-semibold text-gray-700">Additional Filters</h3>
+                    <svg id="additionalFiltersIcon" class="w-4 h-4 text-gray-600 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+                <div id="additionalFilters" class="hidden space-y-2 mt-2">
+                    <form method="GET" action="{{ request()->url() }}" class="space-y-2">
                     <!-- Preserve existing search and date parameters -->
                     @if(request('search'))
                         <input type="hidden" name="search" value="{{ request('search') }}">
@@ -184,15 +191,12 @@
                     @if(request('technician'))
                         <input type="hidden" name="technician" value="{{ request('technician') }}">
                     @endif
-                    @if(request('parent'))
-                        <input type="hidden" name="parent" value="{{ request('parent') }}">
-                    @endif
                     
                     <!-- First Row: 4 filters -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
                         <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <label for="status" class="block text-xs font-medium text-gray-600 mb-0.5">Status</label>
+                            <select name="status" id="status" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                                 <option value="">All Status</option>
                                 <option value="IN USE" {{ request('status') == 'IN USE' ? 'selected' : '' }}>IN USE</option>
                                 <option value="UNDER REPAIR" {{ request('status') == 'UNDER REPAIR' ? 'selected' : '' }}>UNDER REPAIR</option>
@@ -203,8 +207,8 @@
                         </div>
                         
                         <div>
-                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                            <select name="category" id="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <label for="category" class="block text-xs font-medium text-gray-600 mb-0.5">Category</label>
+                            <select name="category" id="category" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                                 <option value="">All Categories</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
@@ -215,8 +219,8 @@
                         </div>
                         
                         <div>
-                            <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                            <select name="location" id="location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <label for="location" class="block text-xs font-medium text-gray-600 mb-0.5">Location</label>
+                            <select name="location" id="location" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                                 <option value="">All Locations</option>
                                 @foreach($locations as $location)
                                     <option value="{{ $location->id }}" {{ request('location') == $location->id ? 'selected' : '' }}>
@@ -226,31 +230,14 @@
                             </select>
                         </div>
 
-                        <div>
-                            <label for="parent" class="block text-sm font-medium text-gray-700 mb-1">Parent</label>
-                            <select name="parent" id="parent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
-                                <option value="">All Assets</option>
-                                <option value="has_parent" {{ request('parent') == 'has_parent' ? 'selected' : '' }}>Has Parent (Components)</option>
-                                <option value="no_parent" {{ request('parent') == 'no_parent' ? 'selected' : '' }}>No Parent (Standalone)</option>
-                                <option value="is_parent" {{ request('parent') == 'is_parent' ? 'selected' : '' }}>Is Parent (Has Components)</option>
-                                @if(isset($parentAssets))
-                                    <optgroup label="Specific Parent Assets">
-                                        @foreach($parentAssets as $parentAsset)
-                                            <option value="{{ $parentAsset->id }}" {{ request('parent') == $parentAsset->id || request('parent') == (string)$parentAsset->id || (string)request('parent') == (string)$parentAsset->id ? 'selected' : '' }}>
-                                                {{ $parentAsset->name }} ({{ $parentAsset->serial_number }}) - {{ $parentAsset->location->full_location ?? 'N/A' }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endif
-                            </select>
-                        </div>
+
                     </div>
                     
                     <!-- Second Row: 2 filters + buttons -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
                         <div>
-                            <label for="warranty" class="block text-sm font-medium text-gray-700 mb-1">Warranty</label>
-                            <select name="warranty" id="warranty" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <label for="warranty" class="block text-xs font-medium text-gray-600 mb-0.5">Warranty</label>
+                            <select name="warranty" id="warranty" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                                 <option value="">All Warranties</option>
                                 <option value="expiring_365" {{ request('warranty') == 'expiring_365' ? 'selected' : '' }}>Expiring within 365 days</option>
                                 <option value="expiring_30" {{ request('warranty') == 'expiring_30' ? 'selected' : '' }}>Expiring within 30 days</option>
@@ -259,8 +246,8 @@
                         </div>
                         
                         <div>
-                            <label for="technician" class="block text-sm font-medium text-gray-700 mb-1">Technician</label>
-                            <select name="technician" id="technician" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500">
+                            <label for="technician" class="block text-xs font-medium text-gray-600 mb-0.5">Technician</label>
+                            <select name="technician" id="technician" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500">
                                 <option value="">All Technicians</option>
                                 @if(isset($technicians))
                                     @foreach($technicians as $technician)
@@ -273,14 +260,14 @@
                         </div>
                         
                         <div class="flex gap-2">
-                            <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button type="submit" class="bg-red-800 text-white px-3 py-1.5 text-sm rounded hover:bg-red-700 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                                 </svg>
                                 Apply Filters
                             </button>
                             
-                            @if(request('status') || request('category') || request('location') || request('warranty') || request('technician') || request('parent'))
+                            @if(request('status') || request('category') || request('location') || request('warranty') || request('technician'))
                                 @php
                                     $clearParams = [];
                                     if (request('search')) $clearParams['search'] = request('search');
@@ -289,8 +276,8 @@
                                     $clearUrl = request()->url() . (!empty($clearParams) ? '?' . http_build_query($clearParams) : '');
                                 @endphp
                                 <a href="{{ $clearUrl }}" 
-                                   class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   class="bg-gray-500 text-white px-3 py-1.5 text-sm rounded hover:bg-gray-600 flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                     Clear Filters
@@ -367,13 +354,18 @@
             </div>
 
             <!-- Search Section -->
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
-                <h3 class="text-lg font-semibold text-gray-800 mb-3">Search Assets</h3>
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div class="mb-4 p-2 bg-gray-50 rounded-lg border">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleFilter('searchSection')">
+                    <h3 class="text-sm font-semibold text-gray-700">Search Assets</h3>
+                    <svg id="searchSectionIcon" class="w-4 h-4 text-gray-600 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+                <div id="searchSection" class="hidden flex-col sm:flex-row items-start sm:items-center gap-2 mt-2">
                     <div class="relative w-full flex gap-2">
-                        <input type="text" id="searchInput" placeholder="Search assets..." class="flex-1 min-w-0 sm:min-w-[400px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
-                        <button id="searchButton" class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center whitespace-nowrap">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <input type="text" id="searchInput" placeholder="Search assets..." class="flex-1 min-w-0 sm:min-w-[350px] px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500" value="{{ request('search') }}">
+                        <button id="searchButton" class="bg-red-800 text-white px-3 py-1.5 text-sm rounded hover:bg-red-700 flex items-center whitespace-nowrap">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             Search
@@ -393,8 +385,8 @@
                             $searchUrl = request()->url() . (!empty($searchParams) ? '?' . http_build_query($searchParams) : '');
                         @endphp
                         <a href="{{ $searchUrl }}" 
-                           class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="bg-gray-500 text-white px-3 py-1.5 text-sm rounded hover:bg-gray-600 flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                             Clear Search
@@ -402,8 +394,8 @@
                     @endif
                 </div>
                 @if(request('search'))
-                    <div class="mt-3 p-3 bg-blue-50 rounded-md">
-                        <p class="text-sm text-blue-800">
+                    <div class="mt-2 p-2 bg-blue-50 rounded">
+                        <p class="text-xs text-blue-800">
                             <strong>Searching for:</strong> "{{ request('search') }}" ({{ $assets->total() }} assets found)
                         </p>
                     </div>
@@ -415,18 +407,18 @@
 
 
             <!-- Mobile View Cards -->
-            <div class="md:hidden space-y-4 mb-4">
+            <div class="md:hidden space-y-2 mb-4">
                 @foreach($assets as $asset)
-                <div class="border rounded-lg p-4 bg-white shadow-sm">
-                    <div class="mb-3">
-                        <h3 class="font-bold text-gray-900">{{ $asset->name ?? '' }}</h3>
-                        <p class="text-sm text-gray-600">System SN: {{ $asset->serial_number ?? 'N/A' }}</p>
+                <div class="border rounded-lg p-3 bg-white shadow-sm">
+                    <div class="mb-2">
+                        <h3 class="font-bold text-gray-900 text-sm">{{ $asset->name ?? '' }}</h3>
+                        <p class="text-xs text-gray-600">System SN: {{ $asset->serial_number ?? 'N/A' }}</p>
                         @if($asset->manufacturer_serial_number)
-                            <p class="text-sm text-gray-600">Manufacturer SN: <span class="font-medium">{{ $asset->manufacturer_serial_number }}</span></p>
+                            <p class="text-xs text-gray-600">Manufacturer SN: <span class="font-medium">{{ $asset->manufacturer_serial_number }}</span></p>
                         @endif
                     </div>
                     
-                    <div class="flex gap-3 mb-3">
+                    <div class="flex gap-2 mb-2">
                         @if($asset->photo)
                         <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
                         @else
@@ -440,7 +432,7 @@
                         @endif
                     </div>
                     
-                                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm mb-3">
+                                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs mb-2">
                             <div>
                                 <p class="text-gray-500">Status:</p>
                                 <p class="font-medium">
@@ -554,78 +546,47 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">Photo</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">QR Code</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Serial Number</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer SN</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parent/Components</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky right-20 bg-gray-50 z-10">Category</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase sticky right-0 bg-gray-50 z-10">Actions</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase w-24">Photo</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase w-24">QR Code</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Serial Number</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer SN</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Asset Name</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase sticky right-16 bg-gray-50 z-10">Category</th>
+                            <th scope="col" class="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase sticky right-0 bg-gray-50 z-10">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($assets as $asset)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration + ($assets->currentPage() - 1) * $assets->perPage() }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">{{ $loop->iteration + ($assets->currentPage() - 1) * $assets->perPage() }}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">
                                 @if($asset->photo)
-                                <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
+                                <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
                                 @else
-                                <div class="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
-                                    <span class="text-gray-500">No Photo</span>
+                                <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                    <span class="text-xs text-gray-500">No Photo</span>
                                 </div>
                                 @endif
                             </td>
                             <!-- Rest of the desktop table remains the same -->
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-2 py-2 whitespace-nowrap">
                                 @if($asset->qr_code)
-                                <img src="{{ asset('storage/' . $asset->qr_code) }}" alt="QR Code" class="w-20 h-20 cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->qr_code) }}')">
+                                <img src="{{ asset('storage/' . $asset->qr_code) }}" alt="QR Code" class="w-16 h-16 cursor-pointer hover:opacity-75 transition-opacity" onclick="openImageModal('{{ asset('storage/' . $asset->qr_code) }}')">
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{{ $asset->serial_number ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900 font-bold">{{ $asset->serial_number ?? 'N/A' }}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                {{ $asset->manufacturer_serial_number ?? 'N/A' }}
+                            </td>
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
                                 {{ $asset->name ?? '' }}
-                                @if($asset->parent_id)
-                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded-full" title="Component of: {{ $asset->parent->name ?? 'N/A' }}">
-                                        Component
-                                    </span>
-                                @elseif($asset->components && $asset->components->count() > 0)
-                                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full" title="{{ $asset->components->count() }} component(s)">
-                                        Parent ({{ $asset->components->count() }})
-                                    </span>
-                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                @if($asset->parent_id && $asset->parent)
-                                    <div class="flex flex-col">
-                                        <span class="text-purple-700 font-medium">Parent:</span>
-                                        <span class="text-gray-700">{{ $asset->parent->name }}</span>
-                                        <span class="text-xs text-gray-500">({{ $asset->parent->serial_number }})</span>
-                                    </div>
-                                @elseif($asset->components && $asset->components->count() > 0)
-                                    <div class="flex flex-col">
-                                        <span class="text-blue-700 font-medium">Components ({{ $asset->components->count() }}):</span>
-                                        <div class="mt-1 space-y-1">
-                                            @foreach($asset->components->take(3) as $component)
-                                                <span class="block text-xs text-gray-600">{{ $component->name }}</span>
-                                            @endforeach
-                                            @if($asset->components->count() > 3)
-                                                <span class="text-xs text-gray-500">+{{ $asset->components->count() - 3 }} more</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @else
-                                    <span class="text-gray-400 text-xs">Standalone</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px]
+                            <td class="px-2 py-2 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[80px]
                                             @switch($asset->status)
                                                 @case('UNDER REPAIR')
                                                     bg-yellow-100 text-yellow-800
@@ -648,11 +609,10 @@
                                     {{ $asset->status ?? 'N/A' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $asset->creator ? $asset->creator->name : 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky right-20 bg-white z-10">{{ $asset->category->name ?? '' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky right-0 bg-white z-10">
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900">{{ $asset->creator ? $asset->creator->name : 'N/A' }}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900 sticky right-16 bg-white z-10">{{ $asset->category->name ?? '' }}</td>
+                            <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-900 sticky right-0 bg-white z-10">
                                 <div class="flex space-x-2">
                                     @if(auth()->user()->group_id === 4)
                                         <!-- Custodians only see Edit button -->
@@ -803,54 +763,54 @@
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" checked data-column="5" class="column-toggle">
-                            <span>Parent/Components</span>
+                            <span>Manufacturer SN</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="7" class="column-toggle">
+                            <input type="checkbox" checked data-column="6" class="column-toggle">
                             <span>Purchase Price</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="8" class="column-toggle">
+                            <input type="checkbox" checked data-column="7" class="column-toggle">
                             <span>Category</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="9" class="column-toggle">
+                            <input type="checkbox" checked data-column="8" class="column-toggle">
                             <span>Location</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="10" class="column-toggle">
+                            <input type="checkbox" checked data-column="9" class="column-toggle">
                             <span>Status</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="11" class="column-toggle">
+                            <input type="checkbox" checked data-column="10" class="column-toggle">
                             <span>Model</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="12" class="column-toggle">
+                            <input type="checkbox" checked data-column="11" class="column-toggle">
                             <span>Specification</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="13" class="column-toggle">
+                            <input type="checkbox" checked data-column="12" class="column-toggle">
                             <span>Vendor</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="14" class="column-toggle">
+                            <input type="checkbox" checked data-column="13" class="column-toggle">
                             <span>Purchase Date</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="15" class="column-toggle">
+                            <input type="checkbox" checked data-column="14" class="column-toggle">
                             <span>Warranty Period</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="16" class="column-toggle">
+                            <input type="checkbox" checked data-column="15" class="column-toggle">
                             <span>Lifespan (Yrs)</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="17" class="column-toggle">
+                            <input type="checkbox" checked data-column="16" class="column-toggle">
                             <span>End of Lifespan Date</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input type="checkbox" checked data-column="18" class="column-toggle">
+                            <input type="checkbox" checked data-column="17" class="column-toggle">
                             <span>Acquisition Doc</span>
                         </label>
                     </div>
@@ -864,32 +824,31 @@
                 <!-- Add to full list table header -->
                 <thead class="bg-gray-50 sticky top-0 shadow-sm z-10">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">#</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Photo</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">QR Code</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Asset Name</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Serial Number</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Manufacturer SN</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Parent/Components</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Price</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Model</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Specification</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Vendor</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Date</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Warranty Period</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Lifespan (Yrs)</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">End of Lifespan Date</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Acquisition Doc</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">#</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Photo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">QR Code</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Asset Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Serial Number</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Manufacturer SN</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Price</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Model</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Specification</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Vendor</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Purchase Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Warranty Period</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Lifespan (Yrs)</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">End of Lifespan Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Acquisition Doc</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($assets as $asset)
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration + ($assets->currentPage() - 1) * $assets->perPage() }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration + ($assets->currentPage() - 1) * $assets->perPage() }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
                             @if($asset->photo)
                             <img src="{{ asset('storage/' . $asset->photo) }}" alt="Asset Photo" class="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity shadow-sm" onclick="openImageModal('{{ asset('storage/' . $asset->photo) }}')">
                             @else
@@ -900,7 +859,7 @@
                             </div>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap">
                             @if($asset->qr_code)
                             <img src="{{ asset('storage/' . $asset->qr_code) }}" alt="QR Code" class="w-16 h-16 cursor-pointer hover:opacity-75 transition-opacity shadow-sm rounded-lg" onclick="openImageModal('{{ asset('storage/' . $asset->qr_code) }}')">
                             @else
@@ -911,47 +870,21 @@
                             </div>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap">
                             {{ $asset->name ?? '' }}
-                            @if($asset->parent_id)
-                                <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">Component</span>
-                            @elseif($asset->components && $asset->components->count() > 0)
-                                <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Parent ({{ $asset->components->count() }})</span>
-                            @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap font-bold">{{ $asset->serial_number ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td class="px-4 py-3 whitespace-nowrap font-bold">{{ $asset->serial_number ?? '' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                             @if($asset->manufacturer_serial_number)
                                 <span class="font-medium">{{ $asset->manufacturer_serial_number }}</span>
                             @else
                                 <span class="text-gray-400 text-xs">N/A</span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            @if($asset->parent_id && $asset->parent)
-                                <div class="flex flex-col">
-                                    <span class="text-purple-700 font-medium text-xs">Parent:</span>
-                                    <span class="text-gray-700 text-xs">{{ $asset->parent->name }}</span>
-                                    <span class="text-xs text-gray-500">{{ $asset->parent->serial_number }}</span>
-                                </div>
-                            @elseif($asset->components && $asset->components->count() > 0)
-                                <div class="flex flex-col">
-                                    <span class="text-blue-700 font-medium text-xs">Components ({{ $asset->components->count() }}):</span>
-                                    @foreach($asset->components->take(2) as $component)
-                                        <span class="text-xs text-gray-600">{{ $component->name }}</span>
-                                    @endforeach
-                                    @if($asset->components->count() > 2)
-                                        <span class="text-xs text-gray-500">+{{ $asset->components->count() - 2 }} more</span>
-                                    @endif
-                                </div>
-                            @else
-                                <span class="text-gray-400 text-xs">Standalone</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->category->name ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($asset->purchase_price ?? 0, 2) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">{{ $asset->category->name ?? '' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">{{ $asset->location ? $asset->location->full_location : 'N/A' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
                             <span class="px-3 py-1.5 text-xs font-medium rounded-full inline-flex items-center justify-center min-w-[90px]
                                     @switch($asset->status)
                                         @case('UNDER REPAIR')
@@ -975,16 +908,16 @@
                                 {{ $asset->status ?? 'N/A' }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->model ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->specification ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $asset->vendor->name ?? '' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="px-4 py-3 whitespace-nowrap">{{ $asset->model ?? '' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">{{ $asset->specification ?? '' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">{{ $asset->vendor->name ?? '' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             {{ \Carbon\Carbon::parse($asset->purchase_date)->format('M d, Y') }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             {{ \Carbon\Carbon::parse($asset->warranty_period)->format('M d, Y') }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             <span class="px-2 py-1 rounded-full text-xs font-medium
                             @switch($asset->life_status)
                                 @case('critical')
@@ -999,7 +932,7 @@
                                 {{ $asset->calculated_lifespan }} year(s)
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             <span class="px-2 py-1 rounded-full text-xs font-medium
                             @switch($asset->life_status)
                                 @case('critical')
@@ -1014,7 +947,7 @@
                                 {{ \Carbon\Carbon::parse($asset->end_of_life_date)->format('M d, Y') }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-3 whitespace-nowrap">
                             @if($asset->acquisition_document)
                                 <a href="{{ asset('storage/' . $asset->acquisition_document) }}" target="_blank" class="text-blue-600 hover:underline flex items-center">
                                     <svg class="w-5 h-5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -1258,6 +1191,22 @@
                 link.click();
                 document.body.removeChild(link);
             });
+    }
+
+    // Toggle filter visibility
+    function toggleFilter(filterId) {
+        const filterSection = document.getElementById(filterId);
+        const icon = document.getElementById(filterId + 'Icon');
+        
+        if (filterSection.classList.contains('hidden')) {
+            filterSection.classList.remove('hidden');
+            filterSection.classList.add('flex');
+            icon.classList.add('rotate-180');
+        } else {
+            filterSection.classList.add('hidden');
+            filterSection.classList.remove('flex');
+            icon.classList.remove('rotate-180');
+        }
     }
 
     // Event Listeners
