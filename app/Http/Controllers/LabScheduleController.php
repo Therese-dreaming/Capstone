@@ -453,7 +453,8 @@ class LabScheduleController extends Controller
             'laboratory' => 'required|string',
             'time_in' => 'required|date',
             'purpose' => 'required|array|min:1',
-            'purpose.*' => 'in:teaching,research,personal,other',
+            // Accept both current UI values and legacy values for compatibility.
+            'purpose.*' => 'in:lecture,examination,practical,research,training,other,teaching,personal',
             'notes' => 'nullable|string|max:500'
         ]);
 
